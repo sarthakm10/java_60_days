@@ -321,6 +321,50 @@ button { font-family: inherit; }
   letter-spacing: -0.02em;
 }
 
+/* Track switch: Beginner / Interview (separate courses, separate progress) */
+.track-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+.track-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.track-btn:hover { color: var(--text-primary); background: var(--glass); }
+.track-btn:focus-visible { outline: 2px solid var(--a2); outline-offset: 1px; }
+.track-btn-days { font-size: 0.68rem; font-weight: 600; color: var(--text-tertiary); }
+
+.track-btn.active {
+  background: var(--grad);
+  color: #fff;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--a1) 35%, transparent);
+}
+
+.track-btn.active .track-btn-days { color: rgba(255, 255, 255, 0.85); }
+
+/* Phones and tablets hide the sidebar, so the top bar carries a one-tap switch */
+.top-chips .track-chip { display: none; cursor: pointer; font-family: inherit; }
+.track-chip:hover { color: var(--text-primary); }
+
 .sidebar-progress {
   display: flex;
   align-items: center;
@@ -4115,6 +4159,7 @@ button { font-family: inherit; }
   .sidebar.open { transform: none; }
   .mobile-overlay.active { display: block; }
   .mobile-menu-btn { display: grid; flex-shrink: 0; }
+  .top-chips .track-chip { display: flex; }
   .top-bar { padding: 0 16px; gap: 10px; }
   .content-scroll { padding: 20px 16px 48px; }
   .level-chip .level-bar, .search-kbd { display: none; }
@@ -4387,6 +4432,8 @@ button { font-family: inherit; }
     line-height: 16px;
   }
   .timer-chip .chip-label { display: none; }
+  .track-chip { padding: 0 10px; }
+  .track-chip .chip-label { display: none; }   /* icon only; the full switch is in the menu */
   .timer-panel {
     top: auto;
     right: 10px;

@@ -1,12 +1,33 @@
 // ============================================================
-// 60-Day SDE Interview Prep Tracker — Application Logic
+// Java Fullstack — Application Logic (Beginner and Interview tracks)
 // ============================================================
 
 (function () {
   "use strict";
 
+  // ── Tracks ──
+  // Each track is its own course with its own progress; switching swaps the days and the track-owned state fields.
+  const TRACKS = {
+    beginner: {
+      name: "Beginner", icon: "🌱", days: BEGINNER_DATA,
+      blurb: "Start from zero: programming basics through Spring Boot, cloud and interviews",
+      roadmap: "Ten phases from your very first program to job-ready. Pick up where you left off, or jump anywhere."
+    },
+    interview: {
+      name: "Interview", icon: "🎯", days: CURRICULUM_DATA,
+      blurb: "Fast revision for developers who already know Java",
+      roadmap: "Eight phases from Core Java to the final sprint. Pick up where you left off, or jump anywhere."
+    }
+  };
+  const TRACK_ORDER = ["beginner", "interview"];
+  // Progress that belongs to one track; everything else in state (streak, focus minutes, goal, theme…) is shared
+  const TRACK_FIELDS = ["checkedSubtopics", "notes", "solvedProblems", "problemLogs", "reviews", "practiceDone", "seenAchievements"];
+  let DAYS = TRACKS.beginner.days;     // the active track's days
+
   // ── State ──
   let state = {
+    track: "beginner",        // active track key
+    tracks: {},               // { trackKey: { ...TRACK_FIELDS } } — the inactive tracks' progress lives here
     checkedSubtopics: {},     // { subtopicId: true }
     notes: {},                // { dayN_covered: "text", dayN_missed: "text" }
     solvedProblems: {},       // { leetcodeSlug: true }
@@ -43,80 +64,192 @@
   // ── Persistence ──
   const STORAGE_KEY = "sde_prep_tracker_v2";
 
+  function emptyTrackProgress() {
+    return { checkedSubtopics: {}, notes: {}, solvedProblems: {}, problemLogs: {}, reviews: {}, practiceDone: {}, seenAchievements: null };
+  }
+
+  // Normalise one track's saved progress (also reads the pre-tracks save format, which is a single track)
+  function readTrackProgress(saved = {}) {
+    return {
+      checkedSubtopics: saved.checkedSubtopics || {},
+      notes: saved.notes || {},
+      solvedProblems: saved.solvedProblems || {},
+      problemLogs: saved.problemLogs || {},
+      reviews: saved.reviews || {},
+      practiceDone: saved.practiceDone || {},
+      seenAchievements: Array.isArray(saved.seenAchievements) ? saved.seenAchievements : null
+    };
+  }
+
+  // state.checkedSubtopics etc. always point at the active track's progress
+  function storeTrackFields() {
+    const progress = state.tracks[state.track] || (state.tracks[state.track] = emptyTrackProgress());
+    TRACK_FIELDS.forEach(k => { progress[k] = state[k]; });
+  }
+
+  function loadTrackFields() {
+    const progress = state.tracks[state.track] || (state.tracks[state.track] = emptyTrackProgress());
+    TRACK_FIELDS.forEach(k => { state[k] = progress[k]; });
+    DAYS = TRACKS[state.track].days;
+  }
+
   function saveState() {
     syncReviewSchedule();
+    storeTrackFields();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        reviews: state.reviews,
+        version: 3,
+        track: state.track,
+        tracks: state.tracks,
         reviewsDone: state.reviewsDone,
-        problemLogs: state.problemLogs,
         studyMinutes: state.studyMinutes,
         goal: state.goal,
         goalMetOn: state.goalMetOn,
-        practiceDone: state.practiceDone,
-        checkedSubtopics: state.checkedSubtopics,
-        notes: state.notes,
-        solvedProblems: state.solvedProblems,
         activity: state.activity,
         profileName: state.profileName,
-        seenAchievements: state.seenAchievements,
         lastPalette: state.lastPalette,
         theme: state.theme
       }));
     } catch (e) { /* quota exceeded */ }
   }
 
+  const hasProgress = (p) => ["checkedSubtopics", "notes", "solvedProblems", "practiceDone"].some(k => Object.keys(p[k] || {}).length);
+
   function loadState() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
       if (saved) {
-        state.checkedSubtopics = saved.checkedSubtopics || {};
-        state.notes = saved.notes || {};
-        state.solvedProblems = saved.solvedProblems || {};
+        if (saved.tracks) {
+          TRACK_ORDER.forEach(key => { state.tracks[key] = readTrackProgress(saved.tracks[key]); });
+          state.track = TRACKS[saved.track] ? saved.track : "beginner";
+        } else {
+          // Saved before tracks existed: that progress is the Interview track, and anyone who studied stays on it
+          state.tracks.interview = readTrackProgress(saved);
+          state.track = hasProgress(state.tracks.interview) ? "interview" : "beginner";
+        }
         state.activity = saved.activity || {};
         state.profileName = saved.profileName || "";
-        state.seenAchievements = Array.isArray(saved.seenAchievements) ? saved.seenAchievements : null;
         state.lastPalette = Number.isInteger(saved.lastPalette) ? saved.lastPalette : -1;
-        state.reviews = saved.reviews || {};
         state.reviewsDone = saved.reviewsDone || {};
-        state.problemLogs = saved.problemLogs || {};
         state.studyMinutes = saved.studyMinutes || {};
         state.goal = { ...state.goal, ...(saved.goal || {}) };
         state.goalMetOn = saved.goalMetOn || null;
-        state.practiceDone = saved.practiceDone || {};
         state.theme = saved.theme || "dark";
       }
     } catch (e) { /* corrupted */ }
+    loadTrackFields();
   }
 
-  // ── Study Notes (Markdown files in notes/day-NN.md) ──
+  // ── Study Notes ──
+  // Interview track: notes/day-NN.md. Beginner track: put together per subtopic, from notes/beginner/day-NN.md
+  // when that file has the subtopic, otherwise from the Interview notes that cover it.
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
-  const notesCache = {};      // dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
+  // Beginner days that have their own notes file; add the day here when its file is written
+  const BEGINNER_NOTE_FILES = new Set([]);
+  const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
+  let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
+  let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
+  const interviewFiles = {};  // Interview day → Promise of notes/day-NN.md (shared by both tracks)
   const diagramCache = {};    // theme + source → rendered SVG markup
   let mermaidPromise = null;
   let mermaidTheme = null;
   let diagramSeq = 0;
 
-  function notesPath(dayNum) {
-    return `notes/day-${String(dayNum).padStart(2, "0")}.md`;
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const interviewDayOf = new Map();   // subtopic id → Interview day whose notes cover it
+  CURRICULUM_DATA.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => interviewDayOf.set(s.id, d.day))));
+
+  function notesPath(dayNum, track = state.track) {
+    return track === "interview" ? `notes/day-${pad2(dayNum)}.md` : `notes/beginner/day-${pad2(dayNum)}.md`;
+  }
+
+  function fetchText(path) {
+    return fetch(path).then(res => {
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.text();
+    });
+  }
+
+  function interviewNotes(day) {
+    if (!interviewFiles[day]) {
+      interviewFiles[day] = fetchText(notesPath(day, "interview")).catch(err => { delete interviewFiles[day]; throw err; });
+    }
+    return interviewFiles[day];
+  }
+
+  // Split a notes file into the part before the first marker, one block per subtopic, and closing "## …" sections
+  function splitNotes(md) {
+    const parts = { intro: [], sections: {}, tail: [] };
+    let mode = "intro", current = null, inFence = false;
+    (md || "").split(/\r?\n/).forEach(line => {
+      if (/^\s*```/.test(line)) inFence = !inFence;
+      if (!inFence) {
+        const sub = line.match(/^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/);
+        if (sub) { mode = "section"; current = parts.sections[sub[1]] = [line]; return; }
+        if (/^<!--\s*topic:/.test(line)) { mode = "topic"; return; }
+        if (/^## /.test(line) && mode === "section") mode = "tail";
+      }
+      if (mode === "intro") parts.intro.push(line);
+      else if (mode === "section") current.push(line);
+      else if (mode === "tail") parts.tail.push(line);
+      // mode "topic": the topic's own "## " heading, replaced by this track's topic name
+    });
+    Object.keys(parts.sections).forEach(id => { parts.sections[id] = parts.sections[id].join("\n").trim(); });
+    return { intro: parts.intro.join("\n").trim(), sections: parts.sections, tail: parts.tail.join("\n").trim() };
+  }
+
+  async function composeBeginnerNotes(dayNum) {
+    const day = TRACKS.beginner.days.find(d => d.day === dayNum);
+    const own = BEGINNER_NOTE_FILES.has(dayNum) ? splitNotes(await fetchText(notesPath(dayNum, "beginner"))) : null;
+    const sourceDays = [...new Set(day.topics.flatMap(t => t.subtopics)
+      .filter(s => s.borrowed && !own?.sections[s.id]).map(s => interviewDayOf.get(s.id)))];
+    const sources = {};
+    await Promise.all(sourceDays.map(d => interviewNotes(d).then(md => { sources[d] = splitNotes(md); })));
+
+    let borrowedAny = false;
+    const body = [];
+    day.topics.forEach(t => {
+      const sections = t.subtopics.map(s => {
+        if (own?.sections[s.id]) return own.sections[s.id];
+        const borrowed = s.borrowed && sources[interviewDayOf.get(s.id)]?.sections[s.id];
+        if (!borrowed) return null;
+        borrowedAny = true;
+        return borrowed.replace(/^(###\s+)\d+\.\s+/m, "$1");   // its number belongs to the Interview day
+      }).filter(Boolean);
+      if (sections.length) body.push(`## ${[TOPIC_ICONS[t.category], t.name].filter(Boolean).join(" ")}`, ...sections);
+    });
+    if (!body.length && !own) return null;
+
+    const intro = own?.intro || `# Day ${dayNum} — ${day.title}`;
+    const shared = borrowedAny
+      ? "> Some sections below are shared with the Interview track, so they may mention its day numbers or go deeper than you need right now. Read the start of each section first; the deeper parts can wait for a second pass."
+      : "";
+    return [intro, shared, ...body, own?.tail].filter(Boolean).join("\n\n");
+  }
+
+  // The active track's Markdown for a day (null when the day has no notes yet)
+  function dayMarkdown(dayNum) {
+    const cache = markdownCache;
+    if (!cache[dayNum]) {
+      const load = state.track === "interview" ? fetchText(notesPath(dayNum)) : composeBeginnerNotes(dayNum);
+      cache[dayNum] = load.catch(err => { delete cache[dayNum]; throw err; });
+    }
+    return cache[dayNum];
   }
 
   function loadDayNotes(dayNum) {
-    if (notesCache[dayNum]) return;
-    notesCache[dayNum] = { status: "loading" };
-    fetch(notesPath(dayNum))
-      .then(res => {
-        if (res.status === 404) return null;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.text();
-      })
+    const cache = notesCache;   // a track switch starts a new cache; late results land in the old one
+    if (cache[dayNum]) return;
+    cache[dayNum] = { status: "loading" };
+    dayMarkdown(dayNum)
       .then(md => {
-        notesCache[dayNum] = md === null ? { status: "missing" } : { status: "ready", ...parseNotes(md) };
+        cache[dayNum] = md === null ? { status: "missing" } : { status: "ready", ...parseNotes(md) };
       })
-      .catch(() => { notesCache[dayNum] = { status: "error" }; })
+      .catch(() => { cache[dayNum] = { status: "error" }; })
       .finally(() => {
-        if (state.currentView === "detail" && state.selectedDay === dayNum) renderDayDetail(dayNum);
+        if (cache === notesCache && state.currentView === "detail" && state.selectedDay === dayNum) renderDayDetail(dayNum);
       });
   }
 
@@ -258,22 +391,29 @@
       return `<div class="study-notes-message">Loading notes…</div>`;
     }
     if (notes.status === "missing") {
-      return `<div class="study-notes-message">
-        <strong>No study notes for Day ${dayNum} yet.</strong>
-        <p>Add a Markdown file at <code>${notesPath(dayNum)}</code> and it will show up here.</p>
-      </div>`;
+      return state.track === "beginner"
+        ? `<div class="study-notes-message">
+            <strong>Notes for Day ${dayNum} are being written.</strong>
+            <p>For now, work through the checklist: each item says what to learn and practise. The notes will appear here when they're ready.</p>
+          </div>`
+        : `<div class="study-notes-message">
+            <strong>No study notes for Day ${dayNum} yet.</strong>
+            <p>Add a Markdown file at <code>${notesPath(dayNum)}</code> and it will show up here.</p>
+          </div>`;
     }
     const fileHint = location.protocol === "file:"
       ? `<p>Browsers block reading local files when <code>index.html</code> is opened directly. Serve the folder instead, for example:</p>
          <pre><code>npx serve .</code></pre>
          <p>or <code>python -m http.server 8000</code>, then open <code>http://localhost:8000</code>. The VS Code "Live Server" extension or GitHub Pages also work.</p>`
-      : `<p>Check that <code>${notesPath(dayNum)}</code> exists and reload the page.</p>`;
+      : state.track === "interview"
+        ? `<p>Check that <code>${notesPath(dayNum)}</code> exists and reload the page.</p>`
+        : `<p>Check your connection and reload the page.</p>`;
     return `<div class="study-notes-message"><strong>Couldn't load the study notes.</strong>${fileHint}</div>`;
   }
 
   // ── Helpers ──
   function getDayData(dayNum) {
-    return CURRICULUM_DATA.find(d => d.day === dayNum);
+    return DAYS.find(d => d.day === dayNum);
   }
 
   function getAllSubtopicsForDay(dayNum) {
@@ -307,7 +447,7 @@
   }
 
   function getFilteredDays() {
-    let days = [...CURRICULUM_DATA];
+    let days = [...DAYS];
 
     // Status filter
     if (state.statusFilter !== "all") {
@@ -327,14 +467,14 @@
 
   function getOverallStats() {
     let totalSubs = 0, checkedSubs = 0, completedDays = 0;
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       const info = getDayCompletionInfo(d.day);
       totalSubs += info.total;
       checkedSubs += info.checked;
       if (info.checked === info.total && info.total > 0) completedDays++;
     });
     return {
-      totalDays: 60,
+      totalDays: DAYS.length,
       completedDays,
       totalSubs,
       checkedSubs,
@@ -344,16 +484,16 @@
 
   function getCurrentDay() {
     let current = 1;
-    for (let i = 1; i <= 60; i++) {
+    for (let i = 1; i <= DAYS.length; i++) {
       if (!isDayCompleted(i)) { current = i; break; }
-      if (i === 60) current = 60;
+      if (i === DAYS.length) current = DAYS.length;
     }
     return current;
   }
 
   function getCategoryStats(categoryName) {
     let total = 0, checked = 0;
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       d.topics.forEach(t => {
         if (t.category === categoryName) {
           t.subtopics.forEach(s => {
@@ -368,7 +508,7 @@
 
   function getStatusCounts() {
     let completed = 0, inProgress = 0, pending = 0, hasMissed = 0;
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       const s = getDayStatus(d.day);
       if (s === "completed") completed++;
       else if (s === "in-progress") inProgress++;
@@ -380,7 +520,7 @@
 
   function getPhases() {
     const phases = [];
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       let phase = phases.find(p => p.name === d.phase);
       if (!phase) {
         phase = { name: d.phase, range: d.phaseRange, days: [] };
@@ -528,12 +668,13 @@
   function achievementContext() {
     const unique = getUniqueProblems();
     const solved = unique.filter(u => state.solvedProblems[u.problem[2]]);
-    const completedDays = CURRICULUM_DATA.filter(d => isDayCompleted(d.day)).length;
+    const completedDays = DAYS.filter(d => isDayCompleted(d.day)).length;
     const streak = getStudyStreak();
-    const notedDays = CURRICULUM_DATA.filter(d => (state.notes[`day${d.day}_covered`] || "").trim()).length;
+    const notedDays = DAYS.filter(d => (state.notes[`day${d.day}_covered`] || "").trim()).length;
     return {
       subs: Object.keys(state.checkedSubtopics).length,
       completedDays,
+      totalDays: DAYS.length,
       firstWeek: [1, 2, 3, 4, 5, 6, 7].filter(isDayCompleted).length,
       phases: getPhases(),
       solved: solved.length,
@@ -555,8 +696,8 @@
     { id: "week-one", icon: "📅", name: "Week One Warrior", desc: "Complete Days 1–7", goal: c => [c.firstWeek, 7] },
     { id: "phase-1", icon: "☕", name: "Java Foundations", desc: "Finish Phase 1", goal: c => [c.phases[0]?.doneDays || 0, c.phases[0]?.days.length || 1] },
     { id: "subs-100", icon: "💯", name: "Century", desc: "Tick 100 subtopics", goal: c => [c.subs, 100] },
-    { id: "halfway", icon: "⛰️", name: "Halfway There", desc: "Complete 30 days", goal: c => [c.completedDays, 30] },
-    { id: "finisher", icon: "🏁", name: "Interview Ready", desc: "Complete all 60 days", goal: c => [c.completedDays, 60] },
+    { id: "halfway", icon: "⛰️", name: "Halfway There", desc: "Complete half of your track's days", goal: c => [c.completedDays, Math.ceil(c.totalDays / 2)] },
+    { id: "finisher", icon: "🏁", name: "Track Complete", desc: "Complete every day of your track", goal: c => [c.completedDays, c.totalDays] },
     { id: "streak-3", icon: "🔥", name: "Warming Up", desc: "3-day study streak", goal: c => [c.bestStreak, 3] },
     { id: "streak-7", icon: "⚡", name: "On Fire", desc: "7-day study streak", goal: c => [c.bestStreak, 7] },
     { id: "streak-21", icon: "🌋", name: "Unstoppable", desc: "21-day study streak", goal: c => [c.bestStreak, 21] },
@@ -599,14 +740,14 @@
   function progressSnapshot() {
     return {
       level: getLevelInfo().level,
-      completed: new Set(CURRICULUM_DATA.filter(d => isDayCompleted(d.day)).map(d => d.day))
+      completed: new Set(DAYS.filter(d => isDayCompleted(d.day)).map(d => d.day))
     };
   }
 
   function celebrateProgress(before) {
     const messages = [];
     const level = getLevelInfo();
-    const newDays = CURRICULUM_DATA.filter(d => isDayCompleted(d.day) && !before.completed.has(d.day));
+    const newDays = DAYS.filter(d => isDayCompleted(d.day) && !before.completed.has(d.day));
     newDays.forEach(d => messages.push(`Day ${d.day} complete! 🎉`));
     if (level.level > before.level) messages.push(`Level up! You're now Level ${level.level} · ${level.title} ⭐`);
 
@@ -727,7 +868,7 @@
 
     // Progress ring
     $("#sidebar-ring").style.setProperty("--p", stats.percentage);
-    $("#stat-days-done").textContent = `${stats.completedDays}/60`;
+    $("#stat-days-done").textContent = `${stats.completedDays}/${DAYS.length}`;
     $("#stat-subs-done").textContent = `${stats.checkedSubs}/${stats.totalSubs}`;
     $("#stat-percentage").textContent = `${stats.percentage}%`;
 
@@ -785,7 +926,7 @@
     const grid = $("#heatmap-grid");
     grid.innerHTML = "";
     const currentDay = getCurrentDay();
-    for (let i = 1; i <= 60; i++) {
+    for (let i = 1; i <= DAYS.length; i++) {
       const cell = document.createElement("div");
       cell.className = "heatmap-cell";
       cell.textContent = i;
@@ -897,8 +1038,11 @@
 
     const detail = $("#day-detail");
     loadDayNotes(dayNum);
-    if (hasPractice(dayNum) && !practiceCache[dayNum]) {
-      loadPractice(dayNum).then(() => { if (state.currentView === "detail" && state.selectedDay === dayNum) renderDayDetail(dayNum); });
+    if (hasPractice(dayNum) && practiceSources(dayNum).some(f => !practiceCache[f])) {
+      const track = state.track;
+      loadDayPractice(dayNum).then(() => {
+        if (state.track === track && state.currentView === "detail" && state.selectedDay === dayNum) renderDayDetail(dayNum);
+      });
     }
     const notes = notesCache[dayNum];
     const noteIds = notes.status === "ready" ? notes.ids : new Set();
@@ -1016,7 +1160,7 @@
       <div class="detail-header ${isComplete ? 'completed' : ''}">
         <div class="ring" style="--p:${info.percentage}"><span class="ring-value">${info.percentage}%</span></div>
         <div class="detail-main">
-          <div class="detail-day-label">Day ${dayNum} of 60 · ${day.phase} (${day.phaseRange})</div>
+          <div class="detail-day-label">Day ${dayNum} of ${DAYS.length} · ${day.phase} (${day.phaseRange})</div>
           <div class="detail-title">${escapeHTML(day.title)}</div>
           <div class="detail-meta">
             <div class="detail-info">${ICONS.clock} ${day.estimatedTime}</div>
@@ -1177,7 +1321,7 @@
     let uncheckedItems = [];
     let missedNotes = [];
 
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       const info = getDayCompletionInfo(d.day);
       // Only show backlog for days that have been started
       if (info.checked > 0 || dayHasMissedNotes(d.day)) {
@@ -1254,8 +1398,19 @@
     return QUESTION_SETS.find(s => s.id === id);
   }
 
+  // Sets name Interview days; the Beginner track teaches each of those DSA topics on a day of its own
+  const beginnerDsaDay = {};   // Interview day → Beginner day with its DSA topic
+  BEGINNER_DATA.forEach(d => d.topics.forEach(t => {
+    if (t.sourceDay && t.category === "DSA" && !beginnerDsaDay[t.sourceDay]) beginnerDsaDay[t.sourceDay] = d.day;
+  }));
+
+  function setDays(set) {
+    if (state.track === "interview") return set.days;
+    return [...new Set(set.days.map(d => beginnerDsaDay[d]).filter(Boolean))].sort((a, b) => a - b);
+  }
+
   function getSetsForDay(dayNum) {
-    return QUESTION_SETS.filter(s => s.days.includes(dayNum));
+    return QUESTION_SETS.filter(s => setDays(s).includes(dayNum));
   }
 
   function getSetStats(set) {
@@ -1349,8 +1504,8 @@
     const unique = getUniqueProblems();
     const solvedCount = unique.filter(u => state.solvedProblems[u.problem[2]]).length;
 
-    // Show sets in the order the 60-day plan reaches them
-    const byFirstDay = [...QUESTION_SETS].sort((a, b) => Math.min(...a.days) - Math.min(...b.days));
+    // Show sets in the order the active track reaches them
+    const byFirstDay = [...QUESTION_SETS].sort((a, b) => Math.min(...setDays(a)) - Math.min(...setDays(b)));
     const body = `<div class="sets-grid">${byFirstDay.map(s => {
       const stats = getSetStats(s);
       return `
@@ -1362,7 +1517,7 @@
           </div>
           <p class="set-description">${s.description}</p>
           <div class="set-progress-bar"><div class="set-progress-fill" style="width:${stats.percentage}%"></div></div>
-          <div class="set-days">Days ${s.days.join(" · ")}</div>
+          <div class="set-days">Days ${setDays(s).join(" · ")}</div>
         </button>
       `;
     }).join("")}</div>`;
@@ -1405,7 +1560,7 @@
         <div class="set-progress-bar"><div class="set-progress-fill" style="width:${stats.percentage}%"></div></div>
         <div class="set-day-links">
           <span>Practised on:</span>
-          ${set.days.map(d => `<button class="set-day-link" data-day="${d}">Day ${d}</button>`).join("")}
+          ${setDays(set).map(d => `<button class="set-day-link" data-day="${d}">Day ${d}</button>`).join("")}
         </div>
       </div>
       <div class="set-filters">
@@ -1465,6 +1620,58 @@
         <div class="achievements-grid">${achievements.map(a => badgeHTML(a, true)).join("")}</div>
       </div>
     `;
+  }
+
+  // ── Track switching ──
+  // Caches hold the active track's notes, flashcards and exercise numbering; a switch starts fresh ones
+  function resetTrackCaches() {
+    notesCache = {};
+    markdownCache = {};
+    cardCache = {};
+    allCardsPromise = null;
+    cardSession = null;
+    trackExercises = {};
+    searchIndex = null;
+    state.highlight = null;
+  }
+
+  function setTrack(key) {
+    if (!TRACKS[key] || key === state.track) return;
+    storeTrackFields();
+    state.track = key;
+    loadTrackFields();
+    resetTrackCaches();
+    // First visit to this track: badges it already qualifies for shouldn't all pop at once
+    if (state.seenAchievements === null) state.seenAchievements = getAchievements().filter(a => a.unlocked).map(a => a.id);
+    saveState();
+    renderTrackSwitch();
+    switchView(state.currentView === "detail" ? "grid" : state.currentView);
+    showToast(`${TRACKS[key].icon} ${TRACKS[key].name} track · ${DAYS.length} days`, "info");
+  }
+
+  function renderTrackSwitch() {
+    const track = TRACKS[state.track];
+    $("#track-switch").innerHTML = TRACK_ORDER.map(key => {
+      const t = TRACKS[key];
+      const on = key === state.track;
+      return `
+        <button class="track-btn ${on ? "active" : ""}" data-track="${key}" aria-pressed="${on}" title="${escapeHTML(t.blurb)}">
+          <span class="track-btn-name">${t.icon} ${t.name}</span>
+          <span class="track-btn-days">${t.days.length} days</span>
+        </button>`;
+    }).join("");
+    $$("#track-switch .track-btn").forEach(btn => btn.addEventListener("click", () => setTrack(btn.dataset.track)));
+
+    const other = TRACKS[TRACK_ORDER.find(k => k !== state.track)];
+    const chip = $("#chip-track");
+    chip.innerHTML = `${track.icon} <span class="chip-label">${track.name}</span>`;
+    chip.title = `${track.name} track (${DAYS.length} days). Tap to switch to ${other.name}.`;
+
+    $("#brand-subtitle").textContent = `${track.name} track · ${DAYS.length} days`;
+    $("#roadmap-title").textContent = `The ${DAYS.length}-Day Roadmap`;
+    $("#roadmap-subtitle").textContent = track.roadmap;
+    $('[data-status="all"] .filter-badge').textContent = DAYS.length;
+    document.title = `Java Fullstack · ${track.name} track`;
   }
 
   // ── View switching ──
@@ -1535,7 +1742,7 @@
   // A subtopic to explain out loud: something already ticked if possible, else something from today
   function pickRecallItem() {
     const done = [];
-    CURRICULUM_DATA.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => {
+    DAYS.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => {
       if (state.checkedSubtopics[s.id]) done.push({ day: d, sub: s });
     })));
     if (done.length) return { ...done[Math.floor(Math.random() * done.length)], reviewed: true };
@@ -1603,7 +1810,7 @@
     const currentDay = getCurrentDay();
     const day = getDayData(currentDay);
     const info = getDayCompletionInfo(currentDay);
-    const allDone = stats.completedDays === 60;
+    const allDone = stats.completedDays === DAYS.length;
     const unique = getUniqueProblems();
     const solved = unique.filter(u => state.solvedProblems[u.problem[2]]).length;
     const [quote, author] = QUOTES[quoteIndex];
@@ -1615,7 +1822,7 @@
     const badgeStrip = [...achievements].sort((a, b) =>
       (b.unlocked - a.unlocked) || (b.have / b.need - a.have / a.need)).slice(0, 10);
     const name = state.profileName.trim();
-    const daysLeft = 60 - stats.completedDays;
+    const daysLeft = DAYS.length - stats.completedDays;
     const todayCount = state.activity[dateKey()] || 0;
     const dueTopicsCount = getDueTopics().length;
     const dueCardsCount = dueCardKeys().length;
@@ -1653,8 +1860,8 @@
           <h2 class="hero-greeting">${greetingFor(now.getHours())},<br>
             <span class="hero-name" id="hero-name" title="Click to change your name">${name ? escapeHTML(name) : "future engineer"}</span> 👋</h2>
           <p class="hero-sub">${allDone
-            ? `You finished all <strong>60 days</strong>. Keep revising and go get that offer. 🏆`
-            : `You're on <strong>Day ${currentDay}</strong> of 60 — <strong>${stats.percentage}%</strong> of the whole plan done. ${currentPhase ? `This week: <strong>${escapeHTML(currentPhase.shortName)}</strong>.` : ""}`}</p>
+            ? `You finished all <strong>${DAYS.length} days</strong>. Keep revising and go get that offer. 🏆`
+            : `You're on <strong>Day ${currentDay}</strong> of ${DAYS.length} in the ${TRACKS[state.track].name} track — <strong>${stats.percentage}%</strong> of the whole plan done. ${currentPhase ? `This week: <strong>${escapeHTML(currentPhase.shortName)}</strong>.` : ""}`}</p>
           <div class="quote">
             <span class="quote-mark">“</span>
             <div>
@@ -1674,7 +1881,7 @@
           <div class="mission-top">
             <div>
               <div class="mission-label"><span class="pulse-dot"></span>${allDone ? "Revision mode" : "Today's mission"}</div>
-              <div class="mission-day">Day ${currentDay}<span> / 60</span></div>
+              <div class="mission-day">Day ${currentDay}<span> / ${DAYS.length}</span></div>
             </div>
             <div class="ring" style="--p:${info.percentage}"><span class="ring-value">${info.percentage}%</span></div>
           </div>
@@ -1846,26 +2053,23 @@
 
   // ── Export / Import ──
   function exportProgress() {
+    storeTrackFields();
     const data = {
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
-      checkedSubtopics: state.checkedSubtopics,
-      notes: state.notes,
-      solvedProblems: state.solvedProblems,
+      track: state.track,
+      tracks: state.tracks,
       activity: state.activity,
       profileName: state.profileName,
-      reviews: state.reviews,
       reviewsDone: state.reviewsDone,
-      problemLogs: state.problemLogs,
       studyMinutes: state.studyMinutes,
-      practiceDone: state.practiceDone,
       goal: state.goal
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `sde-prep-progress-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `java-fullstack-progress-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     showToast("Progress exported successfully!", "success");
@@ -1876,17 +2080,28 @@
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (data.checkedSubtopics) state.checkedSubtopics = data.checkedSubtopics;
-        if (data.notes) state.notes = data.notes;
-        if (data.solvedProblems) state.solvedProblems = data.solvedProblems;
+        if (data.tracks) {
+          TRACK_ORDER.forEach(key => { if (data.tracks[key]) state.tracks[key] = readTrackProgress(data.tracks[key]); });
+        } else if (TRACK_FIELDS.some(k => data[k])) {
+          state.tracks.interview = readTrackProgress(data);   // exported before tracks existed
+        } else {
+          throw new Error("No progress in file");
+        }
+        const track = data.tracks ? (TRACKS[data.track] ? data.track : state.track) : "interview";
         if (data.activity) state.activity = data.activity;
         if (typeof data.profileName === "string") state.profileName = data.profileName;
-        ["reviews", "reviewsDone", "problemLogs", "studyMinutes", "practiceDone"].forEach(k => { if (data[k]) state[k] = data[k]; });
+        ["reviewsDone", "studyMinutes"].forEach(k => { if (data[k]) state[k] = data[k]; });
         if (data.goal) state.goal = { ...state.goal, ...data.goal };
-        state.seenAchievements = getAchievements().filter(a => a.unlocked).map(a => a.id);   // no confetti burst for imported badges
+        // No confetti burst for imported badges: each track re-baselines when it is next opened
+        TRACK_ORDER.forEach(key => { if (state.tracks[key]) state.tracks[key].seenAchievements = null; });
+        state.track = track;
+        loadTrackFields();
+        resetTrackCaches();
+        state.seenAchievements = getAchievements().filter(a => a.unlocked).map(a => a.id);
         saveState();
+        renderTrackSwitch();
         renderAll();
-        showToast("Progress imported successfully!", "success");
+        showToast(`Progress imported · ${TRACKS[state.track].name} track`, "success");
       } catch (err) {
         showToast("Invalid file format. Please use a valid export file.", "error");
       }
@@ -1895,16 +2110,11 @@
   }
 
   function resetProgress() {
-    state.checkedSubtopics = {};
-    state.notes = {};
-    state.solvedProblems = {};
+    TRACK_ORDER.forEach(key => { state.tracks[key] = { ...emptyTrackProgress(), seenAchievements: [] }; });
+    loadTrackFields();
     state.activity = {};
-    state.seenAchievements = [];
-    state.reviews = {};
     state.reviewsDone = {};
-    state.problemLogs = {};
     state.studyMinutes = {};
-    state.practiceDone = {};
     resetTimer();
     saveState();
     switchView("home");
@@ -1974,7 +2184,7 @@
   function getDueTopics() {
     const today = dateKey();
     const items = [];
-    CURRICULUM_DATA.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => {
+    DAYS.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => {
       const r = state.reviews[s.id];
       if (isDue(r, today)) items.push({ id: s.id, label: s.label, day: d.day, topic: t.name, review: r });
     })));
@@ -2012,7 +2222,7 @@
   }
 
   // ── Flashcards, parsed from each day's notes (rapid-fire lines + interview Q&A blocks) ──
-  const cardCache = {};         // day → cards ([] when the day has no notes yet)
+  let cardCache = {};           // active track: day → cards ([] when the day has no notes yet)
   let allCardsPromise = null;
   let cardSession = null;       // { deckLabel, queue, index, flipped, tally }
 
@@ -2041,24 +2251,18 @@
   }
 
   function loadCards(day) {
-    if (cardCache[day]) return Promise.resolve(cardCache[day]);
-    return fetch(notesPath(day))
-      .then(res => (res.ok ? res.text() : ""))
-      .then(md => (cardCache[day] = md ? parseCards(md, day) : []))
-      .catch(() => (cardCache[day] = []));
+    const cache = cardCache;
+    if (cache[day]) return Promise.resolve(cache[day]);
+    return dayMarkdown(day)
+      .then(md => (cache[day] = md ? parseCards(md, day) : []))
+      .catch(() => (cache[day] = []));
   }
 
-  // Notes are written in day order, so load in batches of 5 and stop at the first batch with no notes at all
+  // Load in batches of 5 so a deck list doesn't fire every request at once
   function loadAllCards() {
     allCardsPromise = allCardsPromise || (async () => {
-      const days = CURRICULUM_DATA.map(d => d.day);
-      for (let i = 0; i < days.length; i += 5) {
-        const batch = await Promise.all(days.slice(i, i + 5).map(loadCards));
-        if (batch.every(cards => !cards.length)) {
-          days.slice(i + 5).forEach(day => { cardCache[day] = cardCache[day] || []; });
-          break;
-        }
-      }
+      const days = DAYS.map(d => d.day);
+      for (let i = 0; i < days.length; i += 5) await Promise.all(days.slice(i, i + 5).map(loadCards));
     })();
     return allCardsPromise;
   }
@@ -2080,7 +2284,7 @@
       queue = shuffle(all.filter(c => due.has(c.key)));
       deckLabel = "Due flashcards";
     } else if (deck === "mixed") {
-      const started = new Set(CURRICULUM_DATA.filter(d => getDayCompletionInfo(d.day).checked > 0).map(d => d.day));
+      const started = new Set(DAYS.filter(d => getDayCompletionInfo(d.day).checked > 0).map(d => d.day));
       const pool = all.filter(c => started.has(c.day));
       queue = shuffle(pool.length ? pool : all.filter(c => c.day === 1)).slice(0, 20);
       deckLabel = "Mixed — days you've started";
@@ -2144,7 +2348,7 @@
       <div class="view-header">
         <div>
           <h2 class="view-title">Revise</h2>
-          <p class="view-subtitle">Topics you tick come back after 1, 3, 7, 21 and 45 days. A few minutes here each day is what makes 60 days stick.</p>
+          <p class="view-subtitle">Topics you tick come back after 1, 3, 7, 21 and 45 days. A few minutes here each day is what makes it stick.</p>
         </div>
       </div>
       <div class="revise-stats">
@@ -2205,7 +2409,7 @@
 
   function reviseCardsHTML() {
     // Deck list needs every day's notes parsed first
-    if (!Object.keys(cardCache).length || Object.keys(cardCache).length < CURRICULUM_DATA.length) {
+    if (!Object.keys(cardCache).length || Object.keys(cardCache).length < DAYS.length) {
       loadAllCards().then(() => { if (state.currentView === "revise" && state.reviseTab === "cards") renderReviseView(); });
       return `<div class="revise-empty"><div class="revise-empty-icon">🃏</div><p>Building your flashcard decks from the study notes…</p></div>`;
     }
@@ -2252,7 +2456,7 @@
     }
 
     const due = dueCardKeys().length;
-    const days = CURRICULUM_DATA.filter(d => (cardCache[d.day] || []).length);
+    const days = DAYS.filter(d => (cardCache[d.day] || []).length);
     return `
       <div class="deck-actions">
         <button class="deck-hero" data-deck="due" ${due ? "" : "disabled"}>
@@ -2459,17 +2663,31 @@
     setTimeout(() => overlay.querySelector("#log-approach").focus(), 50);
   }
 
-  // ── Code practice (Markdown files in practice/day-NN.md) ──
-  // Days that have a practice file; add the day here when its file is written
-  const PRACTICE_DAYS = Array.from({ length: 26 }, (_, i) => i + 1);
-  const SPRING_PRACTICE_FROM = 19;   // from here exercises live in a Spring Boot project and are checked by JUnit tests
+  // ── Code practice (Markdown files in practice/day-NN.md, written for the Interview days) ──
+  // The Interview track shows each file on its own day; a Beginner day lists exercise ids in its `practice` field.
+  // Interview days that have a practice file; add the day here when its file is written
+  const PRACTICE_FILES = Array.from({ length: 26 }, (_, i) => i + 1);
+  const SPRING_PRACTICE_FROM = 19;   // from this file on, exercises live in a Spring Boot project and are checked by JUnit tests
   const PRACTICE_LEVELS = { Easy: "E", Medium: "M", Hard: "H" };
-  const practiceCache = {};   // day → { status: "loading" | "ready" | "error", intro, exercises, promise }
-  const exerciseById = {};
+  const practiceCache = {};   // file day → { status: "loading" | "ready" | "error", intro, exercises, promise }
+  const exerciseById = {};    // as parsed from the files
+  let trackExercises = {};    // active track: exercise id → copy numbered for the day it is shown on
   const hintsShown = {};      // exercise id → hints revealed (resets on reload, on purpose)
-  let allPracticePromise = null;
 
-  const hasPractice = (day) => PRACTICE_DAYS.includes(day);
+  const fileOfExercise = (id) => +id.match(/^d(\d+)_/)[1];
+  const practiceDays = () => state.track === "interview"
+    ? PRACTICE_FILES
+    : DAYS.filter(d => d.practice.length).map(d => d.day);
+  const hasPractice = (day) => practiceDays().includes(day);
+  // The practice files a day of the active track draws from
+  const practiceSources = (day) => state.track === "interview"
+    ? [day]
+    : [...new Set(getDayData(day).practice.map(fileOfExercise))];
+  const isSpringPractice = (day) => practiceSources(day).some(f => f >= SPRING_PRACTICE_FROM);
+  // The day of the active track that holds a file's first exercise (Spring setup lives in file 19's intro)
+  const dayOfPracticeFile = (file) => state.track === "interview"
+    ? file
+    : DAYS.find(d => d.practice.some(id => fileOfExercise(id) === file))?.day;
   const practicePath = (day) => `practice/day-${String(day).padStart(2, "0")}.md`;
   const mdToHTML = (md) => (typeof marked !== "undefined" ? marked.parse(md) : `<pre>${escapeHTML(md)}</pre>`);
   const mdInline = (md) => (typeof marked !== "undefined" ? marked.parseInline(md) : escapeHTML(md));
@@ -2509,9 +2727,22 @@
     return practiceCache[day].promise;
   }
 
-  const loadAllPractice = () => (allPracticePromise = allPracticePromise || Promise.all(PRACTICE_DAYS.map(loadPractice)));
-  const practiceLoaded = (day) => practiceCache[day] && practiceCache[day].status !== "loading";
-  const dayExercises = (day) => practiceCache[day]?.exercises || [];
+  // Loads the files behind a day of the active track
+  const loadDayPractice = (day) => Promise.all(practiceSources(day).map(loadPractice));
+  const loadAllPractice = () => Promise.all(PRACTICE_FILES.map(loadPractice));
+  const practiceStatus = (day) => {
+    const files = practiceSources(day).map(f => practiceCache[f]);
+    if (files.some(f => !f || f.status === "loading")) return "loading";
+    return files.some(f => f.status === "error") ? "error" : "ready";
+  };
+  const practiceLoaded = (day) => practiceStatus(day) !== "loading";
+
+  function dayExercises(day) {
+    const list = state.track === "interview"
+      ? practiceCache[day]?.exercises || []
+      : getDayData(day).practice.map(id => exerciseById[id]).filter(Boolean);
+    return list.map((ex, i) => trackExercises[ex.id] || (trackExercises[ex.id] = { ...ex, day, num: i + 1 }));
+  }
 
   function practiceBadgeHTML(day) {
     const list = dayExercises(day);
@@ -2535,9 +2766,10 @@
   // kind: "java" (single-file days), "spring" (Spring Boot days) or "all" (practice page)
   function runTipHTML(kind = "java") {
     const java = `Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+).`;
-    const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day 19 for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
+    const springFrom = dayOfPracticeFile(SPRING_PRACTICE_FROM);
+    const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day ${springFrom} for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
     const text = kind === "spring" ? spring
-      : kind === "all" ? `<b>Days 1–18:</b> ${java} <b>Days 19+:</b> ${spring}`
+      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}`
       : java;
     return `
       <div class="run-tip">
@@ -2582,19 +2814,24 @@
   }
 
   function practiceTabHTML(day) {
-    const data = practiceCache[day];
-    if (!data || data.status === "loading") return `<div class="study-notes-message">Loading exercises…</div>`;
-    if (data.status === "error") {
+    const status = practiceStatus(day);
+    if (status === "loading") return `<div class="study-notes-message">Loading exercises…</div>`;
+    if (status === "error") {
       return `<div class="study-notes-message"><strong>Couldn't load the exercises.</strong>
-        <p>Check that <code>${practicePath(day)}</code> exists and reload the page.</p></div>`;
+        <p>Check that ${practiceSources(day).map(f => `<code>${practicePath(f)}</code>`).join(", ")} exists and reload the page.</p></div>`;
     }
+    // A Beginner day shows only Spring files' intros: they hold the project setup and dependencies,
+    // while the single-file intros describe the Interview day they were written for
+    const intro = practiceSources(day)
+      .filter(f => state.track === "interview" || f >= SPRING_PRACTICE_FROM)
+      .map(f => practiceCache[f].intro.trim()).filter(Boolean).join("\n\n");
     return `
       <div class="practice-panel">
         <div class="practice-intro">
-          <div class="md-content">${mdToHTML(data.intro)}</div>
-          ${runTipHTML(day >= SPRING_PRACTICE_FROM ? "spring" : "java")}
+          ${intro ? `<div class="md-content">${mdToHTML(intro)}</div>` : ""}
+          ${runTipHTML(isSpringPractice(day) ? "spring" : "java")}
         </div>
-        ${data.exercises.map(exerciseCardHTML).join("")}
+        ${dayExercises(day).map(exerciseCardHTML).join("")}
       </div>
     `;
   }
@@ -2636,7 +2873,7 @@
   }
 
   function bindExerciseCard(card, onChange) {
-    const ex = exerciseById[card.dataset.ex];
+    const ex = trackExercises[card.dataset.ex];
     if (window.Prism) Prism.highlightAllUnder(card);
     addCopyButtons(card);
     const redraw = () => {
@@ -2669,18 +2906,19 @@
         </div>
       </div>
     `;
-    if (!PRACTICE_DAYS.every(practiceLoaded)) {
+    const days = practiceDays();
+    if (!days.every(practiceLoaded)) {
       container.innerHTML = `${header}<div class="study-notes-message">Loading exercises…</div>`;
       loadAllPractice().then(() => { if (state.currentView === "practice") renderPracticeView(); });
       return;
     }
 
-    const all = PRACTICE_DAYS.flatMap(dayExercises);
+    const all = days.flatMap(dayExercises);
     const solved = all.filter(e => state.practiceDone[e.id]);
     const today = dateKey();
     const solvedToday = Object.values(state.practiceDone).filter(p => p.on === today).length;
     const next = all.find(e => !state.practiceDone[e.id]);
-    const fullDays = PRACTICE_DAYS.filter(d => dayExercises(d).length && dayExercises(d).every(e => state.practiceDone[e.id])).length;
+    const fullDays = days.filter(d => dayExercises(d).length && dayExercises(d).every(e => state.practiceDone[e.id])).length;
     const levelCounts = ["E", "M", "H"].map(key => {
       const list = all.filter(e => e.level === key);
       return `<span class="difficulty-count ${DIFFICULTY[key].cls}">${DIFFICULTY[key].label} ${list.filter(e => state.practiceDone[e.id]).length}/${list.length}</span>`;
@@ -2689,7 +2927,7 @@
     const filters = [["all", "All", all.length], ["todo", "To do", all.length - solved.length], ["done", "Solved", solved.length]];
     const show = (e) => state.practiceFilter === "all" || (state.practiceFilter === "done") === !!state.practiceDone[e.id];
 
-    const groups = PRACTICE_DAYS.map(day => {
+    const groups = days.map(day => {
       const list = dayExercises(day);
       const rows = list.filter(show);
       if (!rows.length) return "";
@@ -2718,7 +2956,7 @@
       <div class="revise-stats">
         <div class="revise-stat"><strong>${solved.length}/${all.length}</strong><span>exercises solved</span></div>
         <div class="revise-stat"><strong>${solvedToday}</strong><span>solved today</span></div>
-        <div class="revise-stat"><strong>${fullDays}/${PRACTICE_DAYS.length}</strong><span>days fully practised</span></div>
+        <div class="revise-stat"><strong>${fullDays}/${days.length}</strong><span>days fully practised</span></div>
         <div class="revise-stat practice-levels"><div class="difficulty-counts">${levelCounts}</div><span>by difficulty</span></div>
       </div>
       ${next ? `
@@ -2867,7 +3105,7 @@
       ? `Focus session done — ${mode.minutes} minutes logged. Take a 5-minute break ☕`
       : "Break's over — ready for another focus session? 💪";
     if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-      try { new Notification("60-Day SDE Prep", { body: message }); } catch (e) { /* ignore */ }
+      try { new Notification("Java Fullstack", { body: message }); } catch (e) { /* ignore */ }
     }
     showToast(message, mode.focus ? "celebrate" : "info");
     if (mode.focus) launchConfetti(0.4);
@@ -3005,7 +3243,7 @@
 
   function buildSearchIndex() {
     const entries = [];
-    CURRICULUM_DATA.forEach(d => {
+    DAYS.forEach(d => {
       entries.push({ type: "day", day: d.day, title: `Day ${d.day} · ${d.title}`, meta: d.phase, text: `day ${d.day} ${d.title} ${d.phase}` });
       d.topics.forEach(t => t.subtopics.forEach(s => {
         entries.push({ type: "subtopic", day: d.day, id: s.id, title: s.label, meta: `Day ${d.day} · ${t.name}`, text: `${s.label} ${t.name}` });
@@ -3017,7 +3255,7 @@
         meta: sets.map(s => s.name).join(" · "), text: `${num} ${title} leetcode` });
     });
     QUESTION_SETS.forEach(s => {
-      entries.push({ type: "set", setId: s.id, title: `${s.icon} ${s.name}`, meta: `${s.problems.length} problems · Days ${s.days.join(", ")}`, text: `${s.name} ${s.description}` });
+      entries.push({ type: "set", setId: s.id, title: `${s.icon} ${s.name}`, meta: `${s.problems.length} problems · Days ${setDays(s).join(", ")}`, text: `${s.name} ${s.description}` });
     });
     entries.forEach(e => { e.lower = e.text.toLowerCase(); e.titleLower = e.title.toLowerCase(); });
     return entries;
@@ -3035,7 +3273,7 @@
     const q = query.trim().toLowerCase();
     if (!q) return [];
     const words = q.split(/\s+/);
-    const dayMatch = q.match(/^(?:day\s*)?(\d{1,2})$/);
+    const dayMatch = q.match(/^(?:day\s*)?(\d{1,3})$/);
 
     const scored = [];
     searchIndex.forEach(e => {
@@ -3217,6 +3455,9 @@
       state.seenAchievements = getAchievements().filter(a => a.unlocked).map(a => a.id);
       saveState();
     }
+
+    renderTrackSwitch();
+    $("#chip-track").addEventListener("click", () => setTrack(TRACK_ORDER.find(k => k !== state.track)));
 
     // Theme toggle + palette shuffle
     $("#theme-toggle").addEventListener("click", () => {
