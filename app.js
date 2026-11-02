@@ -2461,7 +2461,8 @@
 
   // ── Code practice (Markdown files in practice/day-NN.md) ──
   // Days that have a practice file; add the day here when its file is written
-  const PRACTICE_DAYS = [1, 2, 3, 4, 5, 6, 7, 8];
+  const PRACTICE_DAYS = Array.from({ length: 26 }, (_, i) => i + 1);
+  const SPRING_PRACTICE_FROM = 19;   // from here exercises live in a Spring Boot project and are checked by JUnit tests
   const PRACTICE_LEVELS = { Easy: "E", Medium: "M", Hard: "H" };
   const practiceCache = {};   // day → { status: "loading" | "ready" | "error", intro, exercises, promise }
   const exerciseById = {};
@@ -2531,13 +2532,19 @@
     if (state.practiceDone[ex.id]) celebrateProgress(before);
   }
 
-  function runTipHTML() {
+  // kind: "java" (single-file days), "spring" (Spring Boot days) or "all" (practice page)
+  function runTipHTML(kind = "java") {
+    const java = `Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+).`;
+    const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day 19 for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
+    const text = kind === "spring" ? spring
+      : kind === "all" ? `<b>Days 1–18:</b> ${java} <b>Days 19+:</b> ${spring}`
+      : java;
     return `
       <div class="run-tip">
-        <span class="run-tip-icon">☕</span>
+        <span class="run-tip-icon">${kind === "spring" ? "🍃" : "☕"}</span>
         <div>
           <strong>Run these in your own IDE</strong>
-          <p>Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+). Type it yourself first, use the hints when stuck, and open the solution last.</p>
+          <p>${text} Type it yourself first, use the hints when stuck, and open the solution last.</p>
         </div>
       </div>
     `;
@@ -2585,7 +2592,7 @@
       <div class="practice-panel">
         <div class="practice-intro">
           <div class="md-content">${mdToHTML(data.intro)}</div>
-          ${runTipHTML()}
+          ${runTipHTML(day >= SPRING_PRACTICE_FROM ? "spring" : "java")}
         </div>
         ${data.exercises.map(exerciseCardHTML).join("")}
       </div>
@@ -2621,6 +2628,10 @@
   }
 
   function bindPractice(root, onChange) {
+    root.querySelectorAll(".practice-panel a[href^='http']").forEach(a => {   // e.g. start.spring.io — don't leave the app
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+    });
     root.querySelectorAll(".exercise-card").forEach(card => bindExerciseCard(card, onChange));
   }
 
@@ -2725,7 +2736,7 @@
             <div class="practice-next-title">Every exercise so far is solved. Try rewriting one from memory.</div>
           </div>
         </div>`}
-      ${runTipHTML()}
+      ${runTipHTML("all")}
       <div class="revise-tabs" role="tablist">
         ${filters.map(([key, label, count]) => `
           <button class="revise-tab ${state.practiceFilter === key ? "active" : ""}" data-filter="${key}">
