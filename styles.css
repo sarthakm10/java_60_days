@@ -2655,6 +2655,36 @@ button { font-family: inherit; }
 
 .md-content details > :not(summary):first-of-type { margin-top: 12px; }
 
+/* Beginner track: a plain-language intro on top of a borrowed Interview section */
+.md-content .simple-words {
+  margin: 14px 0 18px;
+  padding: 14px 18px 2px;
+  border-left: 4px solid var(--accent-green);
+  border-radius: var(--radius-md);
+  background: var(--accent-green-bg);
+}
+
+.md-content .simple-words::before {
+  content: "🌱 In simple words";
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent-green);
+}
+
+/* Beginner track: advanced (🚀) parts of a borrowed section, folded for a second pass */
+.md-content details.deeper {
+  margin: 12px 0 16px;
+  border-style: dashed;
+  background: transparent;
+}
+
+.md-content details.deeper > summary { color: var(--text-secondary); font-weight: 600; }
+.md-content details.deeper > summary small { margin-left: 6px; font-weight: 500; color: var(--text-tertiary); }
+
 .notes-anchor { scroll-margin-top: 16px; }
 
 .notes-done-toggle {

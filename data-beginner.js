@@ -212,7 +212,7 @@ const BEGINNER_DATA = (() => {
     ] },
 
     // ===================== PHASE 2: OBJECT-ORIENTED JAVA (Days 13–23) =====================
-    { p: 1, title: "Classes and Objects", topics: [
+    { p: 1, title: "Classes and Objects", practice: ["b13_e1", "b13_e2"], topics: [
       topic("Java", "Java — Classes & Objects", [
         ["b13_t1_s1", "Why object-oriented programming — modelling real things (a Car, a BankAccount) as objects"],
         "d1_t1_s1",
@@ -240,7 +240,7 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(15)
     ] },
-    { p: 1, title: "Inheritance", topics: [
+    { p: 1, title: "Inheritance", practice: ["b16_e1", "b16_e2"], topics: [
       topic("Java", "Java — Inheritance", [
         "d2_t1_s1",
         ["b16_t1_s2", "The super keyword — calling the parent's constructor and methods"],
@@ -249,7 +249,7 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(16)
     ] },
-    { p: 1, title: "Polymorphism — One Name, Many Forms", topics: [
+    { p: 1, title: "Polymorphism — One Name, Many Forms", practice: ["b17_e1", "b17_e2"], topics: [
       topic("Java", "Java — Polymorphism", [
         "d2_t1_s2",
         "d2_t1_s3",
@@ -275,11 +275,11 @@ const BEGINNER_DATA = (() => {
       topic("Java", "Java — Exceptions", ["d7_t1_s1", "d7_t1_s2", "d7_t1_s3", "d7_t1_s4", "d7_t1_s9"]),
       dsa(12)
     ] },
-    { p: 1, title: "More OOP Tools — Inner Classes, Cloning and Serialization", topics: [
+    { p: 1, title: "More OOP Tools — Inner Classes, Cloning and Serialization", practice: ["b22_e1", "b22_e2"], topics: [
       topic("Java", "Java — More OOP Tools", ["d3_t1_s6", "d3_t1_s7", "d2_t4_s2", "d3_t1_s4", "d3_t1_s5"]),
       dsa(13)
     ] },
-    { p: 1, title: "OOP Project and Phase 2 Review", topics: [
+    { p: 1, title: "OOP Project and Phase 2 Review", practice: ["b23_e1"], topics: [
       topic("Java", "Project — Library Management (console)", [
         ["b23_t1_s1", "Design the classes — Book, Member, Library — with their fields, methods and relationships"],
         ["b23_t1_s2", "Use inheritance or an interface where it fits (for example EBook extends Book)"],

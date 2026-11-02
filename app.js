@@ -146,7 +146,7 @@
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
-  const BEGINNER_NOTE_FILES = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 23 }, (_, i) => i + 1));   // Days 1–23
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
@@ -181,14 +181,17 @@
 
   // Split a notes file into the part before the first marker, one block per subtopic, and closing "## …" sections
   // Topic text between a topic's "## " heading and its first subtopic is kept under the topic marker's id.
+  // A beginner file can also hold "<!-- intro: id -->" blocks: plain-language intros for borrowed subtopics.
   function splitNotes(md) {
-    const parts = { intro: [], sections: {}, topicIntros: {}, tail: [] };
+    const parts = { intro: [], sections: {}, topicIntros: {}, subIntros: {}, tail: [] };
     let mode = "intro", current = null, inFence = false, headingSeen = false;
     (md || "").split(/\r?\n/).forEach(line => {
       if (/^\s*```/.test(line)) inFence = !inFence;
       if (!inFence) {
         const sub = line.match(/^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/);
         if (sub) { mode = "section"; current = parts.sections[sub[1]] = [line]; return; }
+        const subIntro = line.match(/^<!--\s*intro:\s*([\w-]+)\s*-->\s*$/);
+        if (subIntro) { mode = "section"; current = parts.subIntros[subIntro[1]] = []; return; }
         const topic = line.match(/^<!--\s*topic:\s*([\w-]+)\s*-->\s*$/);
         if (topic) { mode = "topic"; headingSeen = false; current = parts.topicIntros[topic[1]] = []; return; }
         if (/^## /.test(line)) {
@@ -205,8 +208,38 @@
       intro: parts.intro.join("\n").trim(),
       sections: joined(parts.sections),
       topicIntros: joined(parts.topicIntros),
+      subIntros: joined(parts.subIntros),
       tail: parts.tail.join("\n").trim()
     };
+  }
+
+  // A borrowed Interview section, adapted for beginners: its Interview number dropped, a plain-language intro
+  // right under the heading, and every "#### 🚀" subsection folded into a closed "Go deeper" panel
+  function adaptBorrowedSection(text, simpleIntro) {
+    const out = [];
+    let inFence = false, folding = false, headingDone = false;
+    text.split("\n").forEach(line => {
+      if (!inFence && /^#{2,4} /.test(line) && folding) {
+        out.push("", "</details>", "");
+        folding = false;
+      }
+      if (!inFence && /^#### .*🚀/.test(line)) {
+        const title = escapeHTML(line.replace(/^####\s*/, "").replace("🚀", "").trim());
+        out.push(`<details class="deeper"><summary>🚀 Go deeper <small>${title}</small></summary>`, "");
+        folding = true;
+        return;
+      }
+      if (/^\s*```/.test(line)) inFence = !inFence;
+      if (!headingDone && /^### /.test(line)) {
+        headingDone = true;
+        out.push(line.replace(/^(###\s+)\d+\.\s+/, "$1"));
+        if (simpleIntro) out.push("", `<div class="simple-words">`, "", simpleIntro, "", "</div>");
+        return;
+      }
+      out.push(line);
+    });
+    if (folding) out.push("", "</details>");
+    return out.join("\n");
   }
 
   async function composeBeginnerNotes(dayNum) {
@@ -226,7 +259,7 @@
         const borrowed = s.borrowed && sources[interviewDayOf.get(s.id)]?.sections[s.id];
         if (!borrowed) return null;
         borrowedAny = true;
-        return borrowed.replace(/^(###\s+)\d+\.\s+/m, "$1");   // its number belongs to the Interview day
+        return adaptBorrowedSection(borrowed, own?.subIntros[s.id]);
       }).filter(Boolean);
       if (sections.length || topicIntro) {
         body.push(`## ${[TOPIC_ICONS[t.category], t.name].filter(Boolean).join(" ")}`, topicIntro, ...sections);
@@ -236,7 +269,7 @@
 
     const intro = own?.intro || `# Day ${dayNum} — ${day.title}`;
     const shared = borrowedAny
-      ? "> Some sections below are shared with the Interview track, so they may mention its day numbers or go deeper than you need right now. Read the start of each section first; the deeper parts can wait for a second pass."
+      ? "> Some sections below are shared with the Interview track, so they may mention its day numbers. Start with each section's 🌱 **In simple words** box (where there is one) and its main explanation; the 🚀 **Go deeper** panels can wait for a second pass."
       : "";
     return [intro, shared, ...body.filter(Boolean), own?.tail].filter(Boolean).join("\n\n");
   }
