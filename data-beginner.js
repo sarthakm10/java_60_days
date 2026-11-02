@@ -400,7 +400,7 @@ const BEGINNER_DATA = (() => {
     ] },
 
     // ===================== PHASE 6: BACKEND FOUNDATIONS (Days 45–51) =====================
-    { p: 5, title: "How the Web Works — HTTP, REST and JSON", topics: [
+    { p: 5, title: "How the Web Works — HTTP, REST and JSON", practice: ["b45_e1"], topics: [
       topic("Spring Boot", "Web — HTTP, REST & JSON", [
         ["b45_t1_s1", "Clients and servers — what happens when you open a URL (DNS, request, response) in simple words"],
         ["b45_t1_s2", "HTTP requests — method, URL, headers and body; GET, POST, PUT, PATCH, DELETE"],
@@ -411,7 +411,7 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(51)
     ] },
-    { p: 5, title: "Build Tools and Unit Testing", topics: [
+    { p: 5, title: "Build Tools and Unit Testing", practice: ["b46_e1"], topics: [
       topic("DB/DevOps", "Tools — Maven & Gradle", [
         ["b46_t1_s1", "Why build tools — downloading libraries, compiling, testing and packaging a JAR"],
         ["b46_t1_s2", "A Maven project — src/main/java, src/test/java, resources and pom.xml"],
@@ -426,7 +426,7 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(52)
     ] },
-    { p: 5, title: "Databases and SQL Basics", topics: [
+    { p: 5, title: "Databases and SQL Basics", practice: ["b47_e1"], topics: [
       topic("DB/DevOps", "SQL — Basics", [
         ["b47_t1_s1", "What a database is — tables, rows, columns and primary keys"],
         ["b47_t1_s2", "Install PostgreSQL (or open an online SQL playground) and create a database"],
@@ -438,15 +438,15 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(37)
     ] },
-    { p: 5, title: "SQL Joins, Subqueries and CTEs", topics: [
+    { p: 5, title: "SQL Joins, Subqueries and CTEs", practice: ["b48_e1", "b48_e2"], topics: [
       topic("DB/DevOps", "SQL — Joins & Subqueries", ["d51_t1_s1", "d51_t1_s2", "d51_t1_s3", "d51_t1_s4", "d51_t1_s6", "d51_t1_s7"]),
       dsa(38)
     ] },
-    { p: 5, title: "SQL Window Functions", topics: [
+    { p: 5, title: "SQL Window Functions", practice: ["b49_e1"], topics: [
       topic("DB/DevOps", "SQL — Window Functions", ["d52_t1_s1", "d52_t1_s2", "d52_t1_s3", "d52_t1_s4", "d52_t1_s5", "d52_t1_s6", "d52_t1_s7"]),
       dsa(41)
     ] },
-    { p: 5, title: "Indexes and Transactions", topics: [
+    { p: 5, title: "Indexes and Transactions", practice: ["b50_e1"], topics: [
       topic("DB/DevOps", "SQL — Performance & Transactions", ["d53_t1_s1", "d53_t1_s2", "d53_t1_s3", "d53_t1_s4", "d53_t1_s5", "d53_t1_s6", "d53_t1_s7"]),
       dsa(53)
     ] },
@@ -475,7 +475,7 @@ const BEGINNER_DATA = (() => {
       ]),
       fromDay(42, 0)
     ] },
-    { p: 6, title: "Your First Spring Boot App", topics: [
+    { p: 6, title: "Your First Spring Boot App", practice: ["b54_e1"], topics: [
       topic("Spring Boot", "Spring Boot — Getting Started", [
         ["b54_t1_s1", "Create a project at start.spring.io (Spring Web, DevTools), open it in the IDE and run it"],
         "d20_t1_s1", "d20_t1_s2",

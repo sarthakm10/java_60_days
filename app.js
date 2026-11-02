@@ -146,7 +146,7 @@
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
-  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 44 }, (_, i) => i + 1));   // Days 1–44
+  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 67 }, (_, i) => i + 1));   // Days 1–67
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
@@ -2731,7 +2731,13 @@
   const practiceSources = (day) => state.track === "interview"
     ? [`d${day}`]
     : [...new Set(getDayData(day).practice.map(fileOfExercise))];
-  const isSpringPractice = (day) => practiceSources(day).some(isSpringFile);
+  // What kind of exercises a day has, from their content: Spring files start with a "// src/..." path line
+  function practiceKind(day) {
+    const tasks = dayExercises(day).map(e => e.task).join("\n");
+    if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(tasks)) return "spring";
+    if (/```sql/.test(tasks)) return "sql";
+    return "java";
+  }
   // The day of the active track that holds a file's first exercise (Spring setup lives in file d19's intro)
   const dayOfPracticeFile = (file) => state.track === "interview"
     ? +file.slice(1)
@@ -2818,14 +2824,16 @@
     const java = `Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+).`;
     const springFrom = dayOfPracticeFile(`d${SPRING_PRACTICE_FROM}`);
     const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day ${springFrom} for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
+    const sql = `Run the <b>Setup</b> block once in any SQL database: an online playground like sqliteonline.com or db-fiddle.com (pick PostgreSQL), or your own PostgreSQL. Then write each query and compare its result with the expected one; number formatting can differ slightly between databases.`;
     const text = kind === "spring" ? spring
-      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}`
+      : kind === "sql" ? sql
+      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}${state.track === "beginner" ? ` <b>SQL exercises:</b> ${sql}` : ""}`
       : java;
     return `
       <div class="run-tip">
-        <span class="run-tip-icon">${kind === "spring" ? "🍃" : "☕"}</span>
+        <span class="run-tip-icon">${{ spring: "🍃", sql: "🗄️" }[kind] || "☕"}</span>
         <div>
-          <strong>Run these in your own IDE</strong>
+          <strong>${kind === "sql" ? "Run these in a SQL database" : "Run these in your own IDE"}</strong>
           <p>${text} Type it yourself first, use the hints when stuck, and open the solution last.</p>
         </div>
       </div>
@@ -2879,7 +2887,7 @@
       <div class="practice-panel">
         <div class="practice-intro">
           ${intro ? `<div class="md-content">${mdToHTML(intro)}</div>` : ""}
-          ${runTipHTML(isSpringPractice(day) ? "spring" : "java")}
+          ${runTipHTML(practiceKind(day))}
         </div>
         ${dayExercises(day).map(exerciseCardHTML).join("")}
       </div>
