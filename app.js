@@ -146,7 +146,7 @@
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
-  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 23 }, (_, i) => i + 1));   // Days 1–23
+  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 44 }, (_, i) => i + 1));   // Days 1–44
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)

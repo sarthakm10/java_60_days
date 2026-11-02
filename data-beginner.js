@@ -293,14 +293,14 @@ const BEGINNER_DATA = (() => {
     ] },
 
     // ===================== PHASE 3: GENERICS & COLLECTIONS (Days 24–33) =====================
-    { p: 2, title: "Generics", practice: ["d4_e3"], topics: [
+    { p: 2, title: "Generics", practice: ["b24_e1", "d4_e3"], topics: [
       topic("Java", "Java — Generics", [
         ["b24_t1_s1", "Why generics — one Box<T> class that works for any type, checked by the compiler"],
         "d7_t1_s5", "d7_t1_s6", "d7_t1_s7"
       ]),
       dsa(18)
     ] },
-    { p: 2, title: "The Collections Framework and ArrayList", practice: ["d11_e1"], topics: [
+    { p: 2, title: "The Collections Framework and ArrayList", practice: ["b25_e1", "d11_e1"], topics: [
       topic("Java", "Collections — ArrayList", [
         "d11_t1_s1",
         ["b25_t1_s2", "Using ArrayList — add, get, set, remove, size, contains, and looping over it"],
@@ -312,7 +312,7 @@ const BEGINNER_DATA = (() => {
       topic("Java", "Collections — LinkedList & Pitfalls", ["d11_t1_s4", "d11_t1_s5", "d11_t1_s7", "d11_t1_s9"]),
       dsa(24)
     ] },
-    { p: 2, title: "HashMap — Using It Well", practice: ["d12_e3"], topics: [
+    { p: 2, title: "HashMap — Using It Well", practice: ["b27_e1", "d12_e3"], topics: [
       topic("Java", "Collections — Using HashMap", [
         ["d5_t2_s1", "Key → value pairs with HashMap — put, get, containsKey, remove, getOrDefault"],
         "d12_t1_s9", "d12_t1_s3", "d12_t1_s8", "d13_t1_s3", "d13_t1_s4"
@@ -339,7 +339,7 @@ const BEGINNER_DATA = (() => {
       topic("Java", "Collections — Utilities & Patterns", ["d16_t1_s1", "d16_t1_s2", "d16_t1_s3", "d16_t1_s4", "d16_t1_s6", "d16_t1_s7", "d16_t1_s8", "d17_t1_s6"]),
       dsa(21)
     ] },
-    { p: 2, title: "Collections Review and Mini Project", practice: ["d18_e1", "d18_e2"], topics: [
+    { p: 2, title: "Collections Review and Mini Project", practice: ["b33_e1", "d18_e1", "d18_e2"], topics: [
       topic("Java", "Collections — Review", [
         "d18_t1_s1", "d18_t1_s3", "d18_t1_s4", "d18_t1_s6",
         ["b33_t1_s5", "Mini project: a grade book using Map<String, List<Integer>> with averages, toppers and sorted reports"]
