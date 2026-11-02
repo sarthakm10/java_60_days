@@ -50,7 +50,7 @@ const BEGINNER_DATA = (() => {
 
   const DAYS = [
     // ===================== PHASE 1: PROGRAMMING BASICS (Days 1–12) =====================
-    { p: 0, title: "Welcome to Java — Set Up and Run Your First Program", topics: [
+    { p: 0, title: "Welcome to Java — Set Up and Run Your First Program", practice: ["b1_e1", "b1_e2", "b1_e3"], topics: [
       topic("Java", "Java — Getting Started", [
         ["b1_t1_s1", "What programming is — writing exact instructions that a computer follows step by step"],
         ["b1_t1_s2", "What Java is and where it is used (backend servers, Android, banks, big tech) and why it is a good first language"],
@@ -65,7 +65,7 @@ const BEGINNER_DATA = (() => {
         ["b1_t2_s3", "Break the program on purpose (remove a semicolon, misspell main) and read what the error says"]
       ])
     ] },
-    { p: 0, title: "Variables and Data Types", topics: [
+    { p: 0, title: "Variables and Data Types", practice: ["b2_e1", "b2_e2", "b2_e3"], topics: [
       topic("Java", "Java — Variables & Data Types", [
         ["b2_t1_s1", "Variables — a named box that holds a value; declaring, assigning and changing it"],
         ["b2_t1_s2", "The 8 primitive types — int, long, double, float, boolean, char, byte, short — and which one to pick"],
@@ -80,7 +80,7 @@ const BEGINNER_DATA = (() => {
         ["b2_t2_s3", "Swap two numbers without a third variable (using + and −)"]
       ])
     ] },
-    { p: 0, title: "Operators, Input and Type Casting", topics: [
+    { p: 0, title: "Operators, Input and Type Casting", practice: ["b3_e1", "b3_e2", "b3_e3"], topics: [
       topic("Java", "Java — Operators & Input", [
         ["b3_t1_s1", "Arithmetic operators + − * / % and the integer-division surprise (7 / 2 is 3)"],
         ["b3_t1_s2", "Assignment shortcuts (+=, −=, ++, −−) and the difference between i++ and ++i"],
@@ -95,7 +95,7 @@ const BEGINNER_DATA = (() => {
         ["b3_t2_s3", "Sum, average and remainder of three numbers entered by the user"]
       ])
     ] },
-    { p: 0, title: "Making Decisions — if, else and switch", topics: [
+    { p: 0, title: "Making Decisions — if, else and switch", practice: ["b4_e1", "b4_e2", "b4_e3"], topics: [
       topic("Java", "Java — Conditions", [
         ["b4_t1_s1", "if, else if, else — choosing which code runs"],
         ["b4_t1_s2", "Nested conditions and combining checks with && and ||"],
@@ -110,7 +110,7 @@ const BEGINNER_DATA = (() => {
         ["b4_t2_s4", "Leap-year checker"]
       ])
     ] },
-    { p: 0, title: "Loops — Repeating Work", topics: [
+    { p: 0, title: "Loops — Repeating Work", practice: ["b5_e1", "b5_e2", "b5_e3"], topics: [
       topic("Java", "Java — Loops", [
         ["b5_t1_s1", "for loop — start, condition, update; counting up and down"],
         ["b5_t1_s2", "while and do-while — when you don't know in advance how many times to repeat"],
@@ -125,7 +125,7 @@ const BEGINNER_DATA = (() => {
         ["b5_t2_s4", "Count the digits of a number and add them up"]
       ])
     ] },
-    { p: 0, title: "Methods — Reusable Blocks of Code", topics: [
+    { p: 0, title: "Methods — Reusable Blocks of Code", practice: ["b6_e1", "b6_e2", "b6_e3"], topics: [
       topic("Java", "Java — Methods", [
         ["b6_t1_s1", "Why methods — give a piece of logic a name and reuse it"],
         ["b6_t1_s2", "Parameters and return values; void methods that return nothing"],
@@ -140,7 +140,7 @@ const BEGINNER_DATA = (() => {
         ["b6_t2_s3", "A calculator with one method per operation (add, subtract, multiply, divide)"]
       ])
     ] },
-    { p: 0, title: "Arrays", topics: [
+    { p: 0, title: "Arrays", practice: ["b7_e1", "b7_e2", "b7_e3"], topics: [
       topic("Java", "Java — Arrays", [
         ["d2_t2_s1", "What an array is — a fixed-size row of values of one type; declaring, creating, index starts at 0"],
         ["b7_t1_s2", "Looping over arrays with for and for-each; ArrayIndexOutOfBoundsException"],
@@ -150,7 +150,7 @@ const BEGINNER_DATA = (() => {
       ]),
       topic("DSA", "DSA — Arrays: First Problems", ["d2_t2_s2", "d2_t2_s3", "d2_t2_s4", "d2_t2_s5"], 2)
     ] },
-    { p: 0, title: "Strings and Characters", topics: [
+    { p: 0, title: "Strings and Characters", practice: ["b8_e1", "b8_e2", "b8_e3"], topics: [
       topic("Java", "Java — Strings", [
         ["b8_t1_s1", "char and its number code (ASCII / Unicode); 'a' + 1 and Character helper methods"],
         ["b8_t1_s2", "Everyday String methods — length, charAt, substring, indexOf, contains, toUpperCase, trim, split, replace"],
@@ -160,7 +160,7 @@ const BEGINNER_DATA = (() => {
       ]),
       dsa(4)
     ] },
-    { p: 0, title: "Debugging, Errors and Organising Code", topics: [
+    { p: 0, title: "Debugging, Errors and Organising Code", practice: ["b9_e1", "b9_e2"], topics: [
       topic("Java", "Java — Debugging & Project Structure", [
         ["b9_t1_s1", "Reading compiler errors — cannot find symbol, missing semicolon, incompatible types"],
         ["b9_t1_s2", "Runtime errors and stack traces — how to read one from the top"],
@@ -174,7 +174,7 @@ const BEGINNER_DATA = (() => {
         ["b9_t2_s3", "Move your earlier programs into packages and run them again"]
       ])
     ] },
-    { p: 0, title: "Logic Building Practice", topics: [
+    { p: 0, title: "Logic Building Practice", practice: ["b10_e1", "b10_e2", "b10_e3"], topics: [
       topic("DSA", "Practice — Number Problems", [
         ["b10_t1_s1", "Reverse a number and check if it is a palindrome"],
         ["b10_t1_s2", "Fibonacci series up to N terms (with a loop)"],
@@ -187,7 +187,7 @@ const BEGINNER_DATA = (() => {
         ["b10_t2_s2", "Explain out loud: JDK vs JVM, int vs double, == vs equals() for Strings"]
       ])
     ] },
-    { p: 0, title: "Time Complexity — How Fast Is My Code?", topics: [
+    { p: 0, title: "Time Complexity — How Fast Is My Code?", practice: ["b11_e1", "b11_e2"], topics: [
       topic("DSA", "DSA — Complexity Analysis", [
         "d1_t2_s1", "d1_t2_s2", "d1_t2_s3",
         ["b11_t1_s4", "Find the Big-O of five loops you wrote this week (single, nested, halving)"]
@@ -197,7 +197,7 @@ const BEGINNER_DATA = (() => {
         ["b11_t2_s2", "Check primes faster by looping only up to √n"]
       ])
     ] },
-    { p: 0, title: "Git, GitHub and Your First Mini Project", topics: [
+    { p: 0, title: "Git, GitHub and Your First Mini Project", practice: ["b12_e1"], topics: [
       topic("DB/DevOps", "Tools — Terminal, Git & GitHub", [
         ["b12_t1_s1", "Terminal basics — cd, ls / dir, mkdir; running Java from the terminal"],
         ["b12_t1_s2", "Git in simple words — save snapshots of your project: init, status, add, commit, log"],

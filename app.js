@@ -146,7 +146,7 @@
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
-  const BEGINNER_NOTE_FILES = new Set([]);
+  const BEGINNER_NOTE_FILES = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
@@ -180,24 +180,33 @@
   }
 
   // Split a notes file into the part before the first marker, one block per subtopic, and closing "## …" sections
+  // Topic text between a topic's "## " heading and its first subtopic is kept under the topic marker's id.
   function splitNotes(md) {
-    const parts = { intro: [], sections: {}, tail: [] };
-    let mode = "intro", current = null, inFence = false;
+    const parts = { intro: [], sections: {}, topicIntros: {}, tail: [] };
+    let mode = "intro", current = null, inFence = false, headingSeen = false;
     (md || "").split(/\r?\n/).forEach(line => {
       if (/^\s*```/.test(line)) inFence = !inFence;
       if (!inFence) {
         const sub = line.match(/^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/);
         if (sub) { mode = "section"; current = parts.sections[sub[1]] = [line]; return; }
-        if (/^<!--\s*topic:/.test(line)) { mode = "topic"; return; }
-        if (/^## /.test(line) && mode === "section") mode = "tail";
+        const topic = line.match(/^<!--\s*topic:\s*([\w-]+)\s*-->\s*$/);
+        if (topic) { mode = "topic"; headingSeen = false; current = parts.topicIntros[topic[1]] = []; return; }
+        if (/^## /.test(line)) {
+          if (mode === "topic" && !headingSeen) { headingSeen = true; return; }   // replaced by this track's topic name
+          if (mode !== "intro") mode = "tail";
+        }
       }
       if (mode === "intro") parts.intro.push(line);
-      else if (mode === "section") current.push(line);
-      else if (mode === "tail") parts.tail.push(line);
-      // mode "topic": the topic's own "## " heading, replaced by this track's topic name
+      else if (mode === "section" || mode === "topic") current.push(line);
+      else parts.tail.push(line);
     });
-    Object.keys(parts.sections).forEach(id => { parts.sections[id] = parts.sections[id].join("\n").trim(); });
-    return { intro: parts.intro.join("\n").trim(), sections: parts.sections, tail: parts.tail.join("\n").trim() };
+    const joined = (obj) => Object.fromEntries(Object.entries(obj).map(([id, lines]) => [id, lines.join("\n").trim()]));
+    return {
+      intro: parts.intro.join("\n").trim(),
+      sections: joined(parts.sections),
+      topicIntros: joined(parts.topicIntros),
+      tail: parts.tail.join("\n").trim()
+    };
   }
 
   async function composeBeginnerNotes(dayNum) {
@@ -210,7 +219,8 @@
 
     let borrowedAny = false;
     const body = [];
-    day.topics.forEach(t => {
+    day.topics.forEach((t, ti) => {
+      const topicIntro = own?.topicIntros[`b${dayNum}_t${ti + 1}`];   // a beginner file marks its topics b<day>_t<n>
       const sections = t.subtopics.map(s => {
         if (own?.sections[s.id]) return own.sections[s.id];
         const borrowed = s.borrowed && sources[interviewDayOf.get(s.id)]?.sections[s.id];
@@ -218,7 +228,9 @@
         borrowedAny = true;
         return borrowed.replace(/^(###\s+)\d+\.\s+/m, "$1");   // its number belongs to the Interview day
       }).filter(Boolean);
-      if (sections.length) body.push(`## ${[TOPIC_ICONS[t.category], t.name].filter(Boolean).join(" ")}`, ...sections);
+      if (sections.length || topicIntro) {
+        body.push(`## ${[TOPIC_ICONS[t.category], t.name].filter(Boolean).join(" ")}`, topicIntro, ...sections);
+      }
     });
     if (!body.length && !own) return null;
 
@@ -226,7 +238,7 @@
     const shared = borrowedAny
       ? "> Some sections below are shared with the Interview track, so they may mention its day numbers or go deeper than you need right now. Read the start of each section first; the deeper parts can wait for a second pass."
       : "";
-    return [intro, shared, ...body, own?.tail].filter(Boolean).join("\n\n");
+    return [intro, shared, ...body.filter(Boolean), own?.tail].filter(Boolean).join("\n\n");
   }
 
   // The active track's Markdown for a day (null when the day has no notes yet)
@@ -2663,37 +2675,42 @@
     setTimeout(() => overlay.querySelector("#log-approach").focus(), 50);
   }
 
-  // ── Code practice (Markdown files in practice/day-NN.md, written for the Interview days) ──
-  // The Interview track shows each file on its own day; a Beginner day lists exercise ids in its `practice` field.
+  // ── Code practice (Markdown exercise files) ──
+  // A file key names one file: "d19" is practice/day-19.md (written for Interview day 19), "b3" is
+  // practice/beginner/day-03.md. An exercise id starts with its file key (d19_e2, b3_e1).
+  // The Interview track shows file dN on day N; a Beginner day lists exercise ids in its `practice` field.
   // Interview days that have a practice file; add the day here when its file is written
-  const PRACTICE_FILES = Array.from({ length: 26 }, (_, i) => i + 1);
-  const SPRING_PRACTICE_FROM = 19;   // from this file on, exercises live in a Spring Boot project and are checked by JUnit tests
+  const PRACTICE_FILES = Array.from({ length: 26 }, (_, i) => `d${i + 1}`);
+  const SPRING_PRACTICE_FROM = 19;   // from Interview file d19 on, exercises live in a Spring Boot project and are checked by JUnit tests
   const PRACTICE_LEVELS = { Easy: "E", Medium: "M", Hard: "H" };
-  const practiceCache = {};   // file day → { status: "loading" | "ready" | "error", intro, exercises, promise }
+  const practiceCache = {};   // file key → { status: "loading" | "ready" | "error", intro, exercises, promise }
   const exerciseById = {};    // as parsed from the files
   let trackExercises = {};    // active track: exercise id → copy numbered for the day it is shown on
   const hintsShown = {};      // exercise id → hints revealed (resets on reload, on purpose)
 
-  const fileOfExercise = (id) => +id.match(/^d(\d+)_/)[1];
+  const fileOfExercise = (id) => id.match(/^([db]\d+)_/)[1];
+  const isSpringFile = (file) => file[0] === "d" && +file.slice(1) >= SPRING_PRACTICE_FROM;
   const practiceDays = () => state.track === "interview"
-    ? PRACTICE_FILES
+    ? PRACTICE_FILES.map(f => +f.slice(1))
     : DAYS.filter(d => d.practice.length).map(d => d.day);
   const hasPractice = (day) => practiceDays().includes(day);
   // The practice files a day of the active track draws from
   const practiceSources = (day) => state.track === "interview"
-    ? [day]
+    ? [`d${day}`]
     : [...new Set(getDayData(day).practice.map(fileOfExercise))];
-  const isSpringPractice = (day) => practiceSources(day).some(f => f >= SPRING_PRACTICE_FROM);
-  // The day of the active track that holds a file's first exercise (Spring setup lives in file 19's intro)
+  const isSpringPractice = (day) => practiceSources(day).some(isSpringFile);
+  // The day of the active track that holds a file's first exercise (Spring setup lives in file d19's intro)
   const dayOfPracticeFile = (file) => state.track === "interview"
-    ? file
+    ? +file.slice(1)
     : DAYS.find(d => d.practice.some(id => fileOfExercise(id) === file))?.day;
-  const practicePath = (day) => `practice/day-${String(day).padStart(2, "0")}.md`;
+  const practicePath = (file) => file[0] === "d"
+    ? `practice/day-${file.slice(1).padStart(2, "0")}.md`
+    : `practice/beginner/day-${file.slice(1).padStart(2, "0")}.md`;
   const mdToHTML = (md) => (typeof marked !== "undefined" ? marked.parse(md) : `<pre>${escapeHTML(md)}</pre>`);
   const mdInline = (md) => (typeof marked !== "undefined" ? marked.parseInline(md) : escapeHTML(md));
 
   // <!-- exercise: id | Easy | Title -->  task…  <!-- hints -->  - one hint per line  <!-- solution -->  code + why
-  function parsePractice(md, day) {
+  function parsePractice(md, file) {
     const parts = md.split(/^<!--\s*exercise:\s*(.+?)\s*-->\s*$/m);
     const exercises = [];
     for (let i = 1; i < parts.length; i += 2) {
@@ -2701,7 +2718,7 @@
       const [task, rest = ""] = parts[i + 1].split(/^<!--\s*hints\s*-->\s*$/m);
       const [hintsMd, solution = ""] = rest.split(/^<!--\s*solution\s*-->\s*$/m);
       const ex = {
-        id, day, num: exercises.length + 1,
+        id, file, num: exercises.length + 1,
         level: PRACTICE_LEVELS[levelName] || "M",
         title: title.join("|"),
         task, solution,
@@ -2713,23 +2730,23 @@
     return { intro: parts[0], exercises };
   }
 
-  function loadPractice(day) {
-    if (!practiceCache[day]) {
-      const entry = practiceCache[day] = { status: "loading" };
-      entry.promise = fetch(practicePath(day))
+  function loadPractice(file) {
+    if (!practiceCache[file]) {
+      const entry = practiceCache[file] = { status: "loading" };
+      entry.promise = fetch(practicePath(file))
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.text();
         })
-        .then(md => Object.assign(entry, { status: "ready" }, parsePractice(md, day)))
+        .then(md => Object.assign(entry, { status: "ready" }, parsePractice(md, file)))
         .catch(() => { entry.status = "error"; });
     }
-    return practiceCache[day].promise;
+    return practiceCache[file].promise;
   }
 
   // Loads the files behind a day of the active track
   const loadDayPractice = (day) => Promise.all(practiceSources(day).map(loadPractice));
-  const loadAllPractice = () => Promise.all(PRACTICE_FILES.map(loadPractice));
+  const loadAllPractice = () => Promise.all([...new Set(practiceDays().flatMap(practiceSources))].map(loadPractice));
   const practiceStatus = (day) => {
     const files = practiceSources(day).map(f => practiceCache[f]);
     if (files.some(f => !f || f.status === "loading")) return "loading";
@@ -2739,7 +2756,7 @@
 
   function dayExercises(day) {
     const list = state.track === "interview"
-      ? practiceCache[day]?.exercises || []
+      ? practiceCache[`d${day}`]?.exercises || []
       : getDayData(day).practice.map(id => exerciseById[id]).filter(Boolean);
     return list.map((ex, i) => trackExercises[ex.id] || (trackExercises[ex.id] = { ...ex, day, num: i + 1 }));
   }
@@ -2766,7 +2783,7 @@
   // kind: "java" (single-file days), "spring" (Spring Boot days) or "all" (practice page)
   function runTipHTML(kind = "java") {
     const java = `Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+).`;
-    const springFrom = dayOfPracticeFile(SPRING_PRACTICE_FROM);
+    const springFrom = dayOfPracticeFile(`d${SPRING_PRACTICE_FROM}`);
     const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day ${springFrom} for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
     const text = kind === "spring" ? spring
       : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}`
@@ -2820,10 +2837,10 @@
       return `<div class="study-notes-message"><strong>Couldn't load the exercises.</strong>
         <p>Check that ${practiceSources(day).map(f => `<code>${practicePath(f)}</code>`).join(", ")} exists and reload the page.</p></div>`;
     }
-    // A Beginner day shows only Spring files' intros: they hold the project setup and dependencies,
-    // while the single-file intros describe the Interview day they were written for
+    // A Beginner day shows its own files' intros and the Spring ones (project setup and dependencies);
+    // the Interview single-file intros describe the Interview day they were written for
     const intro = practiceSources(day)
-      .filter(f => state.track === "interview" || f >= SPRING_PRACTICE_FROM)
+      .filter(f => state.track === "interview" || f[0] === "b" || isSpringFile(f))
       .map(f => practiceCache[f].intro.trim()).filter(Boolean).join("\n\n");
     return `
       <div class="practice-panel">
