@@ -380,6 +380,14 @@
       s.innerHTML = s.innerHTML.replace(/`([^`]+)`/g, "<code>$1</code>");
     });
 
+    // An h3 is a flex row (title + Done toggle): keep the title in one flex item, or inline code splits mid-word
+    article.querySelectorAll("h3").forEach(h => {
+      const text = document.createElement("span");
+      text.className = "md-h3-text";
+      text.append(...h.childNodes);
+      h.append(text);
+    });
+
     article.querySelectorAll(".notes-anchor").forEach(anchor => {
       const heading = anchor.nextElementSibling;
       if (!heading || heading.tagName !== "H3") return;
@@ -447,7 +455,7 @@
           </div>`;
     }
     const fileHint = location.protocol === "file:"
-      ? `<p>Browsers block reading local files when <code>index.html</code> is opened directly. Serve the folder instead, for example:</p>
+      ? `<p>Browsers block reading local files when the page is opened directly from disk. Serve the folder instead, for example:</p>
          <pre><code>npx serve .</code></pre>
          <p>or <code>python -m http.server 8000</code>, then open <code>http://localhost:8000</code>. The VS Code "Live Server" extension or GitHub Pages also work.</p>`
       : state.track === "interview"
@@ -1694,6 +1702,9 @@
     showToast(`${TRACKS[key].icon} ${TRACKS[key].name} track · ${DAYS.length} days`, "info");
   }
 
+  // The browser tab's title; the focus timer adds its countdown in front while running
+  const pageTitle = () => `Java Fullstack · ${TRACKS[state.track].name} track`;
+
   function renderTrackSwitch() {
     const track = TRACKS[state.track];
     $("#track-switch").innerHTML = TRACK_ORDER.map(key => {
@@ -1716,7 +1727,7 @@
     $("#roadmap-title").textContent = `The ${DAYS.length}-Day Roadmap`;
     $("#roadmap-subtitle").textContent = track.roadmap;
     $('[data-status="all"] .filter-badge').textContent = DAYS.length;
-    document.title = `Java Fullstack · ${track.name} track`;
+    document.title = pageTitle();
   }
 
   // ── View switching ──
@@ -3065,7 +3076,6 @@
   let timer = { mode: "focus25", lastFocus: "focus25", endsAt: null, remainingMs: 25 * 60000, creditedMs: 0, task: "" };
   let timerInterval = null;
   let timerPanelOpen = false;
-  const baseTitle = document.title;
 
   function loadTimer() {
     try {
@@ -3202,7 +3212,7 @@
       chip.classList.toggle("running", running);
       chip.classList.toggle("on-break", !mode.focus && active);
     }
-    document.title = running ? `${formatClock(remaining)} · ${mode.focus ? "Focus" : "Break"} — ${baseTitle}` : baseTitle;
+    document.title = running ? `${formatClock(remaining)} · ${mode.focus ? "Focus" : "Break"} — ${pageTitle()}` : pageTitle();
 
     const panel = $("#timer-panel");
     if (!panel || panel.hidden) return;
@@ -3505,7 +3515,17 @@
   // ── Init ──
   function init() {
     loadState();
-    setTheme(state.theme);
+
+    // Links from the landing page pick a track: app.html?track=beginner | interview
+    const askedTrack = new URLSearchParams(location.search).get("track");
+    if (TRACKS[askedTrack] && askedTrack !== state.track) {
+      storeTrackFields();
+      state.track = askedTrack;
+      loadTrackFields();
+    }
+    if (askedTrack !== null) history.replaceState(null, "", location.pathname);
+
+    setTheme(state.theme);   // also saves, which keeps the chosen track
     shufflePalette();   // a new colour mood on every visit
 
     // Badges earned before this feature existed shouldn't all pop at once

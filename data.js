@@ -938,7 +938,7 @@ const CURRICULUM_DATA = [
   // ===================== PHASE 4: MICROSERVICES (Days 27–34) =====================
   {
     day: 27,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "Microservices Patterns — API Gateway & Service Discovery",
@@ -972,7 +972,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 28,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "Microservices — CQRS, Event Sourcing & Communication",
@@ -1006,7 +1006,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 29,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "Resilience & Observability — Resilience4j, Tracing, Logging",
@@ -1040,7 +1040,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 30,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["DB/DevOps", "DSA"],
     title: "Docker — Containers, Images & Dockerizing Spring Boot",
@@ -1073,7 +1073,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 31,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["DB/DevOps", "DSA"],
     title: "Kubernetes Basics & CI/CD Pipelines",
@@ -1106,7 +1106,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 32,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "LLD — Creational Design Patterns",
@@ -1138,7 +1138,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 33,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "LLD — Structural & Behavioral Patterns",
@@ -1171,7 +1171,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 34,
-    phase: "Phase 4: Microservices",
+    phase: "Phase 4: Microservices, DevOps & LLD",
     phaseRange: "Days 27–34",
     categories: ["System Design", "DSA"],
     title: "Phase 4 Review — Machine Coding Practice",
@@ -1205,7 +1205,7 @@ const CURRICULUM_DATA = [
   // ===================== PHASE 5: KAFKA DEEP DIVE (Days 35–42) =====================
   {
     day: 35,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "Spring Boot"],
     title: "Kafka Core — Topics, Partitions, Producers & Consumers",
@@ -1237,7 +1237,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 36,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "Spring Boot"],
     title: "Kafka — Error Handling, DLT & Exactly-Once Semantics",
@@ -1269,7 +1269,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 37,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "DSA"],
     title: "Kafka Advanced — Streams, Transactions & Rebalancing",
@@ -1302,7 +1302,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 38,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "DSA"],
     title: "Kafka Interview Prep & Consumer Deep Dive",
@@ -1335,7 +1335,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 39,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design"],
     title: "Machine Coding Practice & Schema Design",
@@ -1357,7 +1357,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 40,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "DSA"],
     title: "Phase 5 Review — Kafka + Patterns Consolidation",
@@ -1388,7 +1388,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 41,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "DSA"],
     title: "Mixed Revision — Java + Spring + DSA Weak Areas",
@@ -1419,7 +1419,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 42,
-    phase: "Phase 5: Apache Kafka",
+    phase: "Phase 5: Kafka & Revision",
     phaseRange: "Days 35–42",
     categories: ["System Design", "DSA"],
     title: "DSA Revision Sprint — All Patterns Review",
@@ -1684,7 +1684,7 @@ const CURRICULUM_DATA = [
   // ===================== PHASE 7: SQL & DESIGN PATTERNS (Days 51–56) =====================
   {
     day: 51,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["DB/DevOps", "DSA"],
     title: "SQL Deep Dive — Joins, CTEs & Subqueries",
@@ -1717,7 +1717,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 52,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["DB/DevOps", "DSA"],
     title: "SQL — Window Functions (Most Tested Topic!)",
@@ -1750,7 +1750,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 53,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["DB/DevOps", "DSA"],
     title: "SQL — Indexing, EXPLAIN & Transactions",
@@ -1783,7 +1783,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 54,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["DB/DevOps"],
     title: "NoSQL, SQL vs NoSQL & Git Workflows",
@@ -1805,7 +1805,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 55,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["System Design", "DSA"],
     title: "System Design Fundamentals — Scalability, Caching & Load Balancing",
@@ -1840,7 +1840,7 @@ const CURRICULUM_DATA = [
   },
   {
     day: 56,
-    phase: "Phase 7: SQL & Patterns",
+    phase: "Phase 7: SQL & System Design",
     phaseRange: "Days 51–56",
     categories: ["System Design", "DSA"],
     title: "Phase 7 Review — SQL + System Design Consolidation",
@@ -2029,9 +2029,9 @@ const PHASES = [
   { name: "Phase 1: Core Java", range: "Days 1–10", days: [1,2,3,4,5,6,7,8,9,10] },
   { name: "Phase 2: Collections", range: "Days 11–18", days: [11,12,13,14,15,16,17,18] },
   { name: "Phase 3: Spring Boot", range: "Days 19–26", days: [19,20,21,22,23,24,25,26] },
-  { name: "Phase 4: Microservices", range: "Days 27–34", days: [27,28,29,30,31,32,33,34] },
-  { name: "Phase 5: Apache Kafka", range: "Days 35–42", days: [35,36,37,38,39,40,41,42] },
+  { name: "Phase 4: Microservices, DevOps & LLD", range: "Days 27–34", days: [27,28,29,30,31,32,33,34] },
+  { name: "Phase 5: Kafka & Revision", range: "Days 35–42", days: [35,36,37,38,39,40,41,42] },
   { name: "Phase 6: AWS Deep Dive", range: "Days 43–50", days: [43,44,45,46,47,48,49,50] },
-  { name: "Phase 7: SQL & Patterns", range: "Days 51–56", days: [51,52,53,54,55,56] },
+  { name: "Phase 7: SQL & System Design", range: "Days 51–56", days: [51,52,53,54,55,56] },
   { name: "Phase 8: Final Sprint", range: "Days 57–60", days: [57,58,59,60] }
 ];

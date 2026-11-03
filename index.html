@@ -4,259 +4,418 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#080a12">
-  <meta name="description" content="Java Fullstack: learn Java, Spring Boot, DSA, databases, DevOps and system design day by day. A 100-day Beginner track that starts from zero, and a 60-day Interview track for developers who already know Java.">
-  <title>Java Fullstack</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="description" content="Java Fullstack: a free, day-by-day path from Hello World to a job-ready Java backend developer. Java, Spring Boot, SQL, DSA, Kafka, AWS and system design, with notes, code exercises, flashcards and progress tracking. No sign-up.">
+  <title>Java Fullstack · From Hello World to hired</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="landing.css">
+  <script>
+    // Match the app's saved theme (or the system setting) before first paint, so there's no flash
+    (function () {
+      document.documentElement.classList.add("js");
+      let theme = null;
+      try { theme = JSON.parse(localStorage.getItem("sde_prep_tracker_v2") || "{}").theme || null; } catch (e) { /* ignore */ }
+      if (!theme) theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Animated background: colours come from the palette picked on each visit -->
-  <div class="aurora" aria-hidden="true">
-    <span class="aurora-blob b1"></span>
-    <span class="aurora-blob b2"></span>
-    <span class="aurora-blob b3"></span>
-    <span class="aurora-grain"></span>
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="grid-lines"></span>
   </div>
-  <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
-  <!-- Mobile Overlay -->
-  <div class="mobile-overlay" id="mobile-overlay"></div>
+  <!-- ═══════ NAV ═══════ -->
+  <header class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="logo" href="#top" aria-label="Java Fullstack home">
+        <span class="logo-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+        </span>
+        <span class="logo-text">Java Fullstack</span>
+      </a>
 
-  <div class="app-container">
-
-    <!-- ═══════ SIDEBAR ═══════ -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-        </div>
-        <div>
-          <h1>Java Fullstack</h1>
-          <div class="sidebar-subtitle" id="brand-subtitle"></div>
-        </div>
-      </div>
-
-      <!-- Track switch: Beginner and Interview are separate courses with separate progress -->
-      <div class="track-switch" id="track-switch" role="group" aria-label="Choose your track"></div>
-
-      <!-- Overall progress ring -->
-      <div class="sidebar-progress">
-        <div class="ring" id="sidebar-ring" style="--p:0">
-          <span class="ring-value" id="stat-percentage">0%</span>
-        </div>
-        <div class="sidebar-progress-text">
-          <div class="sidebar-progress-title">Overall progress</div>
-          <div class="sidebar-progress-line"><strong id="stat-days-done">0/0</strong> days</div>
-          <div class="sidebar-progress-line"><strong id="stat-subs-done">0/0</strong> subtopics</div>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="nav">
-        <button class="nav-item active" data-view="home">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span>Dashboard</span>
-        </button>
-        <button class="nav-item" data-view="grid">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-          <span>Roadmap</span>
-        </button>
-        <button class="nav-item" data-view="revise">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>
-          <span>Revise</span>
-          <span class="nav-badge" data-badge="revise" hidden></span>
-        </button>
-        <button class="nav-item" data-view="practice">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-          <span>Code Practice</span>
-        </button>
-        <button class="nav-item" data-view="sets" id="btn-sets">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
-          <span>Question Sets</span>
-        </button>
-        <button class="nav-item" data-view="backlog">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-          <span>Backlog &amp; Stats</span>
-        </button>
+      <nav class="nav-links" id="nav-links" aria-label="Sections">
+        <a href="#tracks">Tracks</a>
+        <a href="#how">How it works</a>
+        <a href="#curriculum">Curriculum</a>
+        <a href="#features">Features</a>
+        <a href="#faq">FAQ</a>
       </nav>
 
-      <!-- Day heatmap -->
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Jump to a day</div>
-        <div class="heatmap-grid" id="heatmap-grid"></div>
-      </div>
-
-      <!-- Actions -->
-      <div class="sidebar-actions">
-        <button class="icon-btn" id="theme-toggle" title="Toggle light / dark" aria-label="Toggle dark/light theme"></button>
-        <button class="icon-btn" id="palette-shuffle" title="New colour palette" aria-label="Shuffle colour palette">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+      <div class="nav-actions">
+        <a class="icon-btn" href="https://github.com/sarthakm10/java_60_days" target="_blank" rel="noopener noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
+        </a>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch between light and dark" title="Switch between light and dark"></button>
+        <a class="btn btn-primary btn-sm nav-cta" href="app.html" id="nav-cta">Open the app</a>
+        <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
         </button>
-        <button class="icon-btn" id="btn-export" title="Export progress (JSON)" aria-label="Export progress">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-        <button class="icon-btn" id="btn-import" title="Import progress" aria-label="Import progress">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        </button>
-        <input type="file" id="import-input" class="import-input" accept=".json">
-        <button class="icon-btn danger" id="btn-reset" title="Reset all progress" aria-label="Reset all progress">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        </button>
-      </div>
-    </aside>
-
-    <!-- ═══════ MAIN CONTENT ═══════ -->
-    <main class="main-content">
-      <!-- Top Bar -->
-      <div class="top-bar">
-        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-
-        <div class="search-container">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="search" class="search-input" id="search-input" placeholder="Search days, topics, problems… (HashMap, JWT, Two Sum, day 12)"
-                 autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list">
-          <kbd class="search-kbd">/</kbd>
-          <div class="search-results" id="search-results" role="listbox" hidden></div>
-        </div>
-
-        <div class="top-chips">
-          <button class="chip track-chip" id="chip-track" title="Switch track" aria-label="Switch track"></button>
-          <button class="chip timer-chip" id="chip-timer" title="Focus timer" aria-label="Open focus timer">⏱ <span class="chip-label">Focus</span></button>
-          <div class="chip streak-chip" id="chip-streak" title="Study streak: days in a row with progress">🔥 <strong>0</strong></div>
-          <div class="chip level-chip" id="chip-level" title="Your level">
-            <span class="level-badge">1</span>
-            <span class="level-title">Curious Coder</span>
-            <span class="level-bar"><span class="level-bar-fill" style="width:0%"></span></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Content Scroll Area -->
-      <div class="content-scroll">
-        <!-- Dashboard -->
-        <section class="view home-view active" id="home-view"></section>
-
-        <!-- Roadmap: filters + day cards -->
-        <section class="view roadmap-view" id="roadmap-view">
-          <div class="view-header">
-            <div>
-              <h2 class="view-title" id="roadmap-title">Roadmap</h2>
-              <p class="view-subtitle" id="roadmap-subtitle"></p>
-            </div>
-          </div>
-
-          <div class="filter-bar">
-            <div class="filter-group" role="group" aria-label="Filter by status">
-              <button class="filter-btn active" data-status="all">All <span class="filter-badge">0</span></button>
-              <button class="filter-btn" data-status="in-progress">In progress <span class="filter-badge">0</span></button>
-              <button class="filter-btn" data-status="pending">Not started <span class="filter-badge">0</span></button>
-              <button class="filter-btn" data-status="completed">Done <span class="filter-badge">0</span></button>
-              <button class="filter-btn" data-status="has-missed">Has missed items <span class="filter-badge">0</span></button>
-            </div>
-            <div class="filter-group" role="group" aria-label="Filter by category">
-              <button class="filter-btn active" data-category="all">All subjects</button>
-              <button class="filter-btn" data-category="Java"><span class="category-dot" style="background:#58a6ff"></span>Java <span class="filter-badge">0%</span></button>
-              <button class="filter-btn" data-category="Spring Boot"><span class="category-dot" style="background:#3fb950"></span>Spring Boot <span class="filter-badge">0%</span></button>
-              <button class="filter-btn" data-category="DSA"><span class="category-dot" style="background:#bc8cff"></span>DSA <span class="filter-badge">0%</span></button>
-              <button class="filter-btn" data-category="System Design"><span class="category-dot" style="background:#f0883e"></span>System Design <span class="filter-badge">0%</span></button>
-              <button class="filter-btn" data-category="DB/DevOps"><span class="category-dot" style="background:#f778ba"></span>DB / DevOps <span class="filter-badge">0%</span></button>
-            </div>
-          </div>
-
-          <div class="days-grid" id="days-grid"></div>
-        </section>
-
-        <!-- Revise: spaced revision, flashcards, solve-again problems -->
-        <section class="view revise-view" id="revise-view"></section>
-
-        <!-- Code practice: Java exercises to run in your own IDE -->
-        <section class="view practice-view" id="practice-view"></section>
-
-        <!-- Day Detail View -->
-        <section class="view day-detail" id="day-detail"></section>
-
-        <!-- Backlog View -->
-        <section class="view backlog-view" id="backlog-view">
-          <div class="view-header">
-            <div>
-              <h2 class="view-title">Backlog &amp; Stats</h2>
-              <p class="view-subtitle">Where you stand in each subject, what you skipped, and every badge you can earn.</p>
-            </div>
-          </div>
-          <div id="subject-progress" class="subject-progress"></div>
-          <div id="achievements-panel"></div>
-          <div id="backlog-content"></div>
-        </section>
-
-        <!-- DSA Question Sets View -->
-        <section class="view sets-view" id="sets-view"></section>
-      </div>
-    </main>
-  </div>
-
-  <!-- Focus timer panel (opened from the ⏱ chip) -->
-  <div class="timer-panel" id="timer-panel" hidden></div>
-
-  <!-- Phone navigation (hidden on wider screens) -->
-  <nav class="bottom-nav" aria-label="Sections">
-    <button class="nav-item bottom-item active" data-view="home">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span>Home</span>
-    </button>
-    <button class="nav-item bottom-item" data-view="grid">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
-      <span>Roadmap</span>
-    </button>
-    <button class="nav-item bottom-item" data-view="revise">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg>
-      <span>Revise</span>
-      <span class="nav-badge" data-badge="revise" hidden></span>
-    </button>
-    <button class="nav-item bottom-item" data-view="practice">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-      <span>Code</span>
-    </button>
-    <button class="nav-item bottom-item" data-view="sets">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
-      <span>Problems</span>
-    </button>
-    <button class="nav-item bottom-item" data-view="backlog">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-      <span>Stats</span>
-    </button>
-  </nav>
-
-  <!-- Reset Confirmation Modal -->
-  <div class="modal-overlay" id="reset-modal">
-    <div class="modal-content">
-      <h2 class="modal-title">⚠️ Reset All Progress?</h2>
-      <p class="modal-description">
-        This will permanently delete your progress in <strong>both tracks</strong>: checked subtopics, solved problems, daily notes, streak history and badges.
-        This action cannot be undone. Consider exporting your progress first.
-      </p>
-      <div class="modal-actions">
-        <button class="modal-btn cancel" id="reset-cancel">Cancel</button>
-        <button class="modal-btn confirm" id="reset-confirm">Yes, Reset Everything</button>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- Toast Notification -->
-  <div class="toast" id="toast"></div>
+  <main id="main">
+    <!-- ═══════ HERO ═══════ -->
+    <section class="hero" id="top">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <a class="pill hero-pill reveal" href="#faq">
+            <span class="pill-dot"></span> Free · No sign-up · Runs in your browser
+          </a>
 
-  <!-- Scripts -->
-  <!-- Study notes: Markdown rendering + Java syntax highlighting (Mermaid is loaded on demand by app.js) -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" data-manual></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-  <script src="data.js"></script>
-  <script src="data-beginner.js"></script>
-  <script src="question-sets.js"></script>
-  <script src="app.js"></script>
+          <h1 class="hero-title" aria-label="Go from Hello World to hired as a Java backend developer.">
+            <span class="word">Go</span> <span class="word">from</span>
+            <span class="word grad-text">Hello</span> <span class="word grad-text">World</span>
+            <span class="word">to</span> <span class="word">hired</span> <span class="word">as</span> <span class="word">a</span>
+            <span class="word">Java</span> <span class="word">backend</span> <span class="word">developer.</span>
+          </h1>
+
+          <p class="hero-sub reveal" style="--d: 0.55s">
+            A day-by-day path through Java, Spring Boot, SQL, DSA, Kafka, AWS and system design,
+            with study notes, code exercises, flashcards and progress tracking built in.
+          </p>
+
+          <div class="continue-card" id="continue-card" hidden>
+            <span class="continue-flame">🔥</span>
+            <span class="continue-text"></span>
+            <a class="continue-link" href="app.html">Continue →</a>
+          </div>
+
+          <div class="hero-ctas reveal" style="--d: 0.7s">
+            <a class="btn btn-primary btn-lg magnetic" href="app.html?track=beginner">
+              Start the 100-day Beginner track
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+            <a class="btn btn-ghost btn-lg" href="app.html?track=interview">I know Java · Interview track</a>
+          </div>
+
+          <ul class="hero-proof reveal" style="--d: 0.85s">
+            <li><strong data-count="beginnerDays">100</strong> days from zero</li>
+            <li><strong data-count="exercises">138</strong> code exercises</li>
+            <li><strong data-count="problems">415</strong> LeetCode problems</li>
+          </ul>
+        </div>
+
+        <!-- Animated product preview -->
+        <div class="hero-visual reveal" style="--d: 0.3s" id="hero-visual" aria-hidden="true">
+          <div class="editor tilt">
+            <div class="editor-bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="editor-file" id="editor-file">Hello.java</span>
+              <span class="editor-day" id="editor-day">Day 1</span>
+            </div>
+            <pre class="editor-code"><code id="typed-code"></code><span class="caret"></span></pre>
+            <div class="editor-output" id="editor-output"></div>
+          </div>
+
+          <div class="float-card fc-streak">
+            <span class="fc-icon">🔥</span>
+            <div><strong>12-day</strong><small>study streak</small></div>
+          </div>
+
+          <div class="float-card fc-ring">
+            <span class="mini-ring" style="--p: 64"><span>64%</span></span>
+            <div><strong>Day 23</strong><small>OOP Project</small></div>
+          </div>
+
+          <div class="float-card fc-card">
+            <small class="fc-kind">Flashcard · Day 60</small>
+            <strong>Why can calling a @Transactional method from the same class skip the transaction?</strong>
+            <span class="fc-answer">The call doesn't go through Spring's proxy.</span>
+          </div>
+
+          <div class="float-card fc-xp">
+            <span class="fc-badge">7</span>
+            <div><strong>Junior Engineer</strong><small>+40 XP · Hard solved</small></div>
+          </div>
+        </div>
+      </div>
+
+      <a class="scroll-hint" href="#stack" aria-label="Scroll down">
+        <span></span>
+      </a>
+    </section>
+
+    <!-- ═══════ STACK MARQUEE ═══════ -->
+    <section class="marquee-section" id="stack" aria-label="What you'll learn">
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track" id="marquee-track"></div>
+      </div>
+      <p class="sr-only">Topics covered: Java 21, OOP, collections, streams, concurrency, the JVM, SQL, PostgreSQL, Spring Boot, Spring Data JPA, Spring Security, JUnit, Mockito, Docker, Kafka, Kubernetes, AWS, Terraform, system design and DSA.</p>
+    </section>
+
+    <!-- ═══════ STATS ═══════ -->
+    <section class="container stats">
+      <div class="stat reveal">
+        <span class="stat-num"><span data-count="totalDays">160</span></span>
+        <span class="stat-label">days of guided study across two tracks</span>
+      </div>
+      <div class="stat reveal" style="--d: 0.1s">
+        <span class="stat-num"><span data-count="topics">843</span></span>
+        <span class="stat-label">checklist topics in the Beginner track</span>
+      </div>
+      <div class="stat reveal" style="--d: 0.2s">
+        <span class="stat-num"><span data-count="exercises">138</span></span>
+        <span class="stat-label">exercises in Java, SQL and Spring Boot, with hints and solutions</span>
+      </div>
+      <div class="stat reveal" style="--d: 0.3s">
+        <span class="stat-num"><span data-count="problems">415</span></span>
+        <span class="stat-label">LeetCode problems in <span data-count="sets">28</span> topic sets</span>
+      </div>
+    </section>
+
+    <!-- ═══════ TRACKS ═══════ -->
+    <section class="section" id="tracks">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Two tracks</span>
+          <h2>Start where you are</h2>
+          <p>Each track is its own course with its own progress. Switch between them any time from the app's sidebar.</p>
+        </div>
+
+        <div class="tracks">
+          <article class="track-card spotlight reveal" data-track="beginner">
+            <div class="track-top">
+              <span class="track-emoji">🌱</span>
+              <span class="track-len"><strong>100</strong> days</span>
+            </div>
+            <h3>Beginner</h3>
+            <p class="track-for">For someone who has <strong>never written code</strong>.</p>
+            <p>Starts with "what is programming" and installing Java, builds up through object-oriented Java, collections, SQL and Spring Boot, and ends with cloud, system design and a mock interview. Every topic starts with a plain-language explanation.</p>
+            <ul class="track-points">
+              <li>10 phases, one idea at a time</li>
+              <li>"In simple words" boxes, deep dives folded away</li>
+              <li>Three real projects: a game, a library system, a secured REST API</li>
+            </ul>
+            <a class="btn btn-primary" href="app.html?track=beginner">Start Day 1 →</a>
+          </article>
+
+          <article class="track-card spotlight reveal" style="--d: 0.12s" data-track="interview">
+            <div class="track-top">
+              <span class="track-emoji">🎯</span>
+              <span class="track-len"><strong>60</strong> days</span>
+            </div>
+            <h3>Interview</h3>
+            <p class="track-for">For developers who <strong>already know Java</strong>.</p>
+            <p>Fast, dense revision for backend interviews at around two to three years of experience: Java internals, Spring Boot, microservices, Kafka, AWS, SQL and system design, with daily DSA and a final mock interview day.</p>
+            <ul class="track-points">
+              <li>8 phases, interview-focused depth</li>
+              <li>Senior-level 🚀 details and classic interview questions</li>
+              <li>Machine coding and system design practice</li>
+            </ul>
+            <a class="btn btn-ghost" href="app.html?track=interview">Start revising →</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ HOW A DAY WORKS ═══════ -->
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">How it works</span>
+          <h2>A day, in four steps</h2>
+          <p>Two to three hours a day. Everything you need for the day is on one page.</p>
+        </div>
+
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-num">1</span>
+            <span class="step-icon">📖</span>
+            <h3>Read the notes</h3>
+            <p>Plain-language explanations first, with diagrams and runnable examples. Deeper details wait in folded panels for a second pass.</p>
+          </li>
+          <li class="step reveal" style="--d: 0.1s">
+            <span class="step-num">2</span>
+            <span class="step-icon">⌨️</span>
+            <h3>Code it yourself</h3>
+            <p>Exercises with starter code, hints one at a time, and a reference solution. Run them in your own IDE, just like on the job.</p>
+          </li>
+          <li class="step reveal" style="--d: 0.2s">
+            <span class="step-num">3</span>
+            <span class="step-icon">✅</span>
+            <h3>Tick it off</h3>
+            <p>Check off each topic as you learn it. Your streak, XP, level and badges grow with you, and a heatmap shows every day you studied.</p>
+          </li>
+          <li class="step reveal" style="--d: 0.3s">
+            <span class="step-num">4</span>
+            <span class="step-icon">🧠</span>
+            <h3>Revise at the right time</h3>
+            <p>Topics you tick come back after 1, 3, 7, 21 and 45 days, and flashcards are built from every day's notes, so nothing fades.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ═══════ CURRICULUM TIMELINE ═══════ -->
+    <section class="section" id="curriculum">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">The Beginner curriculum</span>
+          <h2>From your first program to your first offer</h2>
+          <p>Ten phases, in an order where each one builds on the last. DSA practice runs alongside from Day 7.</p>
+        </div>
+
+        <div class="timeline" id="timeline">
+          <div class="timeline-rail"><span class="timeline-fill" id="timeline-fill"></span></div>
+          <ol class="timeline-list" id="timeline-list">
+            <!-- filled by landing.js from data-beginner.js; this fallback shows if scripts fail -->
+            <li class="phase-item in"><div class="phase-card"><span class="phase-range">Days 1–100</span><h3>Ten phases from basics to interviews</h3></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ FEATURES ═══════ -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head reveal">
+          <span class="eyebrow">Features</span>
+          <h2>Everything a self-learner needs</h2>
+          <p>Built to keep you going on day 37, not just day 1.</p>
+        </div>
+
+        <div class="bento">
+          <article class="feature f-notes spotlight reveal">
+            <div class="feature-visual notes-visual" aria-hidden="true">
+              <div class="nv-box">🌱 <b>In simple words</b><span></span><span></span></div>
+              <div class="nv-line"></div><div class="nv-line short"></div>
+              <div class="nv-deeper">🚀 Go deeper ▸</div>
+            </div>
+            <h3>Study notes for every day</h3>
+            <p>Written for the level you're at, with diagrams, tables and code you can copy. The Beginner track explains each topic simply first, then goes deeper.</p>
+          </article>
+
+          <article class="feature f-practice spotlight reveal" style="--d: 0.08s">
+            <div class="feature-visual practice-visual" aria-hidden="true">
+              <span class="tag java">☕ Java</span><span class="tag sql">🗄️ SQL</span><span class="tag spring">🍃 Spring Boot</span>
+              <div class="pv-test"><span class="pv-dot"></span> HelloControllerTest: 3 tests passed</div>
+            </div>
+            <h3>Hands-on code practice</h3>
+            <p>Single-file Java programs, SQL against real tables, and Spring Boot exercises checked by JUnit tests. Each comes with starter code, hints and a worked solution.</p>
+          </article>
+
+          <article class="feature f-revise spotlight reveal" style="--d: 0.16s">
+            <div class="feature-visual flip-visual" aria-hidden="true">
+              <div class="flip">
+                <div class="flip-front">What does HashMap use to pick a bucket?</div>
+                <div class="flip-back">The key's <b>hashCode()</b>, turned into an index</div>
+              </div>
+            </div>
+            <h3>Spaced revision & flashcards</h3>
+            <p>Over 2,000 flashcards generated from the notes, and a revision queue that brings topics back just before you'd forget them.</p>
+          </article>
+
+          <article class="feature f-dsa spotlight reveal">
+            <div class="feature-visual dsa-visual" aria-hidden="true">
+              <div class="dsa-row"><span class="pill-e">Easy</span> Two Sum <i>✓</i></div>
+              <div class="dsa-row"><span class="pill-m">Medium</span> LRU Cache <i>🔁</i></div>
+              <div class="dsa-row"><span class="pill-h">Hard</span> Trapping Rain Water</div>
+            </div>
+            <h3>DSA question sets</h3>
+            <p>Curated LeetCode problems grouped by pattern and linked to the day that teaches them, with a log for your approach, complexity and "solve again" flags.</p>
+          </article>
+
+          <article class="feature f-progress spotlight reveal" style="--d: 0.08s">
+            <div class="feature-visual heat-visual" aria-hidden="true" id="heat-visual"></div>
+            <h3>Streaks, XP and badges</h3>
+            <p>A study streak, levels from "Curious Coder" to "Principal Engineer", badges for milestones, and a calendar of every day you showed up.</p>
+          </article>
+
+          <article class="feature f-tools spotlight reveal" style="--d: 0.16s">
+            <div class="feature-visual tools-visual" aria-hidden="true">
+              <span class="tool">⏱ 25:00</span><span class="tool">🎯 Daily goal</span><span class="tool"><kbd>/</kbd> Search</span><span class="tool">🌓 Themes</span><span class="tool">📱 Mobile</span><span class="tool">⬇ Export</span>
+            </div>
+            <h3>Focus tools that stay out of the way</h3>
+            <p>A focus timer and daily goal, instant search across days, topics and problems, light and dark themes, a phone-friendly layout, and one-click export of your progress.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ FAQ ═══════ -->
+    <section class="section" id="faq">
+      <div class="container faq-wrap">
+        <div class="section-head reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Questions, answered</h2>
+        </div>
+
+        <div class="faq">
+          <details class="reveal">
+            <summary>Is it really free?</summary>
+            <p>Yes. Everything (notes, exercises, flashcards, question sets and tracking) is free, with no sign-up and no ads.</p>
+          </details>
+          <details class="reveal">
+            <summary>Do I need an account? Where is my progress saved?</summary>
+            <p>No account. Your progress is saved in your browser on this device. Use <strong>Export</strong> in the app's sidebar to download a backup file, and <strong>Import</strong> to restore it or move it to another device. Clearing your browser's site data erases progress you haven't exported.</p>
+          </details>
+          <details class="reveal">
+            <summary>I've never coded before. Is that really OK?</summary>
+            <p>Yes. That's exactly who the Beginner track is for. Day 1 explains what programming is and walks you through installing Java and an editor. Nothing is assumed; each day builds on the ones before.</p>
+          </details>
+          <details class="reveal">
+            <summary>How much time does it take each day?</summary>
+            <p>About two to three hours on most days, and three to four on heavier ones. Going slower is completely fine: the app tracks what you've done, not the calendar.</p>
+          </details>
+          <details class="reveal">
+            <summary>What do I need to install?</summary>
+            <p>To start: Java 21 (the JDK) and a code editor such as IntelliJ IDEA Community, both free. Later phases add PostgreSQL, Maven (via the project's wrapper) and Docker, each introduced on the day you need it.</p>
+          </details>
+          <details class="reveal">
+            <summary>I already know Java. Where should I start?</summary>
+            <p>Take the 60-day Interview track: it assumes you know the language and goes straight to interview depth. You can also open any Beginner day directly to fill gaps.</p>
+          </details>
+          <details class="reveal">
+            <summary>Can I switch tracks later?</summary>
+            <p>Any time, from the switch at the top of the app's sidebar (or the 🌱/🎯 button on phones). Each track keeps its own progress, so nothing is lost.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ FINAL CTA ═══════ -->
+    <section class="section final">
+      <div class="container">
+        <div class="final-card reveal">
+          <h2>Day 1 takes about two hours.<br><span class="grad-text">Start today.</span></h2>
+          <p>Install Java, run your first program, and tick your first box. Future you will thank you.</p>
+          <div class="hero-ctas center">
+            <a class="btn btn-primary btn-lg magnetic" href="app.html?track=beginner">Start the Beginner track</a>
+            <a class="btn btn-ghost btn-lg" href="app.html?track=interview">Open the Interview track</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span class="logo small">
+        <span class="logo-mark">🚀</span>
+        <span>Java Fullstack</span>
+      </span>
+      <span class="footer-note">Made for self-learners. Your progress stays in your browser.</span>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="app.html">Open the app</a>
+        <a href="https://github.com/sarthakm10/java_60_days" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="#top">Back to top ↑</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="data.js" defer></script>
+  <script src="data-beginner.js" defer></script>
+  <script src="question-sets.js" defer></script>
+  <script src="landing.js" defer></script>
 </body>
 </html>
