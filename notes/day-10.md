@@ -763,6 +763,8 @@ public static int maxSumOfK(int[] nums, int k) {
 }   // Time O(n), Space O(1)
 ```
 
+<!-- visualize: MaxSumWindow -->
+
 **Dry run** `[2, 1, 5, 1, 3, 2], k = 3`:
 
 | window | sum |

@@ -599,6 +599,8 @@ public int[] twoSum(int[] numbers, int target) {
 }   // Time O(n), Space O(1)
 ```
 
+<!-- visualize: TwoSumSorted -->
+
 **Dry run** `numbers = [2, 7, 11, 15], target = 9`: `2 + 15 = 17` (too big, right--) → `2 + 11 = 13` (right--) → `2 + 7 = 9` ✅ → `[1, 2]`.
 
 Compare with Two Sum I (Day 3): unsorted → HashMap O(n)/O(n). Sorted → two pointers O(n)/**O(1)**. Binary-searching the complement for each element also works: O(n log n).

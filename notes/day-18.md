@@ -445,6 +445,8 @@ public int maxDepthBfs(TreeNode root) {
 }   // O(n) time, O(width) space
 ```
 
+<!-- visualize: MaxDepthTree -->
+
 ```mermaid
 flowchart TD
     A["3 → 1 + max(1, 2) = 3"] --> B["9 → 1"]

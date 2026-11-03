@@ -604,6 +604,8 @@ static int factorial(int n) {
 }
 ```
 
+<!-- visualize: Factorial -->
+
 Checklist for every recursive function:
 1. **Base case(s)** — when to stop.
 2. **Progress** — every call moves toward a base case (n - 1, smaller array range, shorter string).

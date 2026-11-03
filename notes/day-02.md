@@ -1228,6 +1228,8 @@ public static void reverse(int[] arr) {
 }   // Time O(n) — n/2 swaps, Space O(1)
 ```
 
+<!-- visualize: ReverseArray -->
+
 ```mermaid
 flowchart TB
     S0["[1, 2, 3, 4, 5]  L=0 R=4  swap"] --> S1["[5, 2, 3, 4, 1]  L=1 R=3  swap"]

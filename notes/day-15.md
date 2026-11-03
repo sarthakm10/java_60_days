@@ -355,6 +355,8 @@ public int search(int[] nums, int target) {
 }   // Time O(log n), Space O(1)
 ```
 
+<!-- visualize: BinarySearch -->
+
 **Dry run** `[-1, 0, 3, 5, 9, 12]`, target 9: `mid=2 (3)` < 9 → left=3; `mid=4 (9)` ✅ → 4. Target 2: `mid=2 (3)` > 2 → right=1; `mid=0 (-1)` < 2 → left=1; `mid=1 (0)` < 2 → left=2 > right → −1.
 
 Recursive version uses O(log n) stack — iterative is preferred.

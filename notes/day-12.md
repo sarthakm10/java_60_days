@@ -465,6 +465,8 @@ public ListNode reverseList(ListNode head) {
 }   // Time O(n), Space O(1)
 ```
 
+<!-- visualize: ReverseLinkedList -->
+
 ```mermaid
 flowchart TD
     S0["null ← prev | curr: 1 → 2 → 3 → null"] --> S1["null ← 1 | prev=1, curr: 2 → 3 → null"]

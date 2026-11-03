@@ -145,6 +145,8 @@
   // when that file has the subtopic, otherwise from the Interview notes that cover it.
   const MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js";
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
+  // <!-- visualize: TwoSumSorted --> under a code block: a button that steps through visualize/traces/TwoSumSorted.json
+  const VISUALIZE_MARKER = /^<!--\s*visualize:\s*(\w+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
   const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 100 }, (_, i) => i + 1));   // every Beginner day
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
@@ -304,7 +306,7 @@
     const withAnchors = md.replace(SUBTOPIC_MARKER, (_, id) => {
       ids.add(id);
       return `<div class="notes-anchor" id="note-${id}" data-subtopic="${id}"></div>\n`;
-    });
+    }).replace(VISUALIZE_MARKER, (_, name) => `<div class="viz-slot" data-viz="${name}"></div>\n`);
     const html = typeof marked !== "undefined"
       ? marked.parse(withAnchors)
       : `<pre>${escapeHTML(md)}</pre>`;
@@ -374,6 +376,17 @@
 
     if (window.Prism) Prism.highlightAllUnder(article);
     addCopyButtons(article);
+
+    article.querySelectorAll(".viz-slot").forEach(slot => {
+      if (!window.CodeVisualizer) return slot.remove();
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "viz-launch";
+      btn.innerHTML = `<span class="viz-launch-icon"><svg viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></span>
+        Step through this code <span class="viz-launch-sub">· watch every line run</span>`;
+      btn.addEventListener("click", () => CodeVisualizer.open(slot.dataset.viz));
+      slot.replaceWith(btn);
+    });
 
     // Inline `code` isn't parsed inside raw <details> HTML, so do it here
     article.querySelectorAll("summary").forEach(s => {

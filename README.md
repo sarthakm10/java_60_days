@@ -75,6 +75,8 @@ notes/day-NN.md          Interview study notes, one file per day
 notes/beginner/day-NN.md Beginner study notes, one file per day
 practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
+visualize/programs/*.java   programs for the code visualizer
+visualize/traces/*.json     their step-by-step recordings (generated)
 favicon.svg, apple-touch-icon.png, og-image.png  icons and the link-preview image
 scripts/                 content checks, and the source of the preview image
 ```
@@ -103,6 +105,8 @@ A Beginner day's notes are put together per subtopic: from `notes/beginner/day-N
 ### Why object-oriented programming
 
 <!-- intro: d1_t1_s1 -->         beginner files only: an "In simple words" box placed on top of a borrowed section
+
+<!-- visualize: TwoSumSorted -->  after a code block: a "Step through this code" button for visualize/programs/TwoSumSorted.java
 ```
 
 Flashcards are generated from the notes:
@@ -148,8 +152,29 @@ node scripts/check-all.js
 | `check-practice.js` | exercise format; Java starters compile and solutions print exactly the expected output; Beginner `practice` lists match the files | Node, a JDK |
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
+| `check-traces.js` | every visualizer program has an up-to-date recording that finished cleanly, and its settings name real variables | Node |
 
-`check-all.js` runs the first three; add `--spring` for the Spring builds, which take a few minutes. Each script also runs on its own and takes a track and days, for example `node scripts/check-practice.js beginner 20-30` or `python scripts/check-sql.py 47`.
+`check-all.js` runs all but the Spring one; add `--spring` for the Spring builds, which take a few minutes. Each script also runs on its own and takes a track and days, for example `node scripts/check-practice.js beginner 20-30` or `python scripts/check-sql.py 47`.
+
+### Code visualizer recordings
+
+The visualizer replays a real run of a Java program, one step per line, like Python Tutor but recorded ahead of time so the site needs no server. Each program in `visualize/programs/` is a complete class with a `main` that uses a small example input, usually the method from the notes plus their dry-run input. Settings go in comments at the top:
+
+```java
+// @title Two Sum II — sorted array (two pointers)
+// @start twoSum                  record from the first call of twoSum (skips building the input in main)
+// @pointers numbers: left right  int variables that index into the array numbers
+// @window nums: right-k+1 right  a range of the array to shade (both ends included)
+// @maxSteps 1000                 step limit (the default)
+```
+
+After adding or editing a program, record it, then commit the `.json` with it:
+
+```bash
+node scripts/trace-programs.js TwoSumSorted
+```
+
+With no name it records every program. It needs a JDK 21 or newer, and nothing else: `scripts/tracer/Tracer.java` uses the JDK's own debugger interface (JDI) to run the program and save each step's line, variables, objects and output. One line is one step, so a loop written on a single line runs in one step. Keep the inputs small: a recording should stay well under the step limit.
 
 ### Link preview image
 

@@ -3,7 +3,7 @@
 // - Interview: every subtopic of the day has a <!-- subtopic: id --> section, with no unknown or repeated ones.
 // - Beginner: sections only for that day's subtopics and one for every new (not borrowed) subtopic,
 //   <!-- intro: id --> only for borrowed subtopics, and <!-- topic: bN_tM --> markers in order.
-// - Both: code fences are balanced, no bare <Tag> outside code (Markdown would treat it as HTML and hide it),
+// - Both: every <!-- visualize: Name --> has its program in visualize/programs, code fences are balanced, no bare <Tag> outside code (Markdown would treat it as HTML and hide it),
 //   and no "|" inside inline code in a table row (it splits the cell).
 const fs = require("fs");
 const path = require("path");
@@ -55,6 +55,8 @@ for (const track of tracks) {
       const expected = day.topics.map((t, i) => `b${n}_t${i + 1}`);
       if (topics.join() !== expected.join()) problems.push(`topic markers ${topics.join(" ") || "(none)"}, expected ${expected.join(" ")}`);
     }
+    markers(md, "visualize").filter(name => !fs.existsSync(path.join(root, "visualize", "programs", `${name}.java`)))
+      .forEach(name => problems.push(`<!-- visualize: ${name} --> but there's no visualize/programs/${name}.java`));
     problems.push(...markdownProblems(md));
     if (problems.length) { problemDays++; console.log(`✗ ${label}:\n  ${problems.join("\n  ")}`); }
   }

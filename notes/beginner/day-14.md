@@ -122,6 +122,8 @@ static int factorial(int n) {
 }
 ```
 
+<!-- visualize: Factorial -->
+
 Each call gets its own frame on the call stack from Day 6, so `factorial(4)` has four frames stacked up before they return one by one. Forget the base case and the frames pile up until `StackOverflowError`. The sections below show you how to trace it.
 
 ## 📝 Day 14 Recap
