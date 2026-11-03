@@ -561,9 +561,9 @@ const BEGINNER_DATA = (() => {
     { p: 7, title: "SOLID and Clean Code Principles", practice: ["d10_e1"], topics: [
       topic("System Design", "Design — SOLID & Clean Code", ["d10_t1_s1", "d10_t1_s2", "d10_t1_s3", "d10_t1_s4", "d10_t1_s5", "d39_t1_s4"])
     ] },
-    { p: 7, title: "Creational Design Patterns", topics: [fromDay(32, 0)] },
-    { p: 7, title: "Structural and Behavioral Design Patterns", topics: [fromDay(33, 0)] },
-    { p: 7, title: "Low-Level Design — Machine Coding I", topics: [
+    { p: 7, title: "Creational Design Patterns", practice: ["b69_e1"], topics: [fromDay(32, 0)] },
+    { p: 7, title: "Structural and Behavioral Design Patterns", practice: ["b70_e1", "b70_e2"], topics: [fromDay(33, 0)] },
+    { p: 7, title: "Low-Level Design — Machine Coding I", practice: ["b71_e1"], topics: [
       topic("System Design", "LLD — Machine Coding", ["d34_t1_s1", "d34_t1_s2", "d34_t1_s3", "d34_t1_s5"])
     ] },
     { p: 7, title: "Low-Level Design — Machine Coding II", topics: [
@@ -583,7 +583,7 @@ const BEGINNER_DATA = (() => {
     { p: 8, title: "Microservices — Why and How to Split", topics: [
       topic("System Design", "Microservices — Basics", ["d27_t1_s1", "d27_t1_s2", "d27_t1_s3", "d28_t1_s3", "d28_t1_s5", "d28_t1_s6"])
     ] },
-    { p: 8, title: "Microservices — Resilience", topics: [
+    { p: 8, title: "Microservices — Resilience", practice: ["b76_e1"], topics: [
       topic("System Design", "Microservices — Resilience", ["d27_t1_s4", "d27_t1_s5", "d29_t1_s1", "d29_t1_s2", "d29_t1_s3", "d29_t1_s7"])
     ] },
     { p: 8, title: "Microservices — Data and Transactions", topics: [
@@ -592,7 +592,7 @@ const BEGINNER_DATA = (() => {
     { p: 8, title: "Observability — Logs, Metrics and Traces", topics: [
       topic("System Design", "Microservices — Observability", ["d29_t1_s4", "d29_t1_s5", "d29_t1_s6", "d34_t1_s6", "d40_t1_s3", "d40_t1_s4", "d40_t1_s6"])
     ] },
-    { p: 8, title: "Kafka — Core Concepts", topics: [
+    { p: 8, title: "Kafka — Core Concepts", practice: ["b79_e1"], topics: [
       topic("System Design", "Kafka — Fundamentals", [
         ["b79_t1_s1", "Messaging in simple words — why services publish events instead of calling each other"],
         "d35_t1_s1", "d35_t1_s2", "d35_t1_s3", "d35_t1_s4", "d35_t1_s5"
@@ -636,7 +636,7 @@ const BEGINNER_DATA = (() => {
     { p: 9, title: "System Design Fundamentals — Part 1", topics: [
       topic("System Design", "HLD — Core Concepts", ["d55_t1_s1", "d55_t1_s2", "d55_t1_s4", "d55_t1_s6", "d55_t1_s7"])
     ] },
-    { p: 9, title: "System Design Fundamentals — Part 2", topics: [
+    { p: 9, title: "System Design Fundamentals — Part 2", practice: ["b93_e1"], topics: [
       topic("System Design", "HLD — Scaling Techniques", ["d55_t1_s3", "d55_t1_s5", "d55_t1_s8", "d55_t1_s9", "d57_t1_s6"])
     ] },
     { p: 9, title: "System Design Practice", topics: [
