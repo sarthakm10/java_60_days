@@ -89,7 +89,8 @@ async function record(options) {
       fs.writeFileSync(input, options.stdin);
       args.push("--stdin", input);
     }
-    const r = await run(jdk.java, args, { timeoutMs: 1000 * ((options.timeoutSeconds || 15) + 30) });
+    let r = await run(jdk.java, args, { timeoutMs: 1000 * ((options.timeoutSeconds || 15) + 30) });
+    if (/missed the start of main/.test(r.stderr)) r = await run(jdk.java, args, { timeoutMs: 1000 * ((options.timeoutSeconds || 15) + 30) });   // a rare start-up race: once more
     if (r.code !== 0 || !fs.existsSync(out)) {
       const text = r.stderr.trim() || r.stdout.trim() || `The recorder stopped (exit code ${r.code}).`;
       return { error: text.split(source).join(path.basename(options.file)) };

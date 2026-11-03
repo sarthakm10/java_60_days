@@ -83,6 +83,10 @@ public class Tracer {
             t.timeoutMs = 1000L * Integer.parseInt(opts.getOrDefault("--timeout", "60"));
             t.stdin = opts.get("--stdin");
             t.run(dir);
+            if (t.steps.isEmpty())
+                throw new Problem(t.startMethod != null
+                    ? "Nothing was recorded: @start names " + t.startMethod + ", but it never ran."
+                    : "Nothing was recorded: the recorder missed the start of main. Try again.");
             Map<String, Object> trace = new LinkedHashMap<>();
             trace.put("program", simpleName);
             trace.put("meta", meta);
@@ -200,6 +204,8 @@ public class Tracer {
         ClassPrepareRequest prep = erm.createClassPrepareRequest();
         prep.addClassFilter(mainClass);
         prep.enable();
+        // If the class was already loaded before the request above, its prepare event never comes: hook main now
+        for (ReferenceType t : vm.classesByName(mainClass)) breakAtMain(erm, t);
 
         long deadline = System.currentTimeMillis() + timeoutMs;
         vm.resume();
@@ -216,10 +222,9 @@ public class Tracer {
             }
             for (Event e : set) {
                 if (e instanceof ClassPrepareEvent cpe) {
-                    Method main = cpe.referenceType().methodsByName("main").get(0);
-                    erm.createBreakpointRequest(main.location()).enable();
+                    breakAtMain(erm, cpe.referenceType());
                 } else if (e instanceof BreakpointEvent be) {
-                    startStepping(erm, be.thread());
+                    if (!stepping) { startStepping(erm, be.thread()); stepping = true; }
                     onLocation(be.thread(), "step", null);
                 } else if (e instanceof StepEvent se) {
                     onLocation(se.thread(), "step", null);
@@ -247,6 +252,14 @@ public class Tracer {
             if (alive) set.resume();
         }
         vm.process().waitFor(5, java.util.concurrent.TimeUnit.SECONDS);   // let it close its files (stdin) first
+    }
+
+    boolean stepping;
+    final Set<Location> hooked = new HashSet<>();
+
+    void breakAtMain(EventRequestManager erm, ReferenceType type) {
+        for (Method main : type.methodsByName("main"))
+            if (main.isStatic() && hooked.add(main.location())) erm.createBreakpointRequest(main.location()).enable();
     }
 
     void startStepping(EventRequestManager erm, ThreadReference thread) {

@@ -25,6 +25,11 @@ A **JDK 17 or newer**, not just a JRE. The extension looks for it in the `javaSt
 2. Click **▶** in the editor's title bar, or right-click → **Visualize this Java file**.
 3. Step with the panel's buttons or arrow keys. In the editor, use **F10** for the next step and **Alt+F10** for the previous one. Right-click a line → **Run to this line** to jump to the next time it runs.
 
+To try it, open one of the files in `vscode-extension/examples/`:
+- `Tour.java` shows everything it draws.
+- `ReadNumbers.java` reads input.
+- `FindTheBug.java` crashes, so you can find out why.
+
 If the program reads input (`Scanner(System.in)`), you're asked what to type first. Separate lines with `\n`. Change it later with **Java Visualizer: Set the program's input…**.
 
 Comment settings at the top of the file make a visualization clearer:
