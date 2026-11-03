@@ -1529,6 +1529,73 @@
     }).join("");
   }
 
+  // ── Render: Code Visualizer — every recording, grouped by question set (visualize/index.js) ──
+  let vizQuery = "";
+  const vizCatalog = () => (window.CodeVisualizer && typeof VISUALIZER_CATALOG !== "undefined" ? VISUALIZER_CATALOG : []);
+
+  function renderVisualizerView() {
+    const container = $("#visualizer-view");
+    const catalog = vizCatalog();
+    container.innerHTML = `
+      <div class="sets-header">
+        <div>
+          <h2 class="sets-title">▶ Code Visualizer</h2>
+          <p class="sets-subtitle">${catalog.length} worked solutions to step through line by line: the code, the variables, the arrays, lists and trees, and the call stack at every step.</p>
+        </div>
+        <label class="viz-search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="viz-search" placeholder="Search: two pointers, stack, tree…" value="${escapeHTML(vizQuery)}" aria-label="Search the visualizations">
+        </label>
+      </div>
+      <div id="viz-catalog"></div>`;
+    const input = container.querySelector("#viz-search");
+    input.addEventListener("input", () => { vizQuery = input.value; renderVisualizerList(); });
+    renderVisualizerList();
+  }
+
+  function renderVisualizerList() {
+    const list = $("#viz-catalog");
+    const problems = new Map(QUESTION_SETS.flatMap(s => s.problems.map(p => [p[2], p])));
+    const words = vizQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    const shown = vizCatalog().filter(c => {
+      const set = getSetById(c.set);
+      const text = [c.title, c.program, set?.name, ...c.leetcode.map(slug => problems.get(slug)?.[1]), ...c.leetcode]
+        .join(" ").toLowerCase();
+      return words.every(w => text.includes(w));
+    });
+    const card = (c) => {
+      const [, main = c.title, sub = ""] = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(c.title) || [];
+      const days = c.days[state.track] || [];
+      return `
+        <article class="viz-card">
+          <button class="viz-card-main" data-viz="${c.program}" title="Step through it">
+            <span class="viz-card-play"><svg viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></span>
+            <span class="viz-card-text">
+              <span class="viz-card-title">${escapeHTML(main)}</span>
+              ${sub ? `<span class="viz-card-sub">${escapeHTML(sub)}</span>` : ""}
+            </span>
+          </button>
+          <div class="viz-card-meta">
+            ${c.leetcode.map(slug => problems.get(slug)).filter(Boolean).map(([num, title, slug, diff]) =>
+              `<a class="viz-card-lc" href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener noreferrer">LeetCode ${num}</a>
+               <span class="difficulty-pill ${DIFFICULTY[diff].cls}">${DIFFICULTY[diff].label}</span>`).join("")}
+            <span class="viz-card-steps">${c.steps} steps</span>
+            ${days.map(d => `<button class="set-day-link" data-day="${d}" title="Open Day ${d}'s notes, where this code is">Day ${d} notes</button>`).join("")}
+          </div>
+        </article>`;
+    };
+    const groups = QUESTION_SETS.map(set => ({ set, items: shown.filter(c => c.set === set.id) })).filter(g => g.items.length);
+    list.innerHTML = groups.length
+      ? groups.map(({ set, items }) => `
+          <section class="viz-group">
+            <h3 class="viz-group-title"><span class="set-icon">${set.icon}</span>${escapeHTML(set.name)}<span class="viz-group-count">${items.length}</span></h3>
+            <div class="viz-catalog-grid">${items.map(card).join("")}</div>
+          </section>`).join("")
+      : `<div class="backlog-empty"><p>No visualization matches "${escapeHTML(vizQuery)}".</p></div>`;
+    list.querySelectorAll(".viz-card-main").forEach(btn => btn.addEventListener("click", () => CodeVisualizer.open(btn.dataset.viz)));
+    list.querySelectorAll(".set-day-link").forEach(btn => btn.addEventListener("click", () => openDayDetail(parseInt(btn.dataset.day), "study")));
+  }
+
   function renderSetsView() {
     const container = $("#sets-view");
     const set = state.selectedSet && getSetById(state.selectedSet);
@@ -1538,6 +1605,7 @@
       el.addEventListener("click", () => openSet(el.dataset.set));
     });
     container.querySelector("#sets-back")?.addEventListener("click", () => openSet(null));
+    container.querySelector("#sets-viz")?.addEventListener("click", () => switchView("visualizer"));
     container.querySelectorAll(".problem-log-btn").forEach(btn => {
       btn.addEventListener("click", () => openProblemLog(btn.dataset.slug));
     });
@@ -1597,6 +1665,7 @@
         <div>
           <h2 class="sets-title">🧩 DSA Question Sets</h2>
           <p class="sets-subtitle">${QUESTION_SETS.length} topic sets · ${unique.length} LeetCode problems · tick a problem once and it counts in every set it appears in.</p>
+          ${vizCatalog().length ? `<button class="link-btn sets-viz-link" id="sets-viz">▶ Step through ${vizCatalog().length} worked solutions in the Code Visualizer →</button>` : ""}
         </div>
         <div class="sets-summary">
           <div class="sets-summary-value">${solvedCount}<span>/${unique.length}</span></div>
@@ -1748,8 +1817,8 @@
   }
 
   // ── View switching ──
-  const VIEW_SECTIONS = { home: "#home-view", grid: "#roadmap-view", revise: "#revise-view", practice: "#practice-view", detail: "#day-detail", backlog: "#backlog-view", sets: "#sets-view" };
-  const RETURN_LABELS = { home: "Dashboard", grid: "Roadmap", revise: "Revise", practice: "Practice" };
+  const VIEW_SECTIONS = { home: "#home-view", grid: "#roadmap-view", revise: "#revise-view", practice: "#practice-view", detail: "#day-detail", backlog: "#backlog-view", sets: "#sets-view", visualizer: "#visualizer-view" };
+  const RETURN_LABELS = { home: "Dashboard", grid: "Roadmap", revise: "Revise", practice: "Practice", visualizer: "Code Visualizer" };
 
   function showSection(view) {
     Object.entries(VIEW_SECTIONS).forEach(([name, sel]) => $(sel).classList.toggle("active", name === view));
@@ -1792,6 +1861,8 @@
       renderSubjectProgress();
     } else if (view === "sets") {
       renderSetsView();
+    } else if (view === "visualizer") {
+      renderVisualizerView();
     }
     renderSidebar();
     $(".content-scroll").scrollTop = 0;

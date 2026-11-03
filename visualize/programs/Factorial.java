@@ -1,4 +1,5 @@
 // @title Factorial with recursion (the call stack)
+// @set recursion
 // @start factorial
 public class Factorial {
     static int factorial(int n) {

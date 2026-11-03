@@ -1,4 +1,5 @@
 // @title Reverse an array in place (two pointers)
+// @set two-pointers
 // @start reverse
 // @pointers arr: left right
 import java.util.Arrays;

@@ -159,10 +159,13 @@ node scripts/check-all.js
 
 ### Code visualizer recordings
 
-The visualizer replays a real run of a Java program, one step per line, like Python Tutor but recorded ahead of time so the site needs no server. Each program in `visualize/programs/` is a complete class with a `main` that uses a small example input, usually the method from the notes plus their dry-run input. Settings go in comments at the top:
+The visualizer replays a real run of a Java program, one step per line, like Python Tutor but recorded ahead of time so the site needs no server. Learners reach a recording three ways: the **Code Visualizer** page in the sidebar (every recording, grouped by question set, with search), a **Visualize** button on its LeetCode problem in the Question Sets, and a **Step through this code** button under the code in the notes.
+
+Each program in `visualize/programs/` is a complete class with a `main` that uses a small example input, usually the method from the notes plus their dry-run input. Settings go in comments at the top:
 
 ```java
 // @title Two Sum II — sorted array (two pointers)
+// @set two-pointers              the question set it's listed under on the Visualizer page (default: its @leetcode problem's set)
 // @leetcode two-sum-ii-input-array-is-sorted   adds a Visualize button to that problem in the Question Sets
 // @expect [1, 2]                 what the program must print (the problem's example answer); checked
 // @start twoSum                  record from the first call of twoSum (skips building the input in main)
@@ -181,7 +184,7 @@ After adding or editing a program, record it, then commit the `.json` files and 
 node scripts/trace-programs.js TwoSumSorted
 ```
 
-With no name it records every program. It needs a JDK 21 or newer, and nothing else: `scripts/tracer/Tracer.java` uses the JDK's own debugger interface (JDI) to run the program and save each step's line, variables, objects and output. One line is one step, so a loop written on a single line runs in one step. Keep the inputs small: a recording should stay well under the step limit.
+With no name it records every program; after only adding or moving a `<!-- visualize: … -->` marker in the notes, `node scripts/trace-programs.js --index` rewrites the index (the page's "Day N notes" links) without re-recording. It needs a JDK 21 or newer, and nothing else: `scripts/tracer/Tracer.java` uses the JDK's own debugger interface (JDI) to run the program and save each step's line, variables, objects and output. One line is one step, so a loop written on a single line runs in one step. Keep the inputs small: a recording should stay well under the step limit.
 
 ### Link preview image
 

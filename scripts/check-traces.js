@@ -8,12 +8,13 @@
 // - visualize/index.js is up to date with the recordings.
 const fs = require("fs");
 const path = require("path");
-const { root, visualizerIndex, questionSlugs } = require("./lib");
+const { root, visualizerIndex, questionSets, questionSlugs } = require("./lib");
 
 const programs = path.join(root, "visualize", "programs");
 const traces = path.join(root, "visualize", "traces");
-const KNOWN = new Set(["title", "start", "maxSteps", "hide", "pointers", "window", "cell", "leetcode", "expect"]);
+const KNOWN = new Set(["title", "set", "start", "maxSteps", "hide", "pointers", "window", "cell", "leetcode", "expect"]);
 const slugs = questionSlugs();
+const setIds = new Set(questionSets().map(s => s.id));
 let failures = 0;
 const fail = (name, msg) => { failures++; console.log(`✗ ${name}: ${msg}`); };
 
@@ -40,6 +41,8 @@ for (const name of sources.sort()) {
     if (!slugs.has(slug)) problems.push(`@leetcode ${slug} isn't a problem in question-sets.js`);
   }
   if (t.meta.leetcode && t.meta.expect === undefined) problems.push("@leetcode needs an @expect with the problem's example answer");
+  if (t.meta.set && !setIds.has(t.meta.set)) problems.push(`@set ${t.meta.set} isn't a question set id`);
+  if (!t.meta.set && !t.meta.leetcode) problems.push("no @set or @leetcode: the Visualizer page can't put it under a topic");
 
   // Every name any frame ever shows, to check @pointers / @window against
   const names = new Set(t.steps.flatMap(s => s.frames.flatMap(f => f.locals.map(([n]) => n))));
@@ -57,6 +60,6 @@ for (const name of sources.sort()) {
 }
 const indexFile = path.join(root, "visualize", "index.js");
 if (!fs.existsSync(indexFile) || fs.readFileSync(indexFile, "utf8").replace(/\r\n/g, "\n") !== visualizerIndex())
-  fail("visualize/index.js", "out of date: run node scripts/trace-programs.js (it rewrites the index)");
+  fail("visualize/index.js", "out of date: run node scripts/trace-programs.js --index");
 console.log(failures ? `\n${failures} problem(s)` : `\nAll ${sources.length} recordings OK`);
 process.exit(failures ? 1 : 0);

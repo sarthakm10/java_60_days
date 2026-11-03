@@ -1,4 +1,5 @@
 // @title Maximum sum subarray of size K (fixed sliding window)
+// @set sliding-window
 // @start maxSumOfK
 // @pointers nums: right
 // @window nums: right-k+1 right

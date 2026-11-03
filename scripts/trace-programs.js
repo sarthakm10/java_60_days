@@ -1,7 +1,8 @@
-// Usage: node scripts/trace-programs.js [Name ...]
+// Usage: node scripts/trace-programs.js [Name ...]   or   node scripts/trace-programs.js --index
 // Records visualize/programs/<Name>.java into visualize/traces/<Name>.json with scripts/tracer/Tracer.java,
-// then rewrites visualize/index.js (LeetCode slug → program) for the Question Sets' Visualize buttons.
-// No names: every program. Needs a JDK 21+ (javac, java and its jdk.jdi module).
+// then rewrites visualize/index.js: the Visualizer page's catalog and the Question Sets' Visualize buttons.
+// No names: every program. --index: only rewrite the index (after editing a notes <!-- visualize --> marker).
+// Needs a JDK 21+ (javac, java and its jdk.jdi module).
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -10,6 +11,11 @@ const { root, visualizerIndex } = require("./lib");
 
 const programs = path.join(root, "visualize", "programs");
 const traces = path.join(root, "visualize", "traces");
+if (process.argv.includes("--index")) {
+  fs.writeFileSync(path.join(root, "visualize", "index.js"), visualizerIndex());
+  console.log("visualize/index.js rewritten");
+  process.exit(0);
+}
 const names = process.argv.slice(2).length
   ? process.argv.slice(2).map(n => n.replace(/\.java$/, ""))
   : fs.readdirSync(programs).filter(f => f.endsWith(".java")).map(f => f.slice(0, -5)).sort();
