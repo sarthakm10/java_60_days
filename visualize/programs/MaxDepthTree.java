@@ -1,4 +1,6 @@
 // @title Maximum depth of a binary tree (recursion on a tree)
+// @leetcode maximum-depth-of-binary-tree
+// @expect 3
 // @start maxDepth
 public class MaxDepthTree {
     static class TreeNode {

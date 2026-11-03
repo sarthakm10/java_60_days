@@ -77,6 +77,7 @@ practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
 visualize/programs/*.java   programs for the code visualizer
 visualize/traces/*.json     their step-by-step recordings (generated)
+visualize/index.js          LeetCode slug → recording, for the Question Sets' buttons (generated)
 favicon.svg, apple-touch-icon.png, og-image.png  icons and the link-preview image
 scripts/                 content checks, and the source of the preview image
 ```
@@ -162,13 +163,19 @@ The visualizer replays a real run of a Java program, one step per line, like Pyt
 
 ```java
 // @title Two Sum II — sorted array (two pointers)
+// @leetcode two-sum-ii-input-array-is-sorted   adds a Visualize button to that problem in the Question Sets
+// @expect [1, 2]                 what the program must print (the problem's example answer); checked
 // @start twoSum                  record from the first call of twoSum (skips building the input in main)
-// @pointers numbers: left right  int variables that index into the array numbers
-// @window nums: right-k+1 right  a range of the array to shade (both ends included)
+// @hide levelOrder               helper methods to run without recording (lambdas: all lambdas)
+// @pointers numbers: left right  int variables that index into the array (or String) numbers
+// @window nums: right-k+1 right  a range of the array (or String) to shade, both ends included
+// @cell grid: r c                the cell of a 2D array to ring
 // @maxSteps 1000                 step limit (the default)
 ```
 
-After adding or editing a program, record it, then commit the `.json` with it:
+A variable whose name contains "stack" (or a `java.util.Stack`) is drawn standing up, top first. Collections held in an object's fields, like `MinStack`'s two stacks, are drawn as `owner.field`.
+
+After adding or editing a program, record it, then commit the `.json` files and `visualize/index.js` with it:
 
 ```bash
 node scripts/trace-programs.js TwoSumSorted

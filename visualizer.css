@@ -338,6 +338,28 @@ body.viz-open { overflow: hidden; }
 .viz-grid { display: flex; flex-direction: column; gap: 4px; width: max-content; }
 .viz-grid-row { display: flex; align-items: center; gap: 4px; }
 .viz-grid-row > .viz-idx { width: 18px; margin: 0; text-align: right; }
+.viz-grid-cols > .viz-idx:not(:first-child) { width: 42px; text-align: center; }
+.viz-cell.is-cell .viz-val { border: 2px solid var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* Stacks stand up, top first */
+.viz-stack-col { display: flex; flex-direction: column; gap: 4px; width: max-content; }
+.viz-stack-item { display: flex; align-items: center; gap: 8px; }
+.viz-stack-item .viz-val {
+  display: grid;
+  place-items: center;
+  min-width: 72px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.viz-stack-item:first-child .viz-val { border-color: var(--accent-line); }
+.viz-stack-item.changed .viz-val { animation: vizFlash 0.9s var(--ease); border-color: var(--accent-yellow); }
+.viz-stack-top { font-size: 0.74rem; font-weight: 700; color: var(--accent); }
 
 /* Maps and objects */
 .viz-map, .viz-fields, .viz-locals {
@@ -566,6 +588,34 @@ body.viz-open { overflow: hidden; }
 
 .viz-launch-icon svg { width: 12px; height: 12px; fill: currentColor; margin-left: 2px; }
 .viz-launch-sub { font-weight: 500; color: var(--text-secondary); }
+
+/* ── The Visualize button on a LeetCode problem row ── */
+.problem-viz-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 11px 0 9px;
+  border-radius: 9px;
+  border: 1px solid var(--border-accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.problem-viz-btn svg { width: 11px; height: 11px; fill: currentColor; }
+.problem-viz-btn:hover { background: color-mix(in srgb, var(--a1) 26%, transparent); transform: translateY(-1px); }
+.problem-viz-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .problem-viz-btn { width: 32px; padding: 0; justify-content: center; font-size: 0; gap: 0; }
+  .problem-viz-btn svg { width: 12px; height: 12px; }
+}
 
 /* ── Small screens: code on top, state below, controls pinned ── */
 @media (max-width: 820px) {

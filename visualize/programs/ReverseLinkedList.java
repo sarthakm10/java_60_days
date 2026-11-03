@@ -1,4 +1,6 @@
 // @title Reverse a linked list (prev / curr / next)
+// @leetcode reverse-linked-list
+// @expect 3 2 1
 // @start reverseList
 public class ReverseLinkedList {
     static class ListNode {

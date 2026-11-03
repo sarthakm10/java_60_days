@@ -1,4 +1,6 @@
 // @title Two Sum II — sorted array (two pointers)
+// @leetcode two-sum-ii-input-array-is-sorted
+// @expect [1, 2]
 // @start twoSum
 // @pointers numbers: left right
 import java.util.Arrays;

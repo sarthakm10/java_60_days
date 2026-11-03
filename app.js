@@ -1495,6 +1495,9 @@
     return [...bySlug.values()];
   }
 
+  // The visualizer recording of a LeetCode problem's worked solution, if there is one (visualize/index.js)
+  const visualizationFor = (slug) => window.CodeVisualizer && typeof VISUALIZATIONS !== "undefined" ? VISUALIZATIONS[slug] : undefined;
+
   function problemRowHTML(p, sets) {
     const [num, title, slug, diff, premium] = p;
     const solved = !!state.solvedProblems[slug];
@@ -1511,6 +1514,7 @@
         ${premium ? `<span class="problem-premium" title="Needs LeetCode Premium">🔒 Premium</span>` : ""}
         ${setLinks}
         ${log?.solveAgain ? `<span class="log-flag" title="Flagged to solve again">🔁</span>` : ""}
+        ${visualizationFor(slug) ? `<button class="problem-viz-btn" data-viz="${visualizationFor(slug)}" title="Step through a worked solution, line by line"><svg viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg>Visualize</button>` : ""}
         <button class="problem-log-btn ${log ? "has-log" : ""}" data-slug="${slug}" title="${log ? "Open your log" : "Log approach, complexity, attempts"}">📝</button>
         <span class="difficulty-pill ${d.cls}">${d.label}</span>
       </div>
@@ -3596,6 +3600,12 @@
     if (timerRunning()) ensureTimerTick();
     renderTimer();
     document.addEventListener("visibilitychange", () => { if (!document.hidden && timerRunning()) timerTick(); });
+
+    // A problem row's Visualize button, wherever the row is drawn (question sets, a day's DSA list, the backlog)
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".problem-viz-btn");
+      if (btn) CodeVisualizer.open(btn.dataset.viz);
+    });
 
     // Flashcard keys: Space/Enter flips, 1/2/3 grade
     document.addEventListener("keydown", (e) => {

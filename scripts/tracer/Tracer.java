@@ -11,6 +11,7 @@
 // Settings come from "// @key value" comment lines at the top of the program:
 //   @start <method>   record only from the first call of this method (skips building the input in main)
 //   @maxSteps <n>     stop recording after n steps (default 1000)
+//   @hide <m> …       don't record steps inside these methods (e.g. a helper that prints a tree); "lambdas" hides lambdas
 // Every @key line is also copied into the trace's "meta" for the visualizer page.
 import com.sun.jdi.*;
 import com.sun.jdi.connect.*;
@@ -46,6 +47,7 @@ public class Tracer {
             Set<String> userClasses = compile(source, mainClass, dir);
             Tracer t = new Tracer(userClasses, mainClass, (String) meta.get("start"),
                 Integer.parseInt((String) meta.getOrDefault("maxSteps", "1000")));
+            if (meta.get("hide") instanceof String h) t.hidden.addAll(List.of(h.trim().split("\\s+")));
             t.run(dir);
             Map<String, Object> trace = new LinkedHashMap<>();
             trace.put("program", mainClass);
@@ -106,6 +108,7 @@ public class Tracer {
     final String mainClass, startMethod;
     final int maxSteps;
     final List<Map<String, Object>> steps = new ArrayList<>();
+    final Set<String> hidden = new HashSet<>();
     boolean truncated, recording, done;
     VirtualMachine vm;
     String out = "";
@@ -197,8 +200,20 @@ public class Tracer {
             if (!event.equals("step") || !thread.frame(0).location().method().name().equals(startMethod)) return;
             recording = true;
         }
+        if (!hidden.isEmpty() && insideHidden(thread)) return;
         if (steps.size() >= maxSteps) { truncated = true; done = true; return; }
         steps.add(snapshot(thread, event, returned, null));
+    }
+
+    // @hide: helper methods (printing a tree, a sort's comparator) run without recording their steps
+    boolean insideHidden(ThreadReference thread) throws IncompatibleThreadStateException {
+        for (StackFrame f : thread.frames()) {
+            Location loc = f.location();
+            if (!isUser(loc.declaringType())) continue;
+            String name = loc.method().name();
+            if (hidden.contains(name) || hidden.contains("lambdas") && name.startsWith("lambda$")) return true;
+        }
+        return false;
     }
 
     void onException(ExceptionEvent ee) throws Exception {

@@ -1,4 +1,6 @@
 // @title Binary search
+// @leetcode binary-search
+// @expect 4
 // @start search
 // @pointers nums: left mid right
 public class BinarySearch {

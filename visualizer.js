@@ -89,7 +89,18 @@
     }
   }
 
-  // "array: a b" settings from the program's @pointers / @window comments
+  // Inside a cell a char needs no quotes: 'a' → a
+  const cellText = (v, heap) => (v !== null && typeof v === "object" && "c" in v ? v.c : short(v, heap, 1));
+
+  // lambda$merge$0 → "lambda in merge", <init> → "new ListNode"
+  function methodName(f) {
+    const lambda = /^lambda\$(\w+?)\$\d+$/.exec(f.method);
+    if (lambda) return `lambda in ${lambda[1]}`;
+    if (f.method === "<init>") return `new ${f.class.split(/[.$]/).pop()}`;
+    return f.method;
+  }
+
+  // "array: a b" settings from the program's @pointers / @window / @cell comments
   function parseSpec(text) {
     const m = /^(\w+):\s*(.+)$/.exec(text || "");
     return m ? { array: m[1], parts: m[2].trim().split(/\s+/) } : null;
@@ -113,6 +124,7 @@
       this.timer = null;
       this.pointers = parseSpec(trace.meta.pointers);
       this.window = parseSpec(trace.meta.window);
+      this.cell = parseSpec(trace.meta.cell);
       this.build();
       this.go(0);
     }
@@ -235,14 +247,14 @@
     // ── One sentence about this step ──
     explain(s, p) {
       const top = last(s.frames);
-      const call = (f) => `<code>${esc(f.method)}(${f.locals.filter(([n]) => n !== "this").map(([, v]) => esc(short(v, s.heap))).join(", ")})</code>`;
+      const call = (f) => `<code>${esc(methodName(f))}(${f.locals.filter(([n]) => n !== "this").map(([, v]) => esc(short(v, s.heap))).join(", ")})</code>`;
       if (s.event === "exception") return `<span class="viz-badge error">Exception</span> <b>${esc(s.exception)}</b> on line ${s.line - this.hidden}`;
-      if (s.event === "return") return `<span class="viz-badge return">Return</span> <code>${esc(top.method)}</code> returns <b>${esc(short(top.returned, s.heap))}</b>`;
+      if (s.event === "return") return `<span class="viz-badge return">Return</span> <code>${esc(methodName(top))}</code> returns <b>${esc(short(top.returned, s.heap))}</b>`;
       if (!p) return `<span class="viz-badge">Start</span> ${call(top)} starts. The highlighted line runs next.`;
       if (s.frames.length > p.frames.length) return `<span class="viz-badge call">Call</span> ${call(top)}: a new frame on the call stack`;
       if (s.frames.length < p.frames.length) {
         const done = last(p.frames);
-        return `<span class="viz-badge">Back</span> in <code>${esc(top.method)}</code>${p.event === "return" ? `, with the value <b>${esc(short(done.returned, p.heap))}</b> from <code>${esc(done.method)}</code>` : ""}`;
+        return `<span class="viz-badge">Back</span> in <code>${esc(methodName(top))}</code>${p.event === "return" ? `, with the value <b>${esc(short(done.returned, p.heap))}</b> from <code>${esc(methodName(done))}</code>` : ""}`;
       }
       const changes = this.changes(s, p);
       return `<span class="viz-badge">Line ${p.line - this.hidden}</span> ran${changes.length ? ": " + changes.slice(0, 4).join(" · ") : " (no variables changed)"}${changes.length > 4 ? " · …" : ""}`;
@@ -291,7 +303,29 @@
       (s.statics || []).forEach(([name, v]) => { if (isRef(v)) add(v.ref, { name: name.split(".").pop(), top: false }); });
       const ret = last(s.frames).returned;
       if (isRef(ret)) add(ret.ref, { name: "returned", top: true });
+      // A plain object's collections (e.g. MinStack's two stacks) get drawn too, named owner.field
+      for (const [id, list] of [...map]) {
+        const o = s.heap[id];
+        if (o?.kind !== "object" || nodeKind(o)) continue;
+        for (const [f, v] of o.fields) if (isRef(v) && s.heap[v.ref]?.kind !== "object") add(v.ref, { name: `${list[0].name}.${f}`, top: list[0].top });
+      }
       return map;
+    }
+
+    // @pointers / @window on a String: draw its characters as cells, like a char[]
+    stringArrays(s, names) {
+      const out = {};
+      for (const spec of [this.pointers, this.window]) {
+        if (!spec || out[`str:${spec.array}`]) continue;
+        for (let fi = s.frames.length - 1; fi >= 0; fi--) {
+          const hit = s.frames[fi].locals.find(([n, v]) => n === spec.array && v && typeof v === "object" && "s" in v);
+          if (!hit) continue;
+          out[`str:${spec.array}`] = { kind: "array", type: "String", length: hit[1].s.length, items: [...hit[1].s].map(c => ({ c })) };
+          names?.set(`str:${spec.array}`, [{ name: spec.array, top: fi === s.frames.length - 1 }]);
+          break;
+        }
+      }
+      return out;
     }
 
     // ── Data: every structure a variable points at, drawn once ──
@@ -299,7 +333,11 @@
       const names = this.namesById(s);
       const drawn = new Set();
       const parts = [];
+      const strings = this.stringArrays(s, names);
+      const oldStrings = p ? this.stringArrays(p, null) : {};
+      for (const [id, o] of Object.entries(strings)) parts.push(this.drawObject(id, o, s, p, names, oldStrings[id] || null));
       for (const id of names.keys()) {
+        if (strings[id]) continue;
         if (drawn.has(id) || !s.heap[id]) continue;
         const o = s.heap[id];
         const kind = nodeKind(o);
@@ -335,17 +373,35 @@
       try { return Function(...Object.keys(vars), `return (${expr});`)(...Object.values(vars)); } catch { return undefined; }
     }
 
-    drawObject(id, o, s, p, names) {
-      const old = p?.heap[id];
+    drawObject(id, o, s, p, names, old = p?.heap[id]) {
       const referredAs = (names.get(id) || []).map(e => e.name);
       if (o.kind === "array" && o.items.length && o.items.every(x => isRef(x) && s.heap[x.ref]?.kind === "array")) {
-        // A 2D array: a grid
+        // A 2D array: a grid, with the @cell (row, column) ringed
         const rows = o.items.map(x => s.heap[x.ref]);
         const oldRows = old?.items?.map(x => p.heap[x.ref]);
+        const at = this.cell && referredAs.includes(this.cell.array) ? this.cell.parts.map(e => this.evalBound(s, e)) : null;
+        const cols = Math.max(...rows.map(r => r.items.length));
+        return `<div class="viz-obj">${this.caption(id, o, names, ` × ${cols}`)}
+          <div class="viz-grid">
+            <div class="viz-grid-row viz-grid-cols"><span class="viz-idx"></span>${Array.from({ length: cols }, (_, c) => `<span class="viz-idx">${c}</span>`).join("")}</div>
+            ${rows.map((row, r) => `<div class="viz-grid-row"><span class="viz-idx">${r}</span>${row.items.map((x, c) => {
+              const changed = oldRows?.[r] && !same(oldRows[r].items[c], x);
+              const here = at && at[0] === r && at[1] === c;
+              return `<span class="viz-cell ${changed ? "changed" : ""} ${here ? "is-cell" : ""}"><span class="viz-val ${primClass(x)}">${esc(cellText(x, s.heap))}</span></span>`;
+            }).join("")}</div>`).join("")}
+          </div>
+          ${at && at.every(Number.isInteger) ? `<div class="viz-note"><span class="viz-legend is-top"></span> ${esc(this.cell.array)}[${esc(this.cell.parts[0])}][${esc(this.cell.parts[1])}] = ${esc(this.cell.array)}[${at[0]}][${at[1]}]</div>` : ""}</div>`;
+      }
+      const stackLike = (o.kind === "deque" || o.kind === "list") && (o.type === "Stack" || referredAs.some(n => /stack/i.test(n)));
+      if (stackLike) {
+        // A stack stands up: top first. ArrayDeque's push adds at the front; java.util.Stack's at the end
+        const items = o.type === "Stack" ? [...o.items].reverse() : o.items;
+        const oldItems = old ? (old.type === "Stack" ? [...old.items].reverse() : old.items) : null;
+        const grew = oldItems && (items.length !== oldItems.length || !same(items[0], oldItems[0]));
         return `<div class="viz-obj">${this.caption(id, o, names)}
-          <div class="viz-grid">${rows.map((row, r) => `<div class="viz-grid-row"><span class="viz-idx">${r}</span>${row.items.map((x, c) =>
-            `<span class="viz-cell ${oldRows?.[r] && !same(oldRows[r].items[c], x) ? "changed" : ""}"><span class="viz-val ${primClass(x)}">${esc(short(x, s.heap))}</span></span>`).join("")}</div>`).join("")}
-          </div></div>`;
+          ${items.length ? `<div class="viz-stack-col">${items.map((x, k) => `<div class="viz-stack-item ${k === 0 && grew ? "changed" : ""}">
+            <span class="viz-val ${primClass(isRef(x) ? 0 : x)}">${esc(cellText(x, s.heap))}</span>${k === 0 ? `<span class="viz-stack-top">← top</span>` : ""}</div>`).join("")}</div>`
+            : `<div class="viz-empty">empty</div>`}</div>`;
       }
       if (["array", "list", "deque", "pq", "set"].includes(o.kind)) {
         const ptr = this.pointers && referredAs.includes(this.pointers.array) ? this.pointers.parts : [];
@@ -360,14 +416,13 @@
         const cells = o.items.map((x, k) => {
           const changed = old && old.kind === o.kind && !same(old.items?.[k], x);
           return `<div class="viz-cell ${changed ? "changed" : ""} ${inWin(k) ? "in-window" : ""}">
-            <span class="viz-val ${primClass(isRef(x) ? 0 : x)}">${esc(short(x, s.heap, 1))}</span>
+            <span class="viz-val ${primClass(isRef(x) ? 0 : x)}">${esc(cellText(x, s.heap))}</span>
             ${showIdx ? `<span class="viz-idx">${k}</span>` : ""}
             <span class="viz-ptrs">${(at[k] || []).map(t => `<span class="viz-ptr ${t.color}">${esc(t.name)}</span>`).join("")}</span>
           </div>`;
         });
         if (at[o.items.length]) cells.push(`<div class="viz-cell ghost"><span class="viz-val">&nbsp;</span><span class="viz-idx">${o.items.length}</span><span class="viz-ptrs">${at[o.items.length].map(t => `<span class="viz-ptr ${t.color}">${esc(t.name)}</span>`).join("")}</span></div>`);
-        const stackLike = o.kind === "deque" && referredAs.some(n => /stack/i.test(n));
-        const ends = o.kind === "deque" && o.items.length ? `<div class="viz-ends"><span>${stackLike ? "top" : "front"}</span><span>${stackLike ? "bottom" : "back"}</span></div>` : "";
+        const ends = o.kind === "deque" && o.items.length ? `<div class="viz-ends"><span>front</span><span>back</span></div>` : "";
         const note = o.kind === "pq" ? `<div class="viz-note">Stored as a heap: the smallest (by its comparator) is first</div>` : "";
         return `<div class="viz-obj">${this.caption(id, o, names)}
           ${o.items.length ? `<div class="viz-cells">${cells.join("")}</div>${ends}` : `<div class="viz-empty">empty</div>`}${note}</div>`;
@@ -476,7 +531,7 @@
         });
         if ("returned" in f) rows.push(`<tr class="viz-ret"><th>returns</th><td>${esc(short(f.returned, s.heap))}</td></tr>`);
         return `<div class="viz-frame ${isTop ? "is-top" : ""}">
-          <div class="viz-frame-head"><code>${esc(f.method)}</code><span>line ${f.line - this.hidden}</span></div>
+          <div class="viz-frame-head"><code>${esc(methodName(f))}</code><span>line ${f.line - this.hidden}</span></div>
           ${rows.length ? `<table class="viz-locals">${rows.join("")}</table>` : `<div class="viz-empty">no variables yet</div>`}
         </div>`;
       }).join("");

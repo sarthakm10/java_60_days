@@ -1,11 +1,12 @@
 // Usage: node scripts/trace-programs.js [Name ...]
-// Records visualize/programs/<Name>.java into visualize/traces/<Name>.json with scripts/tracer/Tracer.java.
+// Records visualize/programs/<Name>.java into visualize/traces/<Name>.json with scripts/tracer/Tracer.java,
+// then rewrites visualize/index.js (LeetCode slug → program) for the Question Sets' Visualize buttons.
 // No names: every program. Needs a JDK 21+ (javac, java and its jdk.jdi module).
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { root } = require("./lib");
+const { root, visualizerIndex } = require("./lib");
 
 const programs = path.join(root, "visualize", "programs");
 const traces = path.join(root, "visualize", "traces");
@@ -27,5 +28,6 @@ for (const name of names) {
   else { failures++; console.log(`✗ ${name}:\n${(r.stdout + r.stderr).trim()}`); }
 }
 fs.rmSync(bin, { recursive: true, force: true });
-console.log(failures ? `\n${failures} failed` : `\n${names.length} trace(s) written to visualize/traces/`);
+fs.writeFileSync(path.join(root, "visualize", "index.js"), visualizerIndex());
+console.log(failures ? `\n${failures} failed` : `\n${names.length} trace(s) written to visualize/traces/, index in visualize/index.js`);
 process.exit(failures ? 1 : 0);

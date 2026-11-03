@@ -1,4 +1,6 @@
 // @title Two Sum — one pass with a HashMap
+// @leetcode two-sum
+// @expect [0, 1]
 // @start twoSum
 // @pointers nums: i
 import java.util.Arrays;
