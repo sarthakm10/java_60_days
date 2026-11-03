@@ -86,9 +86,9 @@ Review your "What I Missed" notes and the problems you flagged **Solve again** o
 2. Most common JPA implementation? → **Hibernate**
 3. Mark a class as a table? → **@Entity**
 4. Mark the primary key and let the database generate it? → **@Id with @GeneratedValue(strategy = GenerationType.IDENTITY)**
-5. How do you get a repository with save/findById/findAll? → **an interface extending JpaRepository<Entity, IdType>**
+5. How do you get a repository with save/findById/findAll? → **an interface extending `JpaRepository<Entity, IdType>`**
 6. Who writes the repository implementation? → **Spring Data, at startup**
-7. Students in a city by method name? → **List<Student> findByCity(String city)**
+7. Students in a city by method name? → **`List<Student> findByCity(String city)`**
 8. When is a misspelled query method name detected? → **at application startup**
 9. JPQL uses table names or class names? → **class and field names**
 10. See the SQL Hibernate runs? → **spring.jpa.show-sql=true**

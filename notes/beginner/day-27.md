@@ -60,7 +60,7 @@ Three maps, three orders: `HashMap` has no order (fastest), `LinkedHashMap` reme
 2. put with an existing key? → **replaces that key's value**
 3. get for a missing key returns? → **null**
 4. Lookup with a fallback value? → **map.getOrDefault(key, fallback)**
-5. Loop over keys and values together? → **for (Map.Entry<K, V> e : map.entrySet())**
+5. Loop over keys and values together? → **`for (Map.Entry<K, V> e : map.entrySet())`**
 6. Your own class as a key needs? → **equals() and hashCode() overridden consistently**
 7. HashMap vs LinkedHashMap vs TreeMap order? → **none / insertion order / sorted by key**
 8. Count words in one line? → **counts.merge(word, 1, Integer::sum)**

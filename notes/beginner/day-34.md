@@ -54,8 +54,8 @@ Practise until lambdas feel normal: sort a list of names by length, filter out s
 1. What is a lambda? → **a short block of code you can pass around as a value: (params) -> body**
 2. Where can a lambda be used? → **wherever a functional interface (one abstract method) is expected**
 3. Rule for local variables used inside a lambda? → **they must be effectively final (never reassigned)**
-4. Predicate<T> does? → **tests a value and returns true/false (method test)**
-5. Function<T, R> does? → **turns a T into an R (method apply)**
+4. `Predicate<T>` does? → **tests a value and returns true/false (method test)**
+5. `Function<T, R>` does? → **turns a T into an R (method apply)**
 6. Consumer vs Supplier? → **Consumer takes a value and returns nothing; Supplier takes nothing and returns a value**
 7. Method reference for s -> s.toUpperCase()? → **String::toUpperCase**
 8. Method reference for creating a new ArrayList? → **ArrayList::new**

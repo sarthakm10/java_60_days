@@ -82,13 +82,13 @@ Trees and recursion (Day 14) are made for each other: a tree is a node plus two 
 
 ## 📝 Day 24 Recap
 
-1. What does <T> in class Box<T> mean? → **a type parameter: a placeholder for a type chosen when the class is used**
-2. Box<String> b; b.put(42)? → **compile error: only Strings allowed**
-3. Can you write Box<int>? → **no, use the wrapper Box<Integer>**
-4. What is the diamond <>? → **new Box<>() lets Java infer the type from the left side**
-5. Meaning of <T extends Comparable<T>>? → **T must be a type that can be compared, so compareTo is allowed**
-6. Is List<Integer> a List<Number>? → **no**
-7. List<? extends Number> is good for? → **reading numbers from a list of any number type**
+1. What does `<T>` in `class Box<T>` mean? → **a type parameter: a placeholder for a type chosen when the class is used**
+2. `Box<String> b; b.put(42)`? → **compile error: only Strings allowed**
+3. Can you write `Box<int>`? → **no, use the wrapper `Box<Integer>`**
+4. What is the diamond `<>`? → **`new Box<>()` lets Java infer the type from the left side**
+5. Meaning of `<T extends Comparable<T>>`? → **T must be a type that can be compared, so compareTo is allowed**
+6. Is `List<Integer>` a `List<Number>`? → **no**
+7. `List<? extends Number>` is good for? → **reading numbers from a list of any number type**
 8. PECS stands for? → **Producer Extends, Consumer Super**
 9. What is type erasure? → **generic types are checked at compile time, then removed; at run time they're gone**
 10. Base case for the depth of a tree? → **an empty tree (null) has depth 0**

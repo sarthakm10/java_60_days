@@ -75,6 +75,8 @@ notes/day-NN.md          Interview study notes, one file per day
 notes/beginner/day-NN.md Beginner study notes, one file per day
 practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
+favicon.svg, apple-touch-icon.png, og-image.png  icons and the link-preview image
+scripts/                 content checks, and the source of the preview image
 ```
 
 ## Content format
@@ -108,6 +110,8 @@ Flashcards are generated from the notes:
 - every `<details><summary>Question</summary>` answer block becomes a card;
 - every numbered line written as `1. Question → **answer**` becomes a card (each day ends with a recap of these).
 
+Outside code blocks, put anything with angle brackets in backticks: a bare `List<Integer>` is read as an HTML tag and the `<Integer>` part disappears from the page.
+
 In the Beginner track, every `#### 🚀 …` subsection of a borrowed section is folded into a closed "Go deeper" panel.
 
 ### Exercise format
@@ -129,6 +133,27 @@ An exercise id starts with its file key: `d20_e1` lives in `practice/day-20.md`,
 - **A new Interview practice file:** `PRACTICE_FILES` in `app.js` lists Interview days 1–26; extend it to include the new day.
 - **A new Beginner exercise:** add its id to the day's `practice` list in `data-beginner.js`.
 - **Beginner notes:** `BEGINNER_NOTE_FILES` in `app.js` lists which days have their own notes file (currently all 100).
+
+### Checking content
+
+After editing notes or exercises, run the checks from the project folder:
+
+```bash
+node scripts/check-all.js
+```
+
+| Script | Checks | Needs |
+| --- | --- | --- |
+| `check-notes.js` | every subtopic has its section, markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
+| `check-practice.js` | exercise format; Java starters compile and solutions print exactly the expected output; Beginner `practice` lists match the files | Node, a JDK |
+| `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
+| `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
+
+`check-all.js` runs the first three; add `--spring` for the Spring builds, which take a few minutes. Each script also runs on its own and takes a track and days, for example `node scripts/check-practice.js beginner 20-30` or `python scripts/check-sql.py 47`.
+
+### Link preview image
+
+`og-image.png` (shown when the site's link is shared) and `apple-touch-icon.png` are rendered from `scripts/brand-images.html`. After changing that file, run `node scripts/render-images.js` (needs Chrome or Edge installed).
 
 ## Tech
 

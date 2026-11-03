@@ -35,7 +35,7 @@ A timed interview-style session: solve problems while thinking aloud, ask clarif
 4. What is the N+1 problem? → **one query for a list, then one more query per item for its related data**
 5. How do you spot N+1? → **turn on SQL logging and see many repeated queries**
 6. Three fixes for N+1? → **JOIN FETCH, @EntityGraph, @BatchSize**
-7. Repository paging parameter and result types? → **Pageable in, Page<T> out**
+7. Repository paging parameter and result types? → **`Pageable` in, `Page<T>` out**
 8. Paging query parameters? → **?page=0&size=20&sort=price**
 9. What does a projection do? → **loads only the fields you need**
 10. Why think aloud in coding interviews? → **interviewers assess your reasoning and communication, not just the code**

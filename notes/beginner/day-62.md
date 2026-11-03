@@ -22,7 +22,7 @@ JWTs can't easily be cancelled once issued, so keep them **short-lived** (around
 ## 📝 Day 62 Recap
 
 1. How does a stateless API know who you are? → **the client sends a token with every request**
-2. Header used for tokens? → **Authorization: Bearer <token>**
+2. Header used for tokens? → **`Authorization: Bearer <token>`**
 3. Three parts of a JWT? → **header, payload and signature**
 4. What does the signature prove? → **the token wasn't changed and was issued by the server**
 5. Is a JWT payload secret? → **no, it's only Base64-encoded; anyone can read it**

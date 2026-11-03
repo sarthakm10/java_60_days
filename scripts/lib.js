@@ -1,0 +1,76 @@
+// Shared helpers for the check scripts: where things live, loading the curriculum data,
+// splitting practice files into exercises, and the [track] [days] command-line arguments.
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+
+const root = path.join(__dirname, "..");
+const pad = (n) => String(n).padStart(2, "0");
+
+const TRACKS = {
+  interview: { name: "Interview", days: 60, notes: "notes", practice: "practice", prefix: "d" },
+  beginner: { name: "Beginner", days: 100, notes: path.join("notes", "beginner"), practice: path.join("practice", "beginner"), prefix: "b" },
+};
+
+const notesFile = (track, day) => path.join(root, TRACKS[track].notes, `day-${pad(day)}.md`);
+const practiceFile = (track, day) => path.join(root, TRACKS[track].practice, `day-${pad(day)}.md`);
+
+// Exercise id → its practice file: dN_eM lives in practice/day-NN.md, bN_eM in practice/beginner/day-NN.md
+function fileOfExercise(id) {
+  const m = id.match(/^([db])(\d+)_e\d+$/);
+  return m && practiceFile(m[1] === "b" ? "beginner" : "interview", +m[2]);
+}
+
+// Runs data.js and data-beginner.js the way the browser does and returns both tracks' days
+function loadData() {
+  const ctx = {};
+  vm.createContext(ctx);
+  const src = ["data.js", "data-beginner.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n");
+  vm.runInContext(`${src}\n;this.interview = CURRICULUM_DATA; this.beginner = BEGINNER_DATA;`, ctx);
+  return { interview: ctx.interview, beginner: ctx.beginner };
+}
+
+// <!-- exercise: id | level | title --> task <!-- hints --> hints <!-- solution --> solution
+function exercises(md) {
+  const parts = md.split(/^<!--\s*exercise:\s*(.+?)\s*-->\s*$/m);
+  const out = [];
+  for (let i = 1; i < parts.length; i += 2) {
+    const [id, level, ...title] = parts[i].split("|").map(s => s.trim());
+    const body = parts[i + 1];
+    const [task, rest = ""] = body.split(/^<!--\s*hints\s*-->\s*$/m);
+    const [hints, solution = ""] = rest.split(/^<!--\s*solution\s*-->\s*$/m);
+    out.push({ id, level, title: title.join(" | "), body, task, hints, solution, hasHints: rest !== "" });
+  }
+  return out;
+}
+
+// What kind of exercise this is, the same way the app decides which runner to show
+function exerciseKind(task) {
+  if (/```sql/.test(task)) return "sql";
+  if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(task)) return "spring";
+  return "java";
+}
+
+// [interview|beginner] [N | N-M]: no track means both, no days means all of them
+function parseArgs(argv = process.argv.slice(2)) {
+  const flags = new Set(argv.filter(a => a.startsWith("--")));
+  const rest = argv.filter(a => !a.startsWith("--"));
+  let tracks = Object.keys(TRACKS);
+  if (TRACKS[rest[0]]) tracks = [rest.shift()];
+  let range = null;
+  if (rest[0]) {
+    const m = rest[0].match(/^(\d+)(?:-(\d+))?$/);
+    if (!m) {
+      console.error(`Unknown argument "${rest[0]}". Usage: [interview|beginner] [day | from-to]`);
+      process.exit(2);
+    }
+    range = [+m[1], +(m[2] || m[1])];
+  }
+  const daysOf = (track) => {
+    const [from, to] = range || [1, TRACKS[track].days];
+    return Array.from({ length: Math.min(to, TRACKS[track].days) - from + 1 }, (_, i) => from + i);
+  };
+  return { tracks, daysOf, flags };
+}
+
+module.exports = { root, pad, TRACKS, notesFile, practiceFile, fileOfExercise, loadData, exercises, exerciseKind, parseArgs };

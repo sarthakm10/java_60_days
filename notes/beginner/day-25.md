@@ -100,7 +100,7 @@ Yesterday's tree problems needed one value back from each subtree (a depth, true
 3. Read / replace element i? → **list.get(i) / list.set(i, x)**
 4. Size of a list? → **list.size()**
 5. Can a List hold int? → **no, it holds Integer objects (autoboxing converts)**
-6. nums.remove(1) on a List<Integer> removes? → **the element at index 1, not the value 1**
+6. `nums.remove(1)` on a `List<Integer>` removes? → **the element at index 1, not the value 1**
 7. What is inside an ArrayList? → **a regular array, replaced by a bigger copy when full**
 8. Cost of get(i) and of inserting in the middle? → **O(1) and O(n)**
 9. Can you add to List.of(...)? → **no, it's unmodifiable**

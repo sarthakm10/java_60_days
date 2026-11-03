@@ -56,7 +56,7 @@ These problems ask you to **build** a data structure, combining collections you 
 3. Default list? → **ArrayList**
 4. List for many readers and rare writers across threads? → **CopyOnWriteArrayList**
 5. Create a student's mark list on first use? → **marks.computeIfAbsent(name, k -> new ArrayList<>()).add(mark)**
-6. Average of a List<Integer> without integer division? → **(double) sum / list.size()**
+6. Average of a `List<Integer>` without integer division? → **`(double) sum / list.size()`**
 7. Map that prints grade counts in order? → **TreeMap**
 8. LRU cache by hand uses? → **a HashMap plus a doubly linked list**
 9. Your own HashMap by hand uses? → **an array of buckets, each a linked list of entries**
