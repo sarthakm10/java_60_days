@@ -79,7 +79,8 @@ visualize/programs/*.java   programs for the code visualizer
 visualize/traces/*.json     their step-by-step recordings (generated)
 visualize/index.js          LeetCode slug → recording, for the Question Sets' buttons (generated)
 favicon.svg, apple-touch-icon.png, og-image.png  icons and the link-preview image
-scripts/                 content checks, and the source of the preview image
+scripts/                 content checks, the visualizer's recorder, and the source of the preview image
+vscode-extension/        Java Step Visualizer: the same visualizer for your own code, inside VS Code
 ```
 
 ## Content format
@@ -189,6 +190,20 @@ With no name it records every program; after only adding or moving a `<!-- visua
 ### Link preview image
 
 `og-image.png` (shown when the site's link is shared) and `apple-touch-icon.png` are rendered from `scripts/brand-images.html`. After changing that file, run `node scripts/render-images.js` (needs Chrome or Edge installed).
+
+## VS Code extension
+
+`vscode-extension/` is **Java Step Visualizer**: the site's visualizer for any Java file you write. It records your program with the same tracer, shows the run in a panel beside the editor, highlights the current line in the editor itself, and records again every time you save. It needs a JDK 17+ and nothing else. To build and install it:
+
+```bash
+node vscode-extension/package-vsix.js
+```
+
+```bash
+code --install-extension vscode-extension/dist/java-step-visualizer-0.1.0.vsix
+```
+
+Then open a `.java` file and click ▶ in the editor's title bar. [vscode-extension/README.md](vscode-extension/README.md) covers the settings and how to work on it.
 
 ## Tech
 

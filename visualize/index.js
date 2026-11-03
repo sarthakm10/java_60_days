@@ -49,7 +49,7 @@ const VISUALIZER_CATALOG = [
   {"program":"LongestSubstring","title":"Longest Substring Without Repeating Characters (sliding window + set)","set":"sliding-window","leetcode":["longest-substring-without-repeating-characters"],"steps":68,"days":{"interview":[],"beginner":[]}},
   {"program":"MaxDepthTree","title":"Maximum depth of a binary tree (recursion on a tree)","set":"binary-tree","leetcode":["maximum-depth-of-binary-tree"],"steps":39,"days":{"interview":[18],"beginner":[24]}},
   {"program":"MaxSumWindow","title":"Maximum sum subarray of size K (fixed sliding window)","set":"sliding-window","leetcode":[],"steps":18,"days":{"interview":[10],"beginner":[17]}},
-  {"program":"MergeIntervals","title":"Merge Intervals (sort by start, then stretch or add)","set":"intervals","leetcode":["merge-intervals"],"steps":26,"days":{"interview":[],"beginner":[]}},
+  {"program":"MergeIntervals","title":"Merge Intervals (sort by start, then stretch or add)","set":"intervals","leetcode":["merge-intervals"],"steps":23,"days":{"interview":[],"beginner":[]}},
   {"program":"MiddleOfList","title":"Middle of the Linked List (slow and fast pointers)","set":"linked-list","leetcode":["middle-of-the-linked-list"],"steps":14,"days":{"interview":[],"beginner":[]}},
   {"program":"MinStack","title":"Min Stack (a second stack remembers the minimum)","set":"stack","leetcode":["min-stack"],"steps":34,"days":{"interview":[],"beginner":[]}},
   {"program":"MoveZeroes","title":"Move Zeroes (read and write pointers)","set":"arrays","leetcode":["move-zeroes"],"steps":27,"days":{"interview":[],"beginner":[]}},

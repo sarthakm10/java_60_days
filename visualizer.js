@@ -109,16 +109,51 @@
   // Java code, one highlighted HTML string per line
   function highlightLines(code) {
     return code.replace(/\n$/, "").split("\n").map(line =>
-      window.Prism?.languages?.java ? Prism.highlight(line, Prism.languages.java, "java") : esc(line));
+      window.Prism?.languages?.java ? Prism.highlight(line, Prism.languages.java, "java") : miniHighlight(line));
+  }
+
+  // Without Prism (e.g. inside VS Code): comments, strings, chars, numbers, keywords and Capitalised types, as Prism's classes
+  const KEYWORDS = new Set(("abstract assert boolean break byte case catch char class continue default do double else enum " +
+    "extends final finally float for if implements import instanceof int interface long new package private protected " +
+    "public return short static super switch this throw throws try var void while true false null record").split(" "));
+  function miniHighlight(line) {
+    const token = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')|(\b\d[\d_]*(?:\.\d+)?[lLfFdD]?\b)|(\b[A-Za-z_]\w*\b)/g;
+    let out = "", last = 0, m;
+    while ((m = token.exec(line))) {
+      out += esc(line.slice(last, m.index));
+      const [text, comment, str, chr, num, word] = m;
+      const cls = comment ? "comment" : str ? "string" : chr ? "char" : num ? "number"
+        : KEYWORDS.has(word) ? "keyword" : /^[A-Z]/.test(word) ? "class-name" : /^\s*\(/.test(line.slice(m.index + text.length)) ? "function" : null;
+      out += cls ? `<span class="token ${cls}">${esc(text)}</span>` : esc(text);
+      last = m.index + text.length;
+    }
+    return out + esc(line.slice(last));
+  }
+
+  // @window bounds like "right-k+1" or "0": names, whole numbers, + and −, no eval
+  function evalSum(expr, value) {
+    const parts = expr.replace(/\s+/g, "").match(/[+-]?[^+-]+/g) || [];
+    let total = 0;
+    for (const part of parts) {
+      const sign = part[0] === "-" ? -1 : 1;
+      const term = part.replace(/^[+-]/, "");
+      const v = /^\d+$/.test(term) ? +term : value(term);
+      if (!Number.isInteger(v)) return undefined;
+      total += sign * v;
+    }
+    return parts.length ? total : undefined;
   }
 
   // ── The player ──
   class Player {
-    constructor(trace, dialog, onClose) {
+    // options: onClose (shows a close button), onStep(step, index) after every move, realLines (number lines
+    // as in the file, for an editor next to it), title, kicker
+    constructor(trace, dialog, options = {}) {
       this.t = trace;
       this.steps = trace.steps;
       this.dialog = dialog;
-      this.onClose = onClose;
+      this.options = options;
+      this.onClose = options.onClose;
       this.i = 0;
       this.speed = 1;
       this.timer = null;
@@ -135,15 +170,15 @@
       // The "// @title …" settings at the top are for the recorder, not the reader: hide them and number from the code
       const raw = this.t.code.split("\n");
       let hidden = 0;
-      while (hidden < raw.length && /^\s*\/\/\s*@\w+/.test(raw[hidden])) hidden++;
+      while (!this.options.realLines && hidden < raw.length && /^\s*\/\/\s*@\w+/.test(raw[hidden])) hidden++;
       this.hidden = hidden;
       this.dialog.innerHTML = `
         <header class="viz-head">
           <div class="viz-head-text">
-            <div class="viz-kicker">Step through the code</div>
-            <h2 class="viz-title" id="viz-title">${esc(this.t.meta.title || this.t.program)}</h2>
+            <div class="viz-kicker">${esc(this.options.kicker || "Step through the code")}</div>
+            <h2 class="viz-title" id="viz-title">${esc(this.options.title || this.t.meta.title || this.t.program)}</h2>
           </div>
-          <button type="button" class="viz-icon-btn" data-act="close" aria-label="Close">${ICONS.close}</button>
+          ${this.onClose ? `<button type="button" class="viz-icon-btn" data-act="close" aria-label="Close">${ICONS.close}</button>` : ""}
         </header>
         <div class="viz-body">
           <div class="viz-code" aria-label="Code">
@@ -230,6 +265,17 @@
       this.dialog.querySelector(".viz-count").textContent = `Step ${this.i + 1} of ${this.steps.length}`;
       this.dialog.querySelector('[data-act="prev"]').disabled = this.dialog.querySelector('[data-act="first"]').disabled = this.i === 0;
       this.dialog.querySelector('[data-act="next"]').disabled = this.dialog.querySelector('[data-act="last"]').disabled = this.i === this.steps.length - 1;
+      this.options.onStep?.(s, this.i, this.dialog.querySelector(".viz-explain").textContent.trim());
+    }
+
+    // The next step (after the current one, wrapping round) that is about to run this line
+    seekLine(line) {
+      const n = this.steps.length;
+      for (let k = 1; k <= n; k++) {
+        const j = (this.i + k) % n;
+        if (this.steps[j].line === line && this.steps[j].event === "step") { this.pause(); this.go(j); return true; }
+      }
+      return false;
     }
 
     // ── Code: the line about to run, the one that just ran, and where each caller is waiting ──
@@ -271,7 +317,10 @@
       for (const [id, o] of Object.entries(s.heap)) {
         const old = p.heap[id];
         if (!old || same(old, o)) continue;
-        const label = names.get(id)?.[0]?.name || o.type;
+        // Of the names pointing at it, prefer one the line that ran mentions (curr.next = prev → "curr", not "head")
+        const ranCode = this.t.code.split("\n")[p.line - 1] || "";
+        const who = names.get(id) || [];
+        const label = (who.find(e => new RegExp(`\\b${e.name.replace(/\./g, "\\.")}\\b`).test(ranCode)) || who[0])?.name || o.type;
         if (o.kind === "array" || o.kind === "list") {
           o.items.forEach((x, k) => {
             if (!same(x, old.items[k])) out.push(`<code>${esc(label)}[${k}]</code> ${old.items[k] === undefined ? "" : esc(short(old.items[k], p.heap)) + " → "}<b>${esc(short(x, s.heap))}</b>`);
@@ -367,10 +416,7 @@
     }
 
     evalBound(s, expr) {
-      const vars = {};
-      (expr.match(/[A-Za-z_]\w*/g) || []).forEach(n => { vars[n] = this.lookup(s, n); });
-      if (Object.values(vars).some(v => v === undefined)) return undefined;
-      try { return Function(...Object.keys(vars), `return (${expr});`)(...Object.values(vars)); } catch { return undefined; }
+      return evalSum(expr, (name) => this.lookup(s, name));
     }
 
     drawObject(id, o, s, p, names, old = p?.heap[id]) {
@@ -567,7 +613,7 @@
     loadTrace(name)
       .then(trace => {
         if (current !== state) return;
-        state.player = new Player(trace, dialog, close);
+        state.player = new Player(trace, dialog, { onClose: close });
         dialog.querySelector('[data-act="next"]').focus();
       })
       .catch(() => {
@@ -589,5 +635,12 @@
     opener?.focus?.();
   }
 
-  window.CodeVisualizer = { open, close, isOpen: () => !!current };
+  // Inside another page (the VS Code extension's panel): the player fills the container. Returns it, to drive
+  // with go(i), act("next" | "prev" | "first" | "last" | "play") and seekLine(line)
+  function embed(container, trace, options = {}) {
+    container.classList.add("viz-dialog", "viz-embedded");
+    return new Player(trace, container, options);
+  }
+
+  window.CodeVisualizer = { open, close, embed, isOpen: () => !!current };
 })();

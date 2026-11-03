@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!--
+  The extension's panel outside VS Code, for working on it in a browser: serve the repo (python -m http.server)
+  and open /vscode-extension/webview/preview.html?trace=TwoSumSorted. A stand-in for VS Code's API sends a
+  recording in and logs what the panel sends back (window.sent); the --vscode-* colours mimic Dark Modern.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel preview</title>
+  <style>
+    :root {
+      --vscode-editor-background: #1f1f1f; --vscode-editor-foreground: #cccccc; --vscode-foreground: #cccccc;
+      --vscode-descriptionForeground: #9d9d9d; --vscode-editorWidget-background: #202020; --vscode-sideBar-background: #181818;
+      --vscode-panel-border: #2b2b2b; --vscode-button-background: #0078d4; --vscode-button-foreground: #ffffff;
+      --vscode-focusBorder: #0078d4; --vscode-textLink-foreground: #4daafc; --vscode-list-hoverBackground: #2a2d2e;
+      --vscode-charts-blue: #3794ff; --vscode-charts-green: #89d185; --vscode-charts-yellow: #cca700; --vscode-charts-red: #f14c4c;
+      --vscode-charts-purple: #b180d7; --vscode-charts-orange: #d18616; --vscode-font-family: "Segoe UI", system-ui, sans-serif;
+      --vscode-editor-font-family: Consolas, "Courier New", monospace; --vscode-font-size: 13px;
+    }
+  </style>
+  <link rel="stylesheet" href="../../visualizer.css">
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="status" hidden></div>
+  <div id="root"><div class="panel-empty">Recording…</div></div>
+  <script>
+    window.sent = [];
+    window.acquireVsCodeApi = () => ({
+      postMessage(msg) {
+        window.sent.push(msg);
+        if (msg.type !== "ready") return;
+        const name = new URLSearchParams(location.search).get("trace") || "TwoSumSorted";
+        fetch(`../../visualize/traces/${name}.json`).then(r => r.json()).then(trace =>
+          window.postMessage({ type: "trace", trace, ms: 2100, keep: null, showCode: new URLSearchParams(location.search).has("code") }, "*"));
+      },
+    });
+  </script>
+  <script src="../../visualizer.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>

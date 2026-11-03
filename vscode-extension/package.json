@@ -1,0 +1,151 @@
+{
+  "name": "java-step-visualizer",
+  "displayName": "Java Step Visualizer",
+  "description": "Step through your own Java program line by line: variables, arrays, lists, maps, linked lists, trees, the call stack and the output, right next to the editor. Re-records every time you save.",
+  "version": "0.1.0",
+  "publisher": "java-fullstack",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Education",
+    "Visualization"
+  ],
+  "keywords": [
+    "java",
+    "visualizer",
+    "python tutor",
+    "dsa",
+    "step through",
+    "learn"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:java"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "javaStepVisualizer.visualize",
+        "title": "Visualize this Java file",
+        "category": "Java Visualizer",
+        "icon": "$(play-circle)"
+      },
+      {
+        "command": "javaStepVisualizer.runToLine",
+        "title": "Run to this line",
+        "category": "Java Visualizer"
+      },
+      {
+        "command": "javaStepVisualizer.next",
+        "title": "Next step",
+        "category": "Java Visualizer"
+      },
+      {
+        "command": "javaStepVisualizer.prev",
+        "title": "Previous step",
+        "category": "Java Visualizer"
+      },
+      {
+        "command": "javaStepVisualizer.setInput",
+        "title": "Set the program's input…",
+        "category": "Java Visualizer"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "javaStepVisualizer.visualize",
+          "when": "resourceLangId == java",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "javaStepVisualizer.visualize",
+          "when": "resourceLangId == java",
+          "group": "navigation@90"
+        },
+        {
+          "command": "javaStepVisualizer.runToLine",
+          "when": "resourceLangId == java && javaStepVisualizer.active",
+          "group": "navigation@91"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "javaStepVisualizer.runToLine",
+          "when": "editorLangId == java && javaStepVisualizer.active"
+        },
+        {
+          "command": "javaStepVisualizer.next",
+          "when": "javaStepVisualizer.active"
+        },
+        {
+          "command": "javaStepVisualizer.prev",
+          "when": "javaStepVisualizer.active"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "javaStepVisualizer.next",
+        "key": "f10",
+        "when": "javaStepVisualizer.active && !inDebugMode"
+      },
+      {
+        "command": "javaStepVisualizer.prev",
+        "key": "alt+f10",
+        "when": "javaStepVisualizer.active && !inDebugMode"
+      }
+    ],
+    "configuration": {
+      "title": "Java Step Visualizer",
+      "properties": {
+        "javaStepVisualizer.javaHome": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Folder of the JDK to use (17 or newer), e.g. `C:\\Program Files\\Java\\jdk-21`. Empty: `JAVA_HOME`, then `java` on the PATH."
+        },
+        "javaStepVisualizer.update": {
+          "type": "string",
+          "enum": [
+            "onSave",
+            "onType",
+            "manual"
+          ],
+          "enumDescriptions": [
+            "Record again every time the file is saved.",
+            "Record again a moment after you stop typing (uses the unsaved text).",
+            "Only when you run the Visualize command."
+          ],
+          "default": "onSave",
+          "description": "When to record the program again after you change it."
+        },
+        "javaStepVisualizer.maxSteps": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 10,
+          "description": "Stop recording after this many steps (a // @maxSteps comment in the file wins)."
+        },
+        "javaStepVisualizer.timeoutSeconds": {
+          "type": "number",
+          "default": 15,
+          "minimum": 2,
+          "description": "Give up if the program hasn't finished after this many seconds (an endless loop, or waiting for input)."
+        },
+        "javaStepVisualizer.showCodeInPanel": {
+          "type": "boolean",
+          "default": false,
+          "description": "Also show the code inside the panel. Off: the editor itself shows the current line."
+        },
+        "javaStepVisualizer.inlineHints": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show what each step changed at the end of the line in the editor."
+        }
+      }
+    }
+  }
+}

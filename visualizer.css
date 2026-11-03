@@ -32,6 +32,12 @@ body.viz-open { overflow: hidden; }
   animation: modalIn 0.3s var(--ease);
 }
 
+/* Embedded (VS Code panel): fills its container, no dialog chrome */
+.viz-dialog.viz-embedded { width: 100%; height: 100%; border: none; border-radius: 0; box-shadow: none; animation: none; }
+.viz-embedded.no-code .viz-code { display: none; }
+.viz-embedded.no-code .viz-body { display: flex; flex-direction: column; }
+.viz-embedded.no-code .viz-state { flex: 1; }
+
 .viz-loading {
   margin: auto;
   display: flex;

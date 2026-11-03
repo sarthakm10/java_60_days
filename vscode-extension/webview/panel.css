@@ -1,0 +1,140 @@
+/* The panel inside VS Code: visualizer.css draws the player with the website's design tokens; here they're
+   mapped onto the current VS Code colour theme, so the panel looks like part of the editor (light, dark, high contrast). */
+:root {
+  --a1: var(--vscode-button-background, #0e639c);
+  --a2: var(--vscode-focusBorder, #007fd4);
+  --a3: var(--vscode-charts-green, #89d185);
+  --accent: var(--vscode-textLink-foreground, var(--a1));
+  --accent-2: var(--vscode-charts-blue, #3794ff);
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 50%, transparent);
+  --border-accent: var(--accent-line);
+  --grad: linear-gradient(120deg, var(--a1), var(--a2));
+  --grad-soft: color-mix(in srgb, var(--accent) 9%, transparent);
+
+  --bg-primary: var(--vscode-editor-background);
+  --bg-secondary: var(--vscode-editor-background);
+  --bg-tertiary: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+  --bg-hover: var(--vscode-list-hoverBackground);
+  --bg-active: var(--vscode-list-activeSelectionBackground);
+
+  --text-primary: var(--vscode-editor-foreground, var(--vscode-foreground));
+  --text-secondary: var(--vscode-descriptionForeground);
+  --text-tertiary: color-mix(in srgb, var(--vscode-descriptionForeground) 80%, transparent);
+  --text-muted: color-mix(in srgb, var(--vscode-descriptionForeground) 55%, transparent);
+
+  --border-primary: var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+  --border-secondary: color-mix(in srgb, var(--vscode-panel-border, rgba(128, 128, 128, 0.35)) 60%, transparent);
+
+  --accent-blue: var(--vscode-charts-blue, #3794ff);
+  --accent-green: var(--vscode-charts-green, #89d185);
+  --accent-yellow: var(--vscode-charts-yellow, #cca700);
+  --accent-amber: var(--vscode-charts-yellow, #cca700);
+  --accent-red: var(--vscode-charts-red, #f14c4c);
+  --accent-purple: var(--vscode-charts-purple, #b180d7);
+  --accent-pink: var(--vscode-charts-purple, #b180d7);
+  --accent-orange: var(--vscode-charts-orange, #d18616);
+  --accent-blue-bg: color-mix(in srgb, var(--accent-blue) 15%, transparent);
+  --accent-green-bg: color-mix(in srgb, var(--accent-green) 15%, transparent);
+  --accent-red-bg: color-mix(in srgb, var(--accent-red) 15%, transparent);
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-glow: 0 0 0 1px var(--accent-line);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-full: 9999px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 120ms var(--ease);
+  --transition-normal: 220ms var(--ease);
+
+  --font-display: var(--vscode-font-family);
+  --font-body: var(--vscode-font-family);
+  --font-mono: var(--vscode-editor-font-family, monospace);
+}
+
+html, body { height: 100%; margin: 0; padding: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-editor-background);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+#root { flex: 1; min-height: 0; display: flex; }
+#root > .viz-dialog { flex: 1; min-height: 0; }
+
+.panel-empty {
+  margin: auto;
+  padding: 24px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Messages above the player: recording…, an exception, the step limit, compile errors */
+#status {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-primary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+#status.info { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+#status.warn { background: color-mix(in srgb, var(--accent-yellow) 14%, transparent); }
+#status.error { background: var(--vscode-inputValidation-errorBackground, var(--accent-red-bg)); border-color: var(--vscode-inputValidation-errorBorder, var(--accent-red)); }
+
+#status pre {
+  margin: 8px 0;
+  padding: 8px 10px;
+  max-height: 40vh;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: var(--vscode-textCodeBlock-background, var(--bg-tertiary));
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  white-space: pre-wrap;
+}
+
+#status code { font-family: var(--font-mono); }
+#status .hint { margin-top: 4px; color: var(--text-secondary); }
+
+#status button {
+  margin-left: 6px;
+  padding: 2px 10px;
+  border: none;
+  border-radius: 2px;
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+  font: inherit;
+  cursor: pointer;
+}
+
+#status.error button { margin-left: 0; }
+#status button:hover { background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground)); }
+
+.spin {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border: 2px solid var(--accent-line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  vertical-align: -1px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Buttons and the slider in VS Code's style */
+.viz-play { box-shadow: none; }
+.viz-icon-btn:focus-visible, .viz-speed:focus-visible, .viz-slider:focus-visible { outline-color: var(--vscode-focusBorder); }
+.viz-head { padding: 10px 14px 8px; }
+.viz-title { font-size: 1.05rem; }
+.viz-state { padding: 12px 14px 16px; }

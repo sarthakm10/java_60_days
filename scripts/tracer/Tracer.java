@@ -1,6 +1,12 @@
 // Records a Java program's run, step by step, for the code visualizer — the same idea as Python Tutor.
 //
-// Usage: java scripts/tracer/Tracer.java <Program.java> <out.json>
+// Usage: java scripts/tracer/Tracer.java <Program.java> <out.json> [options]
+//   --sourcepath <dir>  the source root, so the program can use other classes next to it (they run, but only
+//                       the program's own file is stepped through)
+//   --stdin <file>      what System.in reads (without it, System.in is empty)
+//   --timeout <s>       give up after this many seconds (default 60)
+//   --max-steps <n>     step limit when the program sets no @maxSteps (default 1000)
+// Exit code 0 when recorded, 1 when the program doesn't compile or can't be recorded (the reason is on stderr).
 //
 // The program is compiled with debug info (-g) and started in a second JVM under the JDK's own debugger
 // interface (JDI, module jdk.jdi). Before each line runs, and when a method returns, the tracer saves a
@@ -30,34 +36,62 @@ public class Tracer {
     static final String[] JDK_PACKAGES = { "java.*", "javax.*", "jdk.*", "sun.*", "com.sun.*", RUNNER };
     static final int MAX_HEAP_OBJECTS = 400, MAX_ITEMS = 200;
 
+    // A failure to report in one line (no stack trace): the program doesn't compile, never finishes, …
+    static class Problem extends Exception {
+        Problem(String message) { super(message); }
+    }
+
     public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
-            System.err.println("Usage: java scripts/tracer/Tracer.java <Program.java> <out.json>");
+        List<String> rest = new ArrayList<>(List.of(args));
+        Map<String, String> opts = new HashMap<>();
+        for (String key : List.of("--sourcepath", "--stdin", "--timeout", "--max-steps")) {
+            int at = rest.indexOf(key);
+            if (at >= 0 && at + 1 < rest.size()) { opts.put(key, rest.get(at + 1)); rest.subList(at, at + 2).clear(); }
+        }
+        if (rest.size() != 2) {
+            System.err.println("Usage: java Tracer.java <Program.java> <out.json> [--sourcepath dir] [--stdin file] [--timeout s] [--max-steps n]");
             System.exit(2);
         }
-        Path source = Path.of(args[0]);
+        try {
+            record(Path.of(rest.get(0)), Path.of(rest.get(1)), opts);
+        } catch (Problem p) {
+            System.err.println(p.getMessage());
+            System.exit(1);
+        }
+    }
+
+    static void record(Path source, Path outFile, Map<String, String> opts) throws Exception {
         String code = Files.readString(source);
         Map<String, Object> meta = new LinkedHashMap<>();
         Matcher m = Pattern.compile("(?m)^\\s*//\\s*@(\\w+)\\s+(.*?)\\s*$").matcher(code);
         while (m.find()) meta.put(m.group(1), m.group(2));
 
-        String mainClass = source.getFileName().toString().replaceFirst("\\.java$", "");
+        // The class to run: the file's name, inside the file's package if it has one
+        Matcher pkg = Pattern.compile("(?m)^\\s*package\\s+([\\w.]+)\\s*;").matcher(code);
+        String simpleName = source.getFileName().toString().replaceFirst("\\.java$", "");
+        String mainClass = pkg.find() ? pkg.group(1) + "." + simpleName : simpleName;
+        if (!Pattern.compile("\\bstatic\\s+void\\s+main\\s*\\(").matcher(code).find())
+            throw new Problem("No main method: the visualizer runs a class with public static void main(String[] args).");
+
         Path dir = Files.createTempDirectory("viz-");
         try {
-            Set<String> userClasses = compile(source, mainClass, dir);
-            Tracer t = new Tracer(userClasses, mainClass, (String) meta.get("start"),
-                Integer.parseInt((String) meta.getOrDefault("maxSteps", "1000")));
+            Path sourcepath = opts.containsKey("--sourcepath") ? Path.of(opts.get("--sourcepath")) : null;
+            Set<String> userClasses = compile(source, mainClass, dir, sourcepath);
+            String maxSteps = (String) meta.getOrDefault("maxSteps", opts.getOrDefault("--max-steps", "1000"));
+            Tracer t = new Tracer(userClasses, mainClass, (String) meta.get("start"), Integer.parseInt(maxSteps));
             if (meta.get("hide") instanceof String h) t.hidden.addAll(List.of(h.trim().split("\\s+")));
+            t.timeoutMs = 1000L * Integer.parseInt(opts.getOrDefault("--timeout", "60"));
+            t.stdin = opts.get("--stdin");
             t.run(dir);
             Map<String, Object> trace = new LinkedHashMap<>();
-            trace.put("program", mainClass);
+            trace.put("program", simpleName);
             trace.put("meta", meta);
             trace.put("code", code.replace("\r\n", "\n"));
             List<Map<String, Object>> steps = withoutLoopBraces(t.steps, code.split("\r?\n"));
             trace.put("steps", steps);
             trace.put("truncated", t.truncated);
-            Files.writeString(Path.of(args[1]), Json.write(trace) + "\n");
-            System.out.println(mainClass + ": " + steps.size() + " steps" + (t.truncated ? " (truncated)" : ""));
+            Files.writeString(outFile, Json.write(trace) + "\n");
+            System.out.println(simpleName + ": " + steps.size() + " steps" + (t.truncated ? " (truncated)" : ""));
         } finally {
             try (var walk = Files.walk(dir)) {
                 walk.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
@@ -80,26 +114,43 @@ public class Tracer {
 
     static int depth(Map<String, Object> step) { return ((List<?>) step.get("frames")).size(); }
 
-    // Compiles the program with -g plus a small runner that captures System.out; returns the program's class names
-    static Set<String> compile(Path source, String mainClass, Path dir) throws IOException {
+    // Compiles the program with -g plus a small runner that captures System.out (and feeds System.in);
+    // returns the class names that come from the program's own file: the ones the tracer steps through.
+    // With a sourcepath, classes the program uses from other files are compiled into dir/lib: they run, unrecorded.
+    static Set<String> compile(Path source, String mainClass, Path dir, Path sourcepath) throws IOException, Problem {
         Path runner = dir.resolve(RUNNER + ".java");
         Files.writeString(runner, """
             public class %s {
                 public static final java.io.ByteArrayOutputStream OUT = new java.io.ByteArrayOutputStream();
                 public static void main(String[] args) throws Exception {
                     System.setOut(new java.io.PrintStream(OUT, true, "UTF-8"));
+                    String in = System.getProperty("viz.stdin");
+                    System.setIn(in == null ? new java.io.ByteArrayInputStream(new byte[0]) : new java.io.FileInputStream(in));
                     try { %s.main(new String[0]); } catch (Throwable t) { /* the tracer records it */ }
                 }
             }
             """.formatted(RUNNER, mainClass));
         var javac = ToolProvider.getSystemJavaCompiler();
-        int status = javac.run(null, null, null, "-g", "-encoding", "UTF-8", "-d", dir.toString(), source.toString(), runner.toString());
-        if (status != 0) throw new IllegalStateException("compile failed: " + source);
+        if (javac == null) throw new Problem("No Java compiler found: the visualizer needs a JDK (not just a JRE).");
+        List<String> common = new ArrayList<>(List.of("-g", "-encoding", "UTF-8", "-nowarn", "-Xlint:none"));
+        if (sourcepath != null) common.addAll(List.of("-sourcepath", sourcepath.toString()));
+        // -implicit:none: only the program's own classes land in dir (other files are read, not written)
+        List<String> own = new ArrayList<>(common);
+        own.addAll(List.of("-implicit:none", "-d", dir.toString(), source.toString(), runner.toString()));
+        ByteArrayOutputStream errors = new ByteArrayOutputStream();
+        if (javac.run(null, null, errors, own.toArray(new String[0])) != 0)
+            throw new Problem("Compile error:\n" + errors.toString(StandardCharsets.UTF_8).replace(dir.toString(), "").trim());
         Set<String> names = new HashSet<>();
-        try (var files = Files.list(dir)) {
-            files.map(p -> p.getFileName().toString())
-                 .filter(n -> n.endsWith(".class") && !n.startsWith(RUNNER))
-                 .forEach(n -> names.add(n.substring(0, n.length() - 6)));
+        try (var files = Files.walk(dir)) {
+            files.filter(p -> p.toString().endsWith(".class"))
+                 .map(p -> dir.relativize(p).toString().replace(File.separatorChar, '.').replaceFirst("\\.class$", ""))
+                 .filter(n -> !n.equals(RUNNER))
+                 .forEach(names::add);
+        }
+        if (sourcepath != null) {
+            List<String> all = new ArrayList<>(common);
+            all.addAll(List.of("-d", dir.resolve("lib").toString(), source.toString()));
+            javac.run(null, null, OutputStream.nullOutputStream(), all.toArray(new String[0]));
         }
         return names;
     }
@@ -109,6 +160,9 @@ public class Tracer {
     final int maxSteps;
     final List<Map<String, Object>> steps = new ArrayList<>();
     final Set<String> hidden = new HashSet<>();
+    final List<String> libClasses = new ArrayList<>();
+    long timeoutMs = 60_000;
+    String stdin;
     boolean truncated, recording, done;
     VirtualMachine vm;
     String out = "";
@@ -128,7 +182,16 @@ public class Tracer {
         LaunchingConnector connector = Bootstrap.virtualMachineManager().defaultConnector();
         Map<String, Connector.Argument> a = connector.defaultArguments();
         a.get("main").setValue(RUNNER);
-        a.get("options").setValue("-cp \"" + classpath + "\" -Xss8m");
+        Path lib = classpath.resolve("lib");
+        String cp = "\"" + classpath + (Files.isDirectory(lib) ? File.pathSeparator + lib : "") + "\"";
+        if (Files.isDirectory(lib))
+            try (var files = Files.walk(lib)) {   // classes from other files: run them, don't step through them
+                files.filter(p -> p.toString().endsWith(".class"))
+                     .map(p -> lib.relativize(p).toString().replace(File.separatorChar, '.').replaceFirst("\\.class$", ""))
+                     .filter(n -> !userClasses.contains(n))
+                     .forEach(libClasses::add);
+            }
+        a.get("options").setValue("-cp " + cp + " -Xss8m" + (stdin != null ? " \"-Dviz.stdin=" + stdin + "\"" : ""));
         vm = connector.launch(a);
         drain(vm.process().getInputStream(), System.out);
         drain(vm.process().getErrorStream(), System.err);
@@ -138,7 +201,7 @@ public class Tracer {
         prep.addClassFilter(mainClass);
         prep.enable();
 
-        long deadline = System.currentTimeMillis() + 60_000;
+        long deadline = System.currentTimeMillis() + timeoutMs;
         vm.resume();
         EventQueue queue = vm.eventQueue();
         boolean alive = true;
@@ -147,7 +210,7 @@ public class Tracer {
             if (set == null) {   // e.g. an endless loop on one line, which never reaches a new line to stop at
                 if (System.currentTimeMillis() > deadline) {
                     vm.exit(1);
-                    throw new IllegalStateException("the program did not finish within 60 s (an endless loop?)");
+                    throw new Problem("The program didn't finish within " + timeoutMs / 1000 + " s. Is there an endless loop, or does it wait for input?");
                 }
                 continue;
             }
@@ -183,6 +246,7 @@ public class Tracer {
             }
             if (alive) set.resume();
         }
+        vm.process().waitFor(5, java.util.concurrent.TimeUnit.SECONDS);   // let it close its files (stdin) first
     }
 
     void startStepping(EventRequestManager erm, ThreadReference thread) {
@@ -190,6 +254,7 @@ public class Tracer {
         MethodExitRequest exit = erm.createMethodExitRequest();
         ExceptionRequest ex = erm.createExceptionRequest(null, true, true);
         for (String p : JDK_PACKAGES) { step.addClassExclusionFilter(p); exit.addClassExclusionFilter(p); }
+        for (String c : libClasses) { step.addClassExclusionFilter(c); exit.addClassExclusionFilter(c); }
         exit.addThreadFilter(thread);
         ex.addThreadFilter(thread);
         step.enable(); exit.enable(); ex.enable();
@@ -200,6 +265,7 @@ public class Tracer {
             if (!event.equals("step") || !thread.frame(0).location().method().name().equals(startMethod)) return;
             recording = true;
         }
+        if (!isUser(thread.frame(0).location().declaringType())) return;   // e.g. a lambda's code inside a JDK call
         if (!hidden.isEmpty() && insideHidden(thread)) return;
         if (steps.size() >= maxSteps) { truncated = true; done = true; return; }
         steps.add(snapshot(thread, event, returned, null));
@@ -321,7 +387,7 @@ public class Tracer {
     Map<String, Object> describe(ObjectReference o) {
         Map<String, Object> d = new LinkedHashMap<>();
         String type = o.referenceType().name();
-        d.put("type", type.startsWith("java.") ? simple(type) : type.replace('$', '.'));
+        d.put("type", type.startsWith("java.") ? simple(type) : type.replaceFirst("^([a-z_]\\w*\\.)+", "").replace('$', '.'));
         if (o instanceof ArrayReference arr) {
             d.put("kind", "array");
             d.put("type", simple(((ArrayType) arr.referenceType()).componentTypeName()) + "[]");
