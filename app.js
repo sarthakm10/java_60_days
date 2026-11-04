@@ -1719,7 +1719,13 @@
     const noteIds = notes.status === "ready" ? notes.ids : new Set();
     const stats = frontendStats([m]);
     const level = FRONTEND_LEVELS[m.level];
-    const tab = state.moduleTab === "study" ? "study" : "checklist";
+    const hasExercises = !!m.practice?.length;
+    const tab = state.moduleTab === "study" || (state.moduleTab === "practice" && hasExercises) ? state.moduleTab : "checklist";
+    const practiceFile = `f${m.module}`;
+    if (hasExercises && !practiceCache[practiceFile]) {
+      loadPractice(practiceFile).then(() => { if (state.currentView === "frontend" && state.selectedModule === m.module) renderFrontendView(); });
+    }
+    const exercisesHere = hasExercises ? moduleExercises(m) : null;
     const prev = getModule(m.module - 1), next = getModule(m.module + 1);
     const beginner = state.track === "beginner";
 
@@ -1775,8 +1781,11 @@
         <button class="detail-tab ${tab === "checklist" ? "active" : ""}" data-tab="checklist">${ICONS.clipboardList} Checklist</button>
         <button class="detail-tab ${tab === "study" ? "active" : ""}" data-tab="study">${ICONS.bookOpen} Study Notes
           ${notes.status === "ready" ? `<span class="detail-tab-badge">${noteIds.size}</span>` : ""}</button>
+        ${hasExercises ? `
+          <button class="detail-tab ${tab === "practice" ? "active" : ""}" data-tab="practice">${ICONS.code} <span><span class="hide-sm">Code </span>Practice</span>
+            ${exercisesHere ? practiceBadgeHTML(null, exercisesHere) : ""}</button>` : ""}
       </div>
-      ${tab === "study" ? studyHTML : checklistHTML}
+      ${tab === "study" ? studyHTML : tab === "practice" ? modulePracticeHTML(practiceFile, exercisesHere) : checklistHTML}
       <div class="fe-pager">
         ${prev ? `<button class="btn" data-module="${prev.module}">${ICONS.arrowLeft} ${prev.module}. ${escapeHTML(prev.title)}</button>` : "<span></span>"}
         ${next ? `<button class="btn" data-module="${next.module}">${next.module}. ${escapeHTML(next.title)} ${ICONS.arrowRight}</button>` : ""}
@@ -1816,6 +1825,18 @@
       if (allChecked) showToast("Module unmarked", "info");
     });
 
+    if (tab === "practice") {
+      bindPractice(container, () => {
+        const badge = container.querySelector(".detail-tab[data-tab='practice'] .detail-tab-badge");
+        if (badge && exercisesHere) badge.outerHTML = practiceBadgeHTML(null, exercisesHere);
+      }, moduleExerciseCopies);
+      if (state.pendingExerciseScroll && exercisesHere) {
+        container.querySelector(`#ex-${state.pendingExerciseScroll}`)?.scrollIntoView({ block: "start" });
+        state.pendingExerciseScroll = null;
+      }
+      return;
+    }
+
     if (tab === "study") {
       const article = container.querySelector("#study-article");
       if (article) {
@@ -1846,6 +1867,23 @@
       rerender();
     }));
     container.querySelectorAll(".day-set-chip[data-day]").forEach(chip => chip.addEventListener("click", () => openDayDetail(+chip.dataset.day)));
+  }
+
+  // A frontend module's Code Practice tab
+  function modulePracticeHTML(file, list) {
+    const entry = practiceCache[file];
+    if (!entry || entry.status === "loading") return `<div class="study-notes-message">Loading exercises…</div>`;
+    if (entry.status === "error") {
+      return `<div class="study-notes-message"><strong>Couldn't load the exercises.</strong><p>Check your connection and reload the page.</p></div>`;
+    }
+    return `
+      <div class="practice-panel">
+        <div class="practice-intro">
+          ${entry.intro.trim() ? `<div class="md-content">${mdToHTML(entry.intro.trim())}</div>` : ""}
+          ${practiceKinds(list).map(runTipHTML).join("")}
+        </div>
+        ${list.map(exerciseCardHTML).join("")}
+      </div>`;
   }
 
   function renderSetsView() {
@@ -3072,7 +3110,8 @@
 
   // ── Code practice (Markdown exercise files) ──
   // A file key names one file: "d19" is practice/day-19.md (written for Interview day 19), "b3" is
-  // practice/beginner/day-03.md. An exercise id starts with its file key (d19_e2, b3_e1).
+  // practice/beginner/day-03.md, "f7" is practice/frontend/module-07.md (frontend module 7, both tracks).
+  // An exercise id starts with its file key (d19_e2, b3_e1, f7_e1).
   // The Interview track shows file dN on day N; a Beginner day lists exercise ids in its `practice` field.
   // Interview days that have a practice file; add the day here when its file is written
   const PRACTICE_FILES = Array.from({ length: 26 }, (_, i) => `d${i + 1}`);
@@ -3083,7 +3122,7 @@
   let trackExercises = {};    // active track: exercise id → copy numbered for the day it is shown on
   const hintsShown = {};      // exercise id → hints revealed (resets on reload, on purpose)
 
-  const fileOfExercise = (id) => id.match(/^([db]\d+)_/)[1];
+  const fileOfExercise = (id) => id.match(/^([dbf]\d+)_/)[1];
   const isSpringFile = (file) => file[0] === "d" && +file.slice(1) >= SPRING_PRACTICE_FROM;
   const practiceDays = () => state.track === "interview"
     ? PRACTICE_FILES.map(f => +f.slice(1))
@@ -3093,20 +3132,24 @@
   const practiceSources = (day) => state.track === "interview"
     ? [`d${day}`]
     : [...new Set(getDayData(day).practice.map(fileOfExercise))];
-  // What kind of exercises a day has, from their content: Spring files start with a "// src/..." path line
-  function practiceKind(day) {
-    const tasks = dayExercises(day).map(e => e.task).join("\n");
-    if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(tasks)) return "spring";
-    if (/```sql/.test(tasks)) return "sql";
+  // An exercise's kind, from its task: Spring files start with a "// src/..." path line, DOM exercises are a page
+  function exerciseKind(task) {
+    if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(task)) return "spring";
+    if (/```sql/.test(task)) return "sql";
+    if (/```html/.test(task)) return "dom";
+    if (/```(?:js|javascript)\r?\n/.test(task)) return "js";
     return "java";
   }
+  // The kinds of exercise in a list, in a fixed order, for the run tips
+  const practiceKinds = (list) => ["java", "spring", "sql", "js", "dom"].filter(k => list.some(e => exerciseKind(e.task) === k));
   // The day of the active track that holds a file's first exercise (Spring setup lives in file d19's intro)
   const dayOfPracticeFile = (file) => state.track === "interview"
     ? +file.slice(1)
     : DAYS.find(d => d.practice.some(id => fileOfExercise(id) === file))?.day;
-  const practicePath = (file) => file[0] === "d"
-    ? `practice/day-${file.slice(1).padStart(2, "0")}.md`
-    : `practice/beginner/day-${file.slice(1).padStart(2, "0")}.md`;
+  const practicePath = (file) => {
+    const n = file.slice(1).padStart(2, "0");
+    return { d: `practice/day-${n}.md`, b: `practice/beginner/day-${n}.md`, f: `practice/frontend/module-${n}.md` }[file[0]];
+  };
   const mdToHTML = (md) => (typeof marked !== "undefined" ? marked.parse(md) : `<pre>${escapeHTML(md)}</pre>`);
   const mdInline = (md) => (typeof marked !== "undefined" ? marked.parseInline(md) : escapeHTML(md));
 
@@ -3162,8 +3205,15 @@
     return list.map((ex, i) => trackExercises[ex.id] || (trackExercises[ex.id] = { ...ex, day, num: i + 1 }));
   }
 
-  function practiceBadgeHTML(day) {
-    const list = dayExercises(day);
+  // A frontend module's exercises, numbered in the module's order (null while its file loads)
+  const moduleExerciseCopies = {};
+  function moduleExercises(m) {
+    const entry = practiceCache[`f${m.module}`];
+    if (!entry || entry.status !== "ready") return null;
+    return entry.exercises.map((ex, i) => moduleExerciseCopies[ex.id] || (moduleExerciseCopies[ex.id] = { ...ex, module: m.module, num: i + 1 }));
+  }
+
+  function practiceBadgeHTML(day, list = dayExercises(day)) {
     if (!list.length) return "";
     return `<span class="detail-tab-badge">${list.filter(e => state.practiceDone[e.id]).length}/${list.length}</span>`;
   }
@@ -3181,21 +3231,26 @@
     if (state.practiceDone[ex.id]) celebrateProgress(before);
   }
 
-  // kind: "java" (single-file days), "spring" (Spring Boot days) or "all" (practice page)
+  // kind: "java" (single-file days), "spring" (Spring Boot days), "sql", "js", "dom" or "all" (practice page)
   function runTipHTML(kind = "java") {
     const java = `Each exercise is a single file with a <code>main</code> method. Save it under the class name (for example <code>BankAccount.java</code>) and press Run in IntelliJ or VS Code, or run <code>java BankAccount.java</code> from a terminal (JDK 17+).`;
     const springFrom = dayOfPracticeFile(`d${SPRING_PRACTICE_FROM}`);
     const spring = `Put each file at the path in its first comment line inside your Spring Boot project (see Day ${springFrom} for the one-time setup), then run the given test class, or <code>./mvnw test</code>. You're done when the test is green.`;
     const sql = `Run the <b>Setup</b> block once in any SQL database: an online playground like sqliteonline.com or db-fiddle.com (pick PostgreSQL), or your own PostgreSQL. Then write each query and compare its result with the expected one; number formatting can differ slightly between databases.`;
+    const js = `Save the code as a <code>.mjs</code> file (for example <code>closures.mjs</code>) and run <code>node closures.mjs</code> (Node 18+), or paste it into the browser console (F12).`;
+    const dom = `Save the code as an <code>.html</code> file and open it with VS Code's Live Server (or just in your browser). Keep DevTools open to see errors and <code>console.log</code> output.`;
     const text = kind === "spring" ? spring
       : kind === "sql" ? sql
-      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}${state.track === "beginner" ? ` <b>SQL exercises:</b> ${sql}` : ""}`
+      : kind === "js" ? js
+      : kind === "dom" ? dom
+      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}${state.track === "beginner" ? ` <b>SQL exercises:</b> ${sql}` : ""} <b>JavaScript exercises:</b> ${js}`
       : java;
+    const heading = { sql: "Run these in a SQL database", js: "Run these with Node or in the browser", dom: "Open these pages in a browser" }[kind] || "Run these in your own IDE";
     return `
       <div class="run-tip">
-        <span class="run-tip-icon">${{ spring: "🍃", sql: "🗄️" }[kind] || "☕"}</span>
+        <span class="run-tip-icon">${{ spring: "🍃", sql: "🗄️", js: "🟨", dom: "🌐" }[kind] || "☕"}</span>
         <div>
-          <strong>${kind === "sql" ? "Run these in a SQL database" : "Run these in your own IDE"}</strong>
+          <strong>${heading}</strong>
           <p>${text} Type it yourself first, use the hints when stuck, and open the solution last.</p>
         </div>
       </div>
@@ -3243,13 +3298,13 @@
     // A Beginner day shows its own files' intros and the Spring ones (project setup and dependencies);
     // the Interview single-file intros describe the Interview day they were written for
     const intro = practiceSources(day)
-      .filter(f => state.track === "interview" || f[0] === "b" || isSpringFile(f))
+      .filter(f => state.track === "interview" || f[0] !== "d" || isSpringFile(f))
       .map(f => practiceCache[f].intro.trim()).filter(Boolean).join("\n\n");
     return `
       <div class="practice-panel">
         <div class="practice-intro">
           ${intro ? `<div class="md-content">${mdToHTML(intro)}</div>` : ""}
-          ${runTipHTML(practiceKind(day))}
+          ${practiceKinds(dayExercises(day)).map(runTipHTML).join("")}
         </div>
         ${dayExercises(day).map(exerciseCardHTML).join("")}
       </div>
@@ -3284,16 +3339,16 @@
     });
   }
 
-  function bindPractice(root, onChange) {
+  function bindPractice(root, onChange, lookup = trackExercises) {
     root.querySelectorAll(".practice-panel a[href^='http']").forEach(a => {   // e.g. start.spring.io — don't leave the app
       a.target = "_blank";
       a.rel = "noopener noreferrer";
     });
-    root.querySelectorAll(".exercise-card").forEach(card => bindExerciseCard(card, onChange));
+    root.querySelectorAll(".exercise-card").forEach(card => bindExerciseCard(card, onChange, lookup));
   }
 
-  function bindExerciseCard(card, onChange) {
-    const ex = trackExercises[card.dataset.ex];
+  function bindExerciseCard(card, onChange, lookup = trackExercises) {
+    const ex = lookup[card.dataset.ex];
     if (window.Prism) Prism.highlightAllUnder(card);
     addCopyButtons(card);
     const redraw = () => {
@@ -3303,7 +3358,7 @@
       const fresh = holder.firstElementChild;
       fresh.querySelector(".exercise-solution").open = open;
       card.replaceWith(fresh);
-      bindExerciseCard(fresh, onChange);
+      bindExerciseCard(fresh, onChange, lookup);
     };
     card.querySelector(".hint-btn")?.addEventListener("click", () => {
       hintsShown[ex.id] = (hintsShown[ex.id] || 0) + 1;
@@ -3322,18 +3377,23 @@
       <div class="view-header">
         <div>
           <h2 class="view-title">Code Practice</h2>
-          <p class="view-subtitle">Small Java programs for each day's concepts. Write them in your own IDE, run them, and the theory turns into muscle memory.</p>
+          <p class="view-subtitle">Small programs for each day's concepts, in Java (and JavaScript for frontend). Write them yourself, run them, and the theory turns into muscle memory.</p>
         </div>
       </div>
     `;
     const days = practiceDays();
-    if (!days.every(practiceLoaded)) {
+    // The Beginner days already include the frontend exercises; the Interview track lists them by module
+    const feModules = state.track === "interview" ? FRONTEND_DATA.filter(m => m.practice?.length) : [];
+    const feLoading = feModules.some(m => ["loading", undefined].includes(practiceCache[`f${m.module}`]?.status));
+    if (!days.every(practiceLoaded) || feLoading) {
       container.innerHTML = `${header}<div class="study-notes-message">Loading exercises…</div>`;
-      loadAllPractice().then(() => { if (state.currentView === "practice") renderPracticeView(); });
+      Promise.all([loadAllPractice(), ...feModules.map(m => loadPractice(`f${m.module}`))])
+        .then(() => { if (state.currentView === "practice") renderPracticeView(); });
       return;
     }
 
-    const all = days.flatMap(dayExercises);
+    const feExercises = feModules.flatMap(m => moduleExercises(m) || []);
+    const all = [...days.flatMap(dayExercises), ...feExercises];
     const solved = all.filter(e => state.practiceDone[e.id]);
     const today = dateKey();
     const solvedToday = Object.values(state.practiceDone).filter(p => p.on === today).length;
@@ -3369,6 +3429,28 @@
           </div>
         </section>
       `;
+    }).join("") + feModules.map(m => {
+      const list = moduleExercises(m) || [];
+      const rows = list.filter(show);
+      if (!rows.length) return "";
+      const doneCount = list.filter(e => state.practiceDone[e.id]).length;
+      return `
+        <section class="practice-day ${doneCount === list.length ? "complete" : ""}">
+          <button class="practice-day-head" data-module="${m.module}">
+            <span class="practice-day-num">🎨 Frontend ${m.module}</span>
+            <span class="practice-day-title">${escapeHTML(m.title)}</span>
+            <span class="practice-day-count">${doneCount}/${list.length}</span>
+          </button>
+          <div class="practice-rows">
+            ${rows.map(e => `
+              <button class="practice-row ${state.practiceDone[e.id] ? "done" : ""}" data-module="${m.module}" data-ex="${e.id}">
+                <span class="practice-check">${state.practiceDone[e.id] ? ICONS.check : e.num}</span>
+                <span class="practice-row-title">${mdInline(e.title)}</span>
+                <span class="difficulty-pill ${DIFFICULTY[e.level].cls}">${DIFFICULTY[e.level].label}</span>
+              </button>`).join("")}
+          </div>
+        </section>
+      `;
     }).join("");
 
     container.innerHTML = `
@@ -3384,9 +3466,9 @@
           <div>
             <div class="card-title">${ICONS.code} Up next</div>
             <div class="practice-next-title">${mdInline(next.title)}</div>
-            <div class="practice-next-meta">Day ${next.day} · ${escapeHTML(getDayData(next.day).title)}</div>
+            <div class="practice-next-meta">${next.module ? `Frontend ${next.module} · ${escapeHTML(getModule(next.module).title)}` : `Day ${next.day} · ${escapeHTML(getDayData(next.day).title)}`}</div>
           </div>
-          <button class="btn primary" data-day="${next.day}" data-ex="${next.id}">Start coding ${ICONS.arrowRight}</button>
+          <button class="btn primary" ${next.module ? `data-module="${next.module}"` : `data-day="${next.day}"`} data-ex="${next.id}">Start coding ${ICONS.arrowRight}</button>
         </div>` : `
         <div class="practice-next card">
           <div>
@@ -3414,6 +3496,10 @@
     container.querySelectorAll("[data-day]").forEach(el => el.addEventListener("click", () => {
       state.pendingExerciseScroll = el.dataset.ex || null;
       openDayDetail(parseInt(el.dataset.day), "practice");
+    }));
+    container.querySelectorAll("[data-module]").forEach(el => el.addEventListener("click", () => {
+      state.pendingExerciseScroll = el.dataset.ex || null;
+      openFrontendModule(+el.dataset.module, "practice");
     }));
   }
 

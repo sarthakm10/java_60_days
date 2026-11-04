@@ -685,9 +685,12 @@ const BEGINNER_DATA = (() => {
     r.to = i + 1;
   });
 
-  // Each frontend module's subtopics, split evenly over its days (earlier days take the extra one)
+  // Each frontend module's subtopics, split evenly over its days (earlier days take the extra one);
+  // its exercises go on its last day
   const frontendByDay = {};
+  const frontendPracticeByDay = {};
   FRONTEND_DATA.forEach(m => {
+    if (m.practice) frontendPracticeByDay[m.days[m.days.length - 1]] = m.practice;
     const per = m.subtopics.length / m.days.length;
     m.days.forEach((day, k) => {
       const ids = m.subtopics.slice(Math.round(k * per), Math.round((k + 1) * per)).map(([id]) => id);
@@ -705,7 +708,7 @@ const BEGINNER_DATA = (() => {
       categories: [...new Set(topics.map(t => t.category))],
       title: d.title,
       estimatedTime: d.time || (count > 10 ? "3–4 hrs" : "2–3 hrs"),
-      practice: d.practice || [],
+      practice: [...(d.practice || []), ...(frontendPracticeByDay[i + 1] || [])],
       topics
     };
   });

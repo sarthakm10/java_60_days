@@ -15,10 +15,14 @@ const TRACKS = {
 const notesFile = (track, day) => path.join(root, TRACKS[track].notes, `day-${pad(day)}.md`);
 const practiceFile = (track, day) => path.join(root, TRACKS[track].practice, `day-${pad(day)}.md`);
 
-// Exercise id → its practice file: dN_eM lives in practice/day-NN.md, bN_eM in practice/beginner/day-NN.md
+const frontendPracticeFile = (module) => path.join(root, "practice", "frontend", `module-${pad(module)}.md`);
+
+// Exercise id → its practice file: dN_eM lives in practice/day-NN.md, bN_eM in practice/beginner/day-NN.md,
+// fN_eM (frontend module N) in practice/frontend/module-NN.md
 function fileOfExercise(id) {
-  const m = id.match(/^([db])(\d+)_e\d+$/);
-  return m && practiceFile(m[1] === "b" ? "beginner" : "interview", +m[2]);
+  const m = id.match(/^([dbf])(\d+)_e\d+$/);
+  if (!m) return null;
+  return m[1] === "f" ? frontendPracticeFile(+m[2]) : practiceFile(m[1] === "b" ? "beginner" : "interview", +m[2]);
 }
 
 // Runs data.js, data-frontend.js and data-beginner.js the way the browser does and returns both tracks' days,
@@ -49,6 +53,8 @@ function exercises(md) {
 function exerciseKind(task) {
   if (/```sql/.test(task)) return "sql";
   if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(task)) return "spring";
+  if (/```html/.test(task)) return "dom";                 // a page with a script, run in the browser
+  if (/```(?:js|javascript)\r?\n/.test(task)) return "js";
   return "java";
 }
 
@@ -149,4 +155,4 @@ function visualizerIndex() {
     `const VISUALIZER_CATALOG = [\n${catalog.map(c => `  ${JSON.stringify(c)}`).join(",\n")}\n];\n`;
 }
 
-module.exports = { root, pad, TRACKS, notesFile, practiceFile, fileOfExercise, loadData, exercises, exerciseKind, parseArgs, visualizerIndex, questionSets, questionSlugs };
+module.exports = { root, pad, TRACKS, notesFile, practiceFile, frontendPracticeFile, fileOfExercise, loadData, exercises, exerciseKind, parseArgs, visualizerIndex, questionSets, questionSlugs };

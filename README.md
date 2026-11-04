@@ -78,6 +78,7 @@ notes/beginner/day-NN.md Beginner study notes, one file per day
 notes/frontend/module-NN.md  Frontend notes, one file per module
 practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
+practice/frontend/module-NN.md  JavaScript exercises for frontend modules
 visualize/programs/*.java   programs for the code visualizer
 visualize/traces/*.json     their step-by-step recordings (generated)
 visualize/index.js          LeetCode slug → recording, for the Question Sets' buttons (generated)
@@ -144,7 +145,9 @@ In the Beginner track, every `#### 🚀 …` subsection of a borrowed section is
 … the reference solution and why it works …
 ```
 
-An exercise id starts with its file key: `d20_e1` lives in `practice/day-20.md`, `b47_e1` in `practice/beginner/day-47.md`. The practice tab shows a Java, SQL or Spring Boot run tip depending on what a day's exercises contain.
+An exercise id starts with its file key: `d20_e1` lives in `practice/day-20.md`, `b47_e1` in `practice/beginner/day-47.md`, `f10_e2` in `practice/frontend/module-10.md`. The practice tab shows a run tip for each kind of exercise a day has: Java, Spring Boot, SQL, JavaScript (a `js` starter block, run with Node) or DOM (an `html` page with a script, opened in a browser).
+
+A frontend module lists its exercises in `practice` in `data-frontend.js`. They show on the module page in both tracks, on the module's last Beginner day, and on the Interview track's Code Practice page.
 
 ### Adding content
 
@@ -163,7 +166,7 @@ node scripts/check-all.js
 | Script | Checks | Needs |
 | --- | --- | --- |
 | `check-notes.js` | every subtopic has its section (frontend modules too, once their file exists), markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
-| `check-practice.js` | exercise format; Java starters compile and solutions print exactly the expected output; Beginner `practice` lists match the files | Node, a JDK |
+| `check-practice.js` | exercise format; Java and JavaScript solutions print exactly the expected output (DOM scripts must parse); Beginner and frontend `practice` lists match the files | Node, a JDK |
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
 | `check-traces.js` | every visualizer program has an up-to-date recording that finished cleanly, and its settings name real variables | Node |

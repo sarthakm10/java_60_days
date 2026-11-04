@@ -6,6 +6,8 @@
 // - Beginner track: each module's subtopics are spread over the Beginner days in `days`, as a "Frontend" topic
 //   next to that day's Java and DSA (data-beginner.js adds them).
 // - Interview track: the modules are a separate Frontend section, not part of the 60 days.
+// `practice` lists the module's exercises (practice/frontend/module-NN.md). The Beginner track shows them on the
+// module's last day; the module page shows them in both tracks.
 // Ids are permanent progress keys: keep them when a subtopic moves to another module.
 // ============================================================
 
@@ -53,7 +55,7 @@ const FRONTEND_DATA = [
   ] },
 
   // ===================== JAVASCRIPT =====================
-  { module: 5, level: 1, title: "JavaScript Basics", days: [24, 25, 26], subtopics: [
+  { module: 5, level: 1, title: "JavaScript Basics", days: [24, 25, 26], practice: ["f5_e1", "f5_e2", "f5_e3"], subtopics: [
     ["f5_s1", "What JavaScript is, where it runs (browser and Node.js), and how it differs from Java"],
     ["f5_s2", "Variables: let, const and why to avoid var; naming and template literals"],
     ["f5_s3", "Types: the 7 primitives and objects, typeof, and dynamic typing"],
@@ -61,7 +63,7 @@ const FRONTEND_DATA = [
     ["f5_s5", "Control flow: if, switch, for, while, for...of and for...in"],
     ["f5_s6", "Strings and numbers: common methods, NaN, and the 0.1 + 0.2 surprise"]
   ] },
-  { module: 6, level: 1, title: "Functions, Scope and Closures", days: [27, 28, 29], subtopics: [
+  { module: 6, level: 1, title: "Functions, Scope and Closures", days: [27, 28, 29], practice: ["f6_e1", "f6_e2", "f6_e3"], subtopics: [
     ["f6_s1", "Function declarations, function expressions and arrow functions"],
     ["f6_s2", "Parameters: default values, rest parameters and the arguments object"],
     ["f6_s3", "Scope: global, function and block scope, and the scope chain"],
@@ -69,7 +71,7 @@ const FRONTEND_DATA = [
     ["f6_s5", "Closures: functions that remember their variables, with real uses (counters, private state)"],
     ["f6_s6", "Higher-order functions and callbacks: functions as values"]
   ] },
-  { module: 7, level: 1, title: "Arrays, Objects and Modern Syntax", days: [30, 31, 32], subtopics: [
+  { module: 7, level: 1, title: "Arrays, Objects and Modern Syntax", days: [30, 31, 32], practice: ["f7_e1", "f7_e2", "f7_e3"], subtopics: [
     ["f7_s1", "Arrays: push, pop, slice, splice, indexOf, includes, and which methods change the array"],
     ["f7_s2", "Array methods: map, filter, reduce, find, some, every, sort (and the sort gotcha)"],
     ["f7_s3", "Objects: properties, methods, shorthand, computed keys, Object.keys/values/entries"],
@@ -78,14 +80,14 @@ const FRONTEND_DATA = [
     ["f7_s6", "Map, Set and JSON: JSON.stringify and JSON.parse"],
     ["f7_s7", "References and copies: shallow vs deep copy, structuredClone, and immutability"]
   ] },
-  { module: 8, level: 1, title: "this, Prototypes and Classes", days: [33, 34, 35], subtopics: [
+  { module: 8, level: 1, title: "this, Prototypes and Classes", days: [33, 34, 35], practice: ["f8_e1", "f8_e2"], subtopics: [
     ["f8_s1", "How this is decided: the call site, methods, plain calls, new, and arrow functions"],
     ["f8_s2", "call, apply and bind"],
     ["f8_s3", "Prototypes and the prototype chain: how JavaScript objects inherit"],
     ["f8_s4", "Classes: constructor, methods, extends, super, static, and how they map to prototypes"],
     ["f8_s5", "Getters, setters and private fields (#), compared with Java classes"]
   ] },
-  { module: 9, level: 1, title: "The DOM and Events", days: [36, 37, 38], subtopics: [
+  { module: 9, level: 1, title: "The DOM and Events", days: [36, 37, 38], practice: ["f9_e1", "f9_e2"], subtopics: [
     ["f9_s1", "The DOM tree: querySelector, querySelectorAll, and walking the tree"],
     ["f9_s2", "Changing the page: textContent vs innerHTML, classList, attributes, styles"],
     ["f9_s3", "Creating, adding and removing elements"],
@@ -93,7 +95,7 @@ const FRONTEND_DATA = [
     ["f9_s5", "Bubbling, capturing and event delegation"],
     ["f9_s6", "Forms in JavaScript, and saving data with localStorage and sessionStorage"]
   ] },
-  { module: 10, level: 1, title: "Asynchronous JavaScript", days: [39, 40, 41], subtopics: [
+  { module: 10, level: 1, title: "Asynchronous JavaScript", days: [39, 40, 41], practice: ["f10_e1", "f10_e2", "f10_e3"], subtopics: [
     ["f10_s1", "Why async: one thread, and not blocking the page"],
     ["f10_s2", "The event loop: call stack, task queue and microtask queue"],
     ["f10_s3", "Callbacks and callback hell"],
@@ -109,7 +111,7 @@ const FRONTEND_DATA = [
     ["f11_s4", "ESLint and Prettier: catching mistakes and keeping code formatted"],
     ["f11_s5", "Environment variables in frontend apps, and what must never go in them"]
   ] },
-  { module: 12, level: 1, title: "JavaScript Interview Deep Dive", days: [44, 45, 46], subtopics: [
+  { module: 12, level: 1, title: "JavaScript Interview Deep Dive", days: [44, 45, 46], practice: ["f12_e1", "f12_e2", "f12_e3", "f12_e4"], subtopics: [
     ["f12_s1", "Type coercion puzzles and how == really works"],
     ["f12_s2", "Closures in loops, var vs let, and other classic output questions"],
     ["f12_s3", "Event loop output questions: setTimeout vs Promise vs async"],
@@ -236,7 +238,7 @@ const FRONTEND_DATA = [
     ["f26_s5", "Rendering and data strategies: pagination, caching, optimistic updates, offline"],
     ["f26_s6", "Cross-cutting concerns: performance, accessibility, i18n, security"]
   ] },
-  { module: 27, level: 5, title: "Machine Coding Round", days: [90, 91, 92, 93], subtopics: [
+  { module: 27, level: 5, title: "Machine Coding Round", days: [90, 91, 92, 93], practice: ["f27_e1", "f27_e2"], subtopics: [
     ["f27_s1", "What a machine coding round looks like and how to plan your 60–90 minutes"],
     ["f27_s2", "Build: a todo app with filters and localStorage"],
     ["f27_s3", "Build: a search box with debounce and keyboard navigation"],

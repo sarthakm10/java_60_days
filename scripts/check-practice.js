@@ -1,16 +1,19 @@
 // Usage: node scripts/check-practice.js [interview|beginner] [day | from-to]
-// Code exercises (practice/day-NN.md, practice/beginner/day-NN.md). Needs a JDK (javac + java) on the PATH.
+// Code exercises (practice/day-NN.md, practice/beginner/day-NN.md, and with no arguments practice/frontend/module-NN.md).
+// Needs a JDK (javac + java) on the PATH.
 // - Every exercise has an id for its day, a level, a title, hints and a solution.
 // - Java exercises: the starter compiles (or must NOT compile, with <!-- verify: starter-broken -->), every solution
 //   block compiles, and the first one runs (stdin from **Sample input**) and prints exactly the **Expected output**.
 //   (A **Sample output** instead means the output varies, so it's only run.)
+// - JavaScript exercises: the starter parses, and the first solution block runs with Node and prints exactly the
+//   **Expected output**. DOM exercises (an html block with a script) need a browser, so their scripts only have to parse.
 // - SQL and Spring exercises are only checked for structure here; check-sql.py and check-spring.js run them.
 // - Every exercise a Beginner day lists exists, and every Beginner exercise is listed by some day.
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
-const { root, TRACKS, practiceFile, fileOfExercise, loadData, exercises, exerciseKind, parseArgs } = require("./lib");
+const { root, TRACKS, practiceFile, frontendPracticeFile, fileOfExercise, loadData, exercises, exerciseKind, parseArgs } = require("./lib");
 
 const { tracks, daysOf } = parseArgs();
 let failures = 0, count = 0, skipped = 0;
@@ -56,6 +59,79 @@ function checkJava(ex, tmp) {
   return problems;
 }
 
+// JavaScript exercises: the starter parses, the first solution block runs with Node and prints exactly the
+// **Expected output**. Solutions run as ES modules, so top-level await works.
+const jsBlocks = (md) => [...md.matchAll(/```(?:js|javascript)\r?\n([\s\S]*?)```/g)].map(m => m[1]);
+const scriptsIn = (md) => [...md.matchAll(/```html\r?\n([\s\S]*?)```/g)]
+  .flatMap(m => [...m[1].matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(s => s[1]));
+
+function nodeCheck(src, file) {
+  fs.writeFileSync(file, src);
+  return spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+}
+
+function checkJs(ex, tmp) {
+  const problems = [];
+  const broken = /<!--\s*verify:\s*starter-broken\s*-->/.test(ex.task);
+  const starter = jsBlocks(ex.task)[0];
+  if (!starter) problems.push("no starter js block");
+  else {
+    const r = nodeCheck(starter, path.join(tmp, "starter.mjs"));
+    if (broken && r.status === 0) problems.push("starter should NOT parse");
+    if (!broken && r.status !== 0) problems.push(`starter doesn't parse:\n${r.stderr}`);
+  }
+  const sols = jsBlocks(ex.solution);
+  if (!sols.length) return [...problems, "no solution js block"];
+  const file = path.join(tmp, "solution.mjs");
+  fs.writeFileSync(file, sols[0]);
+  const r = spawnSync(process.execPath, [file], { encoding: "utf8", timeout: 20000 });
+  if (r.status !== 0) problems.push(`solution failed (exit ${r.status}):\n${r.stderr}`);
+  const expected = textBlock(ex.body, "Expected output");
+  if (expected !== undefined) {
+    if (norm(r.stdout || "") !== norm(expected)) problems.push(`output differs\n--- expected\n${norm(expected)}\n--- actual\n${norm(r.stdout || "")}`);
+  } else if (!/\*\*Sample output\*\*/.test(ex.body)) problems.push("no **Expected output**");
+  return problems;
+}
+
+// DOM exercises are a page with a script, so they need a browser: here every script in the starter and the
+// solution must at least parse
+function checkDom(ex, tmp) {
+  const problems = [];
+  const starter = scriptsIn(ex.task), solution = scriptsIn(ex.solution);
+  if (!starter.length) problems.push("no starter html block with a script");
+  if (!solution.length) problems.push("no solution html block with a script");
+  [...starter.map(s => ["starter", s]), ...solution.map(s => ["solution", s])].forEach(([which, src], k) => {
+    const r = nodeCheck(src, path.join(tmp, `${which}${k}.js`));
+    if (r.status !== 0) problems.push(`${which} script doesn't parse:\n${r.stderr}`);
+  });
+  return problems;
+}
+
+const CHECKERS = { java: checkJava, js: checkJs, dom: checkDom };
+
+function checkExercise(ex, label, idPattern, ids) {
+  count++;
+  const problems = [];
+  if (!idPattern.test(ex.id)) problems.push(`bad id ${ex.id} (expected ${idPattern.source.replace(/[\\^$]/g, "").replace("d+", "N")})`);
+  if (ids.has(ex.id)) problems.push("duplicate id");
+  ids.add(ex.id);
+  if (!["Easy", "Medium", "Hard"].includes(ex.level)) problems.push(`bad level "${ex.level}"`);
+  if (!ex.title) problems.push("no title");
+  if (!ex.hasHints || !ex.solution.trim()) problems.push("missing <!-- hints --> or <!-- solution --> marker");
+  else if (!ex.hints.split(/\r?\n/).some(l => /^\s*[-*]\s+/.test(l))) problems.push("no hints");
+
+  const kind = exerciseKind(ex.task);
+  const checker = CHECKERS[kind];
+  if (checker) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "practice-"));
+    try { problems.push(...checker(ex, tmp)); } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  }
+  if (kind !== "java" && kind !== "js") skipped++;
+  const note = { java: "", js: "(js) ", dom: "(dom: scripts parse) " }[kind] ?? `(${kind}: structure only) `;
+  if (problems.length) fail(`${label} ${ex.id}: ${problems.join("\n  ")}`);
+  else console.log(`✓ ${label} ${ex.id} ${note}${ex.level} · ${ex.title}`);
+}
+
 for (const track of tracks) {
   const { prefix, name } = TRACKS[track];
   let files = 0;
@@ -66,27 +142,33 @@ for (const track of tracks) {
     const list = exercises(fs.readFileSync(file, "utf8"));
     if (!list.length) fail(`${name} Day ${day}: no exercises in ${path.relative(root, file)}`);
     const ids = new Set();
-    for (const ex of list) {
-      count++;
-      const problems = [];
-      if (!new RegExp(`^${prefix}${day}_e\\d+$`).test(ex.id)) problems.push(`bad id ${ex.id} (expected ${prefix}${day}_eN)`);
-      if (ids.has(ex.id)) problems.push("duplicate id");
-      ids.add(ex.id);
-      if (!["Easy", "Medium", "Hard"].includes(ex.level)) problems.push(`bad level "${ex.level}"`);
-      if (!ex.title) problems.push("no title");
-      if (!ex.hasHints || !ex.solution.trim()) problems.push("missing <!-- hints --> or <!-- solution --> marker");
-      else if (!ex.hints.split(/\r?\n/).some(l => /^\s*[-*]\s+/.test(l))) problems.push("no hints");
-
-      const kind = exerciseKind(ex.task);
-      if (kind === "java") {
-        const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "practice-"));
-        try { problems.push(...checkJava(ex, tmp)); } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
-      } else skipped++;
-      if (problems.length) fail(`${name} Day ${day} ${ex.id}: ${problems.join("\n  ")}`);
-      else console.log(`✓ ${name} Day ${day} ${ex.id} ${kind === "java" ? "" : `(${kind}: structure only) `}${ex.level} · ${ex.title}`);
-    }
+    for (const ex of list) checkExercise(ex, `${name} Day ${day}`, new RegExp(`^${prefix}${day}_e\\d+$`), ids);
   }
   console.log(`${name}: ${files} practice files\n`);
+}
+
+// Frontend modules (practice/frontend/module-NN.md), checked when no track is named. A module's `practice`
+// list in data-frontend.js must name exactly the exercises in its file (the Beginner track shows them on the
+// module's last day, and the module page shows them in both tracks).
+const frontend = loadData().frontend;
+if (!process.argv[2]) {
+  let files = 0;
+  for (const m of frontend) {
+    const file = frontendPracticeFile(m.module);
+    const listed = m.practice || [];
+    if (!fs.existsSync(file)) {
+      if (listed.length) fail(`Frontend ${m.module}: lists ${listed.join(", ")}, but ${path.relative(root, file)} doesn't exist`);
+      continue;
+    }
+    files++;
+    const list = exercises(fs.readFileSync(file, "utf8"));
+    if (!list.length) fail(`Frontend ${m.module}: no exercises in ${path.relative(root, file)}`);
+    const ids = new Set();
+    for (const ex of list) checkExercise(ex, `Frontend ${m.module}`, new RegExp(`^f${m.module}_e\\d+$`), ids);
+    const inFile = list.map(ex => ex.id);
+    if (inFile.join() !== listed.join()) fail(`Frontend ${m.module}: data-frontend.js lists [${listed.join(", ")}] but the file has [${inFile.join(", ")}]`);
+  }
+  console.log(`Frontend: ${files} practice files\n`);
 }
 
 // The Beginner days' practice lists against the files (all of them, whatever days were asked for)
@@ -105,5 +187,5 @@ if (tracks.includes("beginner")) {
   }
 }
 
-console.log(`${count} exercises (${skipped} SQL/Spring checked for structure only), ${failures} problem(s)`);
+console.log(`${count} exercises (${skipped} SQL/Spring/DOM checked for structure only), ${failures} problem(s)`);
 process.exit(failures ? 1 : 0);
