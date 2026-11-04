@@ -1,7 +1,7 @@
 // ============================================================
 // Java Fullstack — Frontend curriculum (shared by both tracks)
 //
-// 28 modules from web basics to React internals and frontend interview prep, plus a guided React project (module 29). Notes live in
+// 29 modules from web basics to React internals and frontend interview prep, plus a guided React project (module 29). Notes live in
 // notes/frontend/module-NN.md, one <!-- subtopic: fN_sM --> section per subtopic.
 // - Beginner track: each module's subtopics are spread over the Beginner days in `days`, as a "Frontend" topic
 //   next to that day's Java and DSA (data-beginner.js adds them).
@@ -203,6 +203,15 @@ const FRONTEND_DATA = [
     ["f22_s4", "CSR, SSR, SSG and hydration"],
     ["f22_s5", "Next.js and React Server Components: an overview"],
     ["f22_s6", "What's new in React 19: Actions, use, useOptimistic, and the React Compiler"]
+  ] },
+
+  { module: 30, level: 3, title: "React Patterns, TypeScript and Next.js", days: [71, 72, 74], subtopics: [
+    ["f30_s1", "React with TypeScript: typing props, children, events and state"],
+    ["f30_s2", "React with TypeScript, further: refs, generic components, context, reducers and HTML props"],
+    ["f30_s3", "Component patterns: composition, compound components, render props and higher-order components"],
+    ["f30_s4", "Portals for modals and tooltips, and passing refs to your components"],
+    ["f30_s5", "Class components and lifecycle methods, and how they map to hooks"],
+    ["f30_s6", "Next.js basics: the App Router, layouts, server and client components, data and server actions"]
   ] },
 
   // A guided project across the React days: one step per day, ending in the full-stack Task Manager

@@ -36,7 +36,7 @@ DSA practice runs alongside, introduced after the Java concept each pattern need
 - **Study notes** for every day, with diagrams (Mermaid) and syntax-highlighted code. In the Beginner track, sections shared with the Interview track open with an "🌱 In simple words" box, and advanced parts are folded into "🚀 Go deeper" panels
 - **Code practice:** 138 exercises in the Beginner track and 78 in the Interview track (Java, SQL and Spring Boot), each with starter code, step-by-step hints, a reference solution and the expected output or test result
 - **Spaced revision:** ticked topics come back after 1, 3, 7, 21 and 45 days, plus flashcard decks built automatically from the notes
-- **Frontend:** HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend system design, machine coding and interview questions (28 modules plus a guided React project). In the Beginner track it runs alongside Java from Day 13; in the Interview track it's a separate section, by topic. Both tracks also have a **Frontend** page with every module, its checklist and its notes
+- **Frontend:** HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend system design, machine coding and interview questions (29 modules plus a guided React project). In the Beginner track it runs alongside Java from Day 13; in the Interview track it's a separate section, by topic. Both tracks also have a **Frontend** page with every module, its checklist and its notes
 - **DSA question sets:** curated LeetCode problems by topic, with a per-problem log (approach, complexity, attempts, "solve again")
 - Dashboard with streaks, XP, levels and badges, a focus timer, global search (press `/`), light and dark themes, and a mobile layout
 - **Export / import** of all progress as a JSON file
@@ -103,7 +103,7 @@ A Beginner day's notes are put together per subtopic: from `notes/beginner/day-N
 
 ### Frontend modules
 
-`data-frontend.js` lists 29 modules in six levels (HTML & CSS, JavaScript, TypeScript, React, Frontend engineering, Interview prep). Module 29 is a guided project, the Task Manager front end, with one step per React day. Each module has subtopic ids `fN_sM` and the Beginner days it's spread over (`days`):
+`data-frontend.js` lists 30 modules in six levels (HTML & CSS, JavaScript, TypeScript, React, Frontend engineering, Interview prep). Module 29 is a guided project, the Task Manager front end, with one step per React day. Each module has subtopic ids `fN_sM` and the Beginner days it's spread over (`days`):
 
 - **Beginner track:** `data-beginner.js` adds a "Frontend — module title" topic to each of those days, splitting the module's subtopics between them. The day's notes take those sections from the module's file, so frontend sections are never written in `notes/beginner/`.
 - **Interview track:** the modules stay out of the 60 days. They live on the **Frontend** page, where ticked subtopics still count toward the Frontend subject, come back in Revise, and get their own flashcard decks.
