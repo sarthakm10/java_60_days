@@ -22,9 +22,6 @@ Two people open the same product, both change the stock, both save: the second s
 <!-- intro: d22_t1_s5 -->
 Inside a transaction, entities loaded by JPA are **managed**: change a field, and Hibernate saves it automatically when the transaction commits, without you calling `save`. That surprises everyone the first time. The section shows the states an entity goes through (new, managed, detached, removed).
 
-<!-- intro: d22_t1_s6 -->
-Hibernate remembers entities it has already loaded **within a transaction** (the first-level cache), so asking for the same id twice runs only one query. A second-level cache shared across transactions exists too, but needs extra setup; and caching in general is Day 92's topic.
-
 <!-- intro: d22_t1_s7 -->
 `ddl-auto=update` (Day 58) is fine for learning, but in a real project you need to know **exactly** what changes, in order, on every database. **Flyway** runs numbered SQL scripts (`V1__create_products.sql`, `V2__add_stock_column.sql`) once each, in order, and records which ones have run. Your schema is versioned in Git alongside your code. You'll use it in the project on Day 65.
 

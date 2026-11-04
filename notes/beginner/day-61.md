@@ -556,7 +556,7 @@ Access-Control-Allow-Headers: authorization, content-type
 
 The same request from `Origin: http://evil.example` gets `403 Invalid CORS request`.
 
-Notice what's still missing: Ana and anyone else who signs up see the **same** projects. Tomorrow's step gives each project an owner.
+Notice what's still missing: Ana and anyone else who signs up see the **same** projects. Tomorrow's step replaces the password on every request with a login token, and on Day 65 each project gets an owner.
 
 **✅ Checkpoint**
 

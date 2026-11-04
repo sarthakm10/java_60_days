@@ -205,10 +205,11 @@ The rules: a task's title is required (at most 200 characters), its priority is 
 | 59 | 6. relationships, paging and the N+1 problem |
 | 60 | 7. Flyway migrations and transactions |
 | 61 | 8. users, sign-up and Spring Security |
-| 62 | 9. JWT login, and each user sees only their data |
+| 62 | 9. log in once, then send a JWT |
 | 63 | 10. configuration, profiles and health checks |
 | 64 | 11. an aspect that times every service call |
-| 65–67 | 12–22. finish: docs, end-to-end tests, a security review, a runnable jar, a README, GitHub |
+| 65 | 12. each user sees only their own data; then the finish begins |
+| 65–67 | 13–23. finish: docs, end-to-end tests, a security review, a runnable jar, a README, GitHub |
 
 Every step ends with a ✅ **Checkpoint** (what should work now) and a commit, so you can always go back to a version that worked.
 

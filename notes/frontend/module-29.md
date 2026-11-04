@@ -956,7 +956,7 @@ Wrap the three app routes in `<Route element={<RequireAuth />}>…</Route>`, add
 - [ ] With Spring running, signing up creates a user (check the database) and logs you in.
 - [ ] Projects and tasks now come from PostgreSQL: create a task in the UI and see it with `GET /api/...` in Postman (with the token).
 - [ ] Logging out (or deleting the token in DevTools and refreshing) sends you to `/login`, and you come back to the page you wanted after logging in.
-- [ ] Two different users never see each other's projects (your Day 62 ownership checks). Commit: `step 7: real API and JWT login`.
+- [ ] Two different users never see each other's projects (your Day 65 ownership checks). Commit: `step 7: real API and JWT login`.
 
 **If it doesn't work:** a 401 on everything means the `Authorization` header is missing or the token is wrong (check the Network tab); a 404 on `/api/...` from Vite means the proxy isn't running (restart `npm run dev` after editing the config); a 403 on POST may be Spring's CSRF protection, which a stateless JWT API should disable.
 

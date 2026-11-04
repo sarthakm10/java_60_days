@@ -30,6 +30,15 @@ Rapid-fire: one sentence each for API Gateway, service discovery, outbox, CQRS a
 
 👉 There's no code exercise for these days: the patterns live in infrastructure and libraries. The Day 76 resilience exercise is the hands-on part of this block.
 
+<!-- topic: b78_t2 -->
+## 🌿 Spring Boot — Metrics & Health
+
+<!-- intro: d25_t1_s3 -->
+**Micrometer** records numbers about your app (counters like "orders placed", timers like "how long checkout takes", gauges like "items in the queue"), and tools like **Prometheus** and **Grafana** collect them into dashboards and alerts. It's how teams notice problems before users report them.
+
+<!-- intro: d25_t1_s2 -->
+A custom **`HealthIndicator`** adds your own checks to `/actuator/health`: "can we reach the payment service?". If a dependency is down, health reports DOWN, and the platform can stop sending users to this instance.
+
 ## 📝 Day 78 Recap
 
 1. What is a correlation id? → **a unique id passed with a request through every service and logged everywhere**
@@ -42,3 +51,5 @@ Rapid-fire: one sentence each for API Gateway, service discovery, outbox, CQRS a
 8. Three pillars of observability? → **logs, metrics and traces**
 9. What opens a circuit breaker? → **failures above a threshold**
 10. What closes it again? → **successful test calls in the half-open state**
+11. What does Micrometer do? → **records metrics (counters, timers, gauges) for tools like Prometheus**
+12. Add your own check to /actuator/health? → **a HealthIndicator bean**

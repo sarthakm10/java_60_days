@@ -1,14 +1,272 @@
-# Day 66 — Project Day 2: Errors, Security Review and a Runnable Jar
+# Day 66 — Project Day 2: End-to-End Tests, Errors and a Security Review
 
-> Yesterday you proved the API works. Today you make it consistent and safe, and package it the way it will run on a server.
+> Yesterday the API became complete. Today you prove it works end to end, make every error look the same, and review its security.
 
-**Today's goal:** the same error format for every failure (including security errors and bugs), a security review of the whole project, a code review with the last missing tests, and a jar that starts with the prod profile.
+**Today's goal:** a test against a real database, demo data, the same error format for every failure (including security errors and bugs), a security review of the whole project, and how real apps keep users logged in.
 
 <!-- topic: b66_t1 -->
 ## 🛠️ Project — Finish the Task Manager API (Part 2)
 
+<!-- subtopic: b65_t1_s3 -->
+### Step 15: an end-to-end test against a real database
+
+**Goal:** one test class that starts the **whole** app (security, Flyway, JPA, PostgreSQL) and drives it through HTTP, the way the React app will. Unit and `@WebMvcTest` tests are fast and precise; this one proves the pieces work together, including the SQL that the other tests mock away.
+
+**1. A separate database for tests,** so tests never touch your dev data. In psql:
+
+```sql
+CREATE DATABASE taskmanager_test;
+```
+
+```properties
+# src/main/resources/application-test.properties
+# Used by @ActiveProfiles("test"): a separate database, so tests never touch your dev data.
+# Create it once: CREATE DATABASE taskmanager_test;  Flyway creates the tables on the first run.
+spring.datasource.url=jdbc:postgresql://localhost:5432/taskmanager_test
+spring.datasource.username=${DB_USER:postgres}
+spring.datasource.password=${DB_PASSWORD:postgres}
+
+app.jwt.secret=test-only-secret-0123456789-abcdefghij
+app.cors.allowed-origins=http://localhost:5173
+```
+
+**2. The test.** `@SpringBootTest` starts everything; `@AutoConfigureMockMvc` gives a `MockMvc` that goes through the real security filters; `JsonPath` (already in the test starter) reads values out of JSON answers:
+
+```java
+// src/test/java/com/example/taskmanager/TaskApiIntegrationTest.java
+package com.example.taskmanager;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
+import com.jayway.jsonpath.JsonPath;
+
+// The whole app (every bean, security, Flyway, a real PostgreSQL database) driven through HTTP, the way the
+// React app will use it. Slower than the unit tests, so there are only a few, each one a complete story.
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class TaskApiIntegrationTest {
+
+    @Autowired
+    MockMvc mvc;
+
+    @Test
+    void signUpLogInAndManageTasks() throws Exception {
+        String token = newUserToken();
+
+        String project = mvc.perform(json(post("/api/projects"), token, """
+                        {"name": "Website"}
+                        """))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        int projectId = JsonPath.read(project, "$.id");
+
+        String task = mvc.perform(json(post("/api/projects/" + projectId + "/tasks"), token, """
+                        {"title": "Write tests", "priority": 4}
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("TODO"))
+                .andReturn().getResponse().getContentAsString();
+        int taskId = JsonPath.read(task, "$.id");
+
+        mvc.perform(json(patch("/api/tasks/" + taskId), token, """
+                        {"status": "DONE"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DONE"))
+                .andExpect(jsonPath("$.priority").value(4));
+
+        mvc.perform(get("/api/projects/" + projectId + "/tasks?status=DONE").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Write tests"));
+
+        mvc.perform(get("/api/projects").header("Authorization", "Bearer " + token))
+                .andExpect(jsonPath("$[0].taskCount").value(1))
+                .andExpect(jsonPath("$[0].doneCount").value(1));
+
+        mvc.perform(delete("/api/tasks/" + taskId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/tasks/" + taskId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void usersCantSeeEachOthersData() throws Exception {
+        String ana = newUserToken();
+        String ben = newUserToken();
+        String project = mvc.perform(json(post("/api/projects"), ana, """
+                        {"name": "Ana's secret project"}
+                        """))
+                .andReturn().getResponse().getContentAsString();
+        int projectId = JsonPath.read(project, "$.id");
+
+        mvc.perform(get("/api/projects/" + projectId).header("Authorization", "Bearer " + ben))
+                .andExpect(status().isNotFound());
+        mvc.perform(json(post("/api/projects/" + projectId + "/tasks"), ben, """
+                        {"title": "Sneaky"}
+                        """))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/projects").header("Authorization", "Bearer " + ben))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void noTokenNoAccess() throws Exception {
+        mvc.perform(get("/api/projects"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // Signs up a brand-new user (a random email, so tests never clash) and logs in
+    private String newUserToken() throws Exception {
+        String email = "user-" + UUID.randomUUID() + "@example.com";
+        String body = """
+                {"email": "%s", "password": "correct-horse"}
+                """.formatted(email);
+        mvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated());
+        String login = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(login, "$.token");
+    }
+
+    private static MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder request, String token, String body) {
+        return request.header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON).content(body);
+    }
+}
+```
+
+**3. The Initializr's `contextLoads` test** should use the test database too:
+
+```java
+// src/test/java/com/example/taskmanager/TaskManagerApplicationTests.java
+package com.example.taskmanager;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+
+// Starts the whole app against the test database: fails if any bean, setting or query is broken
+@SpringBootTest
+@ActiveProfiles("test")
+class TaskManagerApplicationTests {
+
+    @Test
+    void contextLoads() {
+    }
+}
+```
+
+**4. Run everything:** `./mvnw test`. The integration tests take a few seconds (the app starts once and is reused by all three); Flyway creates the tables in `taskmanager_test` on the first run.
+
+Make sure it can fail: in `ProjectService.find`, use `projectRepository.findById(id)` instead of `findByIdAndOwnerId(id, userId)` for a moment. `usersCantSeeEachOthersData` fails: Ben can now add a task to Ana's project. Put it back.
+
+**✅ Checkpoint**
+
+- [ ] `./mvnw test` passes, including `TaskApiIntegrationTest` (3 tests).
+- [ ] Breaking the ownership check makes it fail. Commit: `step 15: end-to-end tests`.
+
+**If it doesn't work:** "database taskmanager_test does not exist" means step 1 was skipped. If tests pass alone but fail together, two tests probably share an email: `newUserToken()` makes a fresh one each time for exactly this reason.
+
+<!-- subtopic: b65_t1_s4 -->
+### Step 16: demo data on startup
+
+**Goal:** a fresh database with something in it, so you (and anyone trying your project, and the React app on Day 69) can log in straight away. Only in the dev profile: production never gets a demo account.
+
+```java
+// src/main/java/com/example/taskmanager/common/DemoData.java
+package com.example.taskmanager.common;
+
+import java.time.LocalDate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.taskmanager.project.Project;
+import com.example.taskmanager.project.ProjectRepository;
+import com.example.taskmanager.task.Task;
+import com.example.taskmanager.task.TaskRepository;
+import com.example.taskmanager.task.TaskStatus;
+import com.example.taskmanager.user.AppUser;
+import com.example.taskmanager.user.UserRepository;
+
+// On your laptop only (dev profile): a demo account with a project and a few tasks, so the API and the React app
+// have something to show right away. Runs at startup and does nothing if the demo user already exists.
+@Component
+@Profile("dev")
+public class DemoData implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DemoData.class);
+    static final String EMAIL = "demo@example.com";
+
+    private final UserRepository users;
+    private final ProjectRepository projects;
+    private final TaskRepository tasks;
+    private final PasswordEncoder passwordEncoder;
+
+    public DemoData(UserRepository users, ProjectRepository projects, TaskRepository tasks, PasswordEncoder passwordEncoder) {
+        this.users = users;
+        this.projects = projects;
+        this.tasks = tasks;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    @Transactional
+    public void run(String... args) {
+        if (users.existsByEmail(EMAIL)) return;
+        AppUser demo = users.save(new AppUser(EMAIL, passwordEncoder.encode("demo-password")));
+        Project website = projects.save(new Project("Website relaunch", demo));
+        task(website, "Design the database", TaskStatus.DONE, 4, null);
+        task(website, "Build the task API", TaskStatus.IN_PROGRESS, 5, LocalDate.now().plusDays(3));
+        task(website, "Connect the React app", TaskStatus.TODO, 3, LocalDate.now().plusDays(10));
+        task(website, "Write the README", TaskStatus.TODO, 2, null);
+        log.info("Demo data added: log in as {} / demo-password", EMAIL);
+    }
+
+    private void task(Project project, String title, TaskStatus status, int priority, LocalDate dueDate) {
+        Task task = new Task();
+        task.setProject(project);
+        task.setTitle(title);
+        task.setStatus(status);
+        task.setPriority(priority);
+        task.setDueDate(dueDate);
+        tasks.save(task);
+    }
+}
+```
+
+Restart the app: the log says `Demo data added: log in as demo@example.com / demo-password`. Log in as the demo user and list the projects: one project with four tasks, one of them done. Restart again: nothing is added twice.
+
+**✅ Checkpoint**
+
+- [ ] The demo login works in dev; with the `prod` profile there's no demo user.
+- [ ] Commit: `step 16: demo data`.
+
 <!-- subtopic: b66_t1_s1 -->
-### Step 16: one error format everywhere
+### Step 17: one error format everywhere
 
 **Goal:** a client should never need two ways to read an error. Two kinds still break the `ProblemDetail` format: security errors (a 401 with an empty body, because they happen in filters before any controller, so `@RestControllerAdvice` never sees them) and unexpected bugs (a default error page that can leak details).
 
@@ -163,10 +421,10 @@ PUT /api/ping                      → 405 {"detail":"Method 'PUT' is not suppor
 **✅ Checkpoint**
 
 - [ ] Every error from the API, whatever caused it, is `application/problem+json` with a `detail`.
-- [ ] A bug answers 500 with a generic message, and the full stack trace is in the server log. Commit: `step 16: one error format`.
+- [ ] A bug answers 500 with a generic message, and the full stack trace is in the server log. Commit: `step 17: one error format`.
 
 <!-- subtopic: b66_t1_s2 -->
-### Step 17: a security review
+### Step 18: a security review
 
 **Goal:** go through the project the way a reviewer would, with the OWASP Top 10 in mind (Day 61's notes). For each row, find the code that does it, and be ready to explain it in an interview.
 
@@ -187,7 +445,7 @@ PUT /api/ping                      → 405 {"detail":"Method 'PUT' is not suppor
 **What a real product would add next** (say these in an interview; you don't need to build them now):
 
 - **Rate limiting** on `/api/auth/login`, so nobody can try thousands of passwords (Bucket4j, or the API gateway).
-- **Refresh tokens** in an HttpOnly cookie, so users stay logged in longer than 15 minutes without a long-lived access token (Module 25 explains the setup).
+- **Refresh tokens** in an HttpOnly cookie, so users stay logged in longer than 15 minutes without a long-lived access token (today's Spring Security topic, and Module 25 for the browser side).
 - **HTTPS everywhere**, done by the server or load balancer in front of the app (Days 73 onward).
 - **Dependency scanning** (GitHub's Dependabot) to hear about vulnerable libraries.
 
@@ -195,176 +453,24 @@ PUT /api/ping                      → 405 {"detail":"Method 'PUT' is not suppor
 
 - [ ] You can point at the code for every row, and explain each "add next" item in a sentence.
 
-<!-- subtopic: b66_t1_s3 -->
-### Step 18: a code review and the last tests
+<!-- topic: b66_t2 -->
+## 🌿 Spring Security — Beyond Access Tokens
 
-**Goal:** read your own project as a stranger would, and fill the one gap in the tests: `ProjectController` has none.
+<!-- intro: d23_t1_s4 -->
+Your Task Manager's tokens last 15 minutes, then the user must log in again. JWTs can't easily be cancelled once issued, so they're kept **short-lived**. Real apps add a longer-lived **refresh token** (days), used only to get a new access token, and revocable on logout: users stay logged in, and a stolen access token is only useful briefly. This is the first item on step 18's "add next" list.
 
-```java
-// src/test/java/com/example/taskmanager/project/ProjectControllerTest.java
-package com.example.taskmanager.project;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.List;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
-
-import com.example.taskmanager.security.SecurityConfig;
-
-@WebMvcTest(ProjectController.class)
-@Import(SecurityConfig.class)
-class ProjectControllerTest {
-
-    static final RequestPostProcessor ANA = jwt().jwt(token -> token.subject("ana@example.com").claim("uid", 1L));
-
-    @Autowired
-    MockMvc mvc;
-
-    @MockitoBean
-    ProjectService projectService;
-
-    @Test
-    void createReturns201WithLocation() throws Exception {
-        when(projectService.create(eq(1L), any())).thenReturn(new ProjectResponse(3L, "Website", 0, 0));
-
-        mvc.perform(post("/api/projects").with(ANA)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name": "Website"}
-                                """))
-                .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/projects/3"))
-                .andExpect(jsonPath("$.name").value("Website"));
-    }
-
-    @Test
-    void listIsAPlainArrayWithCounts() throws Exception {
-        when(projectService.list(1L)).thenReturn(List.of(new ProjectResponse(3L, "Website", 4, 1)));
-
-        mvc.perform(get("/api/projects").with(ANA))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(3))
-                .andExpect(jsonPath("$[0].taskCount").value(4))
-                .andExpect(jsonPath("$[0].doneCount").value(1));
-    }
-
-    @Test
-    void nameIsRequired() throws Exception {
-        mvc.perform(post("/api/projects").with(ANA)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("name: must not be blank"));
-    }
-
-    @Test
-    void deleteReturns204() throws Exception {
-        mvc.perform(delete("/api/projects/3").with(ANA))
-                .andExpect(status().isNoContent());
-
-        verify(projectService).delete(1L, 3L);
-    }
-}
-```
-
-**A review checklist**, for this project and every one after it:
-
-- [ ] **Names** say what things are (`findByIdAndProjectOwnerId` beats `getTask2`), and every class sits in its feature's package.
-- [ ] **No dead code:** unused imports, commented-out code, the `showProxy` bean from Day 64. IntelliJ: *Code → Optimize Imports*, and look for grey (unused) code.
-- [ ] **Controllers are thin:** they take the request, call one service method and return. Rules live in services.
-- [ ] **No entity leaves a service:** controllers only see DTO records.
-- [ ] **Every write is in a transaction**, and reads are `readOnly`.
-- [ ] **Comments explain why**, not what the code already says.
-- [ ] **Each test can fail:** you broke the code once and saw it fail.
-
-Then run everything:
-
-```bash
-./mvnw test
-```
-
-```text
-[INFO] Tests run: 40, Failures: 0, Errors: 0, Skipped: 0
-[INFO] BUILD SUCCESS
-```
-
-That's 37 unit and slice tests (they run in about 10 seconds, with no database) and the 3 end-to-end tests.
-
-**✅ Checkpoint**
-
-- [ ] 40 tests pass, and the checklist is clean. Commit: `step 18: code review`.
-
-<!-- subtopic: b66_t1_s4 -->
-### Step 19: a runnable jar with the prod profile
-
-**Goal:** the app as one file that runs anywhere with Java 21, configured only by environment variables: exactly how it will run in Docker and on a server (Days 73 onward).
-
-**1. Build it.** `package` runs the tests first, then puts your code and every library into one "fat" jar:
-
-```bash
-./mvnw clean package
-```
-
-```text
-[INFO] Building jar: …/target/taskmanager-0.0.1-SNAPSHOT.jar
-[INFO] BUILD SUCCESS
-```
-
-**2. Run it as production.** In Git Bash or macOS/Linux:
-
-```bash
-export DB_URL=jdbc:postgresql://localhost:5432/taskmanager DB_USER=postgres DB_PASSWORD=postgres
-export JWT_SECRET=$(openssl rand -base64 48) CORS_ORIGINS=http://localhost:5173
-java -jar target/taskmanager-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
-```
-
-In PowerShell:
-
-```powershell
-$env:DB_URL = "jdbc:postgresql://localhost:5432/taskmanager"; $env:DB_USER = "postgres"; $env:DB_PASSWORD = "postgres"
-$env:JWT_SECRET = [Convert]::ToBase64String([byte[]](1..48 | ForEach-Object { Get-Random -Maximum 256 }))
-$env:CORS_ORIGINS = "http://localhost:5173"
-java -jar target/taskmanager-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
-```
-
-The log says `The following 1 profile is active: "prod"`, there are no SQL lines and no debug lines, and there's no demo user. `curl localhost:8080/actuator/health` answers `{"status":"UP"}` (no details in prod).
-
-A new random `JWT_SECRET` on every start means everyone has to log in again after a restart: in a real deployment the secret is stored once in the platform's secret manager and stays the same.
-
-**✅ Checkpoint**
-
-- [ ] The jar starts with `prod`, refuses to start without the variables, and `/actuator/health` is UP.
-- [ ] Commit: `step 19: runnable jar` (the jar itself stays out of Git: `target/` is ignored).
-
-**If it doesn't work:** "no main manifest attribute" means the `spring-boot-maven-plugin` is missing from the `pom.xml` (the Initializr adds it). "Unsupported class file major version" means `java -version` is older than 21.
+<!-- intro: d23_t1_s5 -->
+"Log in with Google" uses **OAuth2** and **OpenID Connect**: instead of your app handling passwords, a trusted **authorization server** (Google, Okta, Keycloak) logs the user in and gives your app a token. Your API is already a **resource server** that checks tokens: with an authorization server it would check that server's tokens instead of making its own. For browser and mobile apps the flow uses **PKCE**, which stops stolen login codes from being used. Recognise the terms; you'll configure them when a project needs it.
 
 ## 📝 Day 66 Recap
 
-1. Why doesn't @RestControllerAdvice handle a 401? → **security errors happen in filters, before any controller runs**
-2. How do you give 401s a ProblemDetail body? → **a custom AuthenticationEntryPoint (and AccessDeniedHandler for 403)**
-3. What does a last-resort @ExceptionHandler(Exception.class) do? → **logs the full error and returns a generic 500 without internals**
-4. Do specific handlers still run with a catch-all present? → **yes, Spring picks the closest matching exception type**
-5. Why the same 401 for unknown email and wrong password? → **so attackers can't find out which emails have accounts**
-6. Why is CSRF protection off? → **the API uses tokens, not cookies, so a forged request has nothing to ride on**
-7. What would you add before a real launch? → **rate limiting on login, refresh tokens, HTTPS, dependency scanning**
-8. What should controllers do? → **take the request, call one service method, return a DTO**
-9. Build a runnable jar? → **./mvnw clean package, then java -jar target/….jar**
-10. Choose the profile when running a jar? → **--spring.profiles.active=prod (or SPRING_PROFILES_ACTIVE)**
+1. @WebMvcTest vs @SpringBootTest? → **the web layer with mocked services vs the whole application**
+2. What does the end-to-end test catch that unit tests can't? → **wrong queries and wiring, because unit tests mock the repositories**
+3. Why a separate test database? → **tests must never change your dev data**
+4. Where does demo data go? → **a CommandLineRunner in the dev profile only, skipped if it already exists**
+5. Why doesn't @RestControllerAdvice handle a 401? → **security errors happen in filters, before any controller runs**
+6. How do you give 401s a ProblemDetail body? → **a custom AuthenticationEntryPoint (and AccessDeniedHandler for 403)**
+7. What does a last-resort @ExceptionHandler(Exception.class) do? → **logs the full error and returns a generic 500 without internals**
+8. Why is CSRF protection off? → **the API uses tokens, not cookies, so a forged request has nothing to ride on**
+9. What is a refresh token for? → **getting a new access token without logging in again**
+10. What is OAuth2/OpenID Connect used for? → **letting a trusted provider log users in and issue tokens ("Log in with Google")**

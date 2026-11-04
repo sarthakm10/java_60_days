@@ -164,7 +164,7 @@ It prints `com.example.taskmanager.task.TaskService$$SpringCGLIB$$0`: a subclass
 - [ ] Service calls are timed in the log, and slow ones are warnings.
 - [ ] `./mvnw test` passes. Commit: `step 11: timing aspect`.
 
-The API is complete. Days 65–67 finish it: documentation, end-to-end tests, a security review, a runnable jar and a README.
+One big piece is left: ownership, so each user sees only their own projects. It's the first step on Day 65; then Days 65–67 finish the API with documentation, end-to-end tests, a security review, a runnable jar and a README.
 
 **If it doesn't work:** no timing lines at all usually means the AspectJ starter is missing (the `@Aspect` annotation compiles but nothing runs it), or the class lacks `@Component`.
 

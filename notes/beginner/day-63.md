@@ -2,7 +2,7 @@
 
 > The features that make an app ready to run on a real server. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** run the same app with different settings per environment, read configuration safely, log properly, and expose health and metrics.
+**Today's goal:** run the same app with different settings per environment, read configuration safely, log properly, and expose a health check. (Metrics come with observability on Day 78.)
 
 <!-- topic: b63_t1 -->
 ## 🌿 Spring Boot — Production Features
@@ -21,15 +21,6 @@ Stop using `System.out.println` in real apps. A **logger** (SLF4J, built in) add
 
 <!-- intro: d25_t1_s1 -->
 **Actuator** adds ready-made monitoring endpoints: `/actuator/health` (is the app and its database OK? Load balancers and Kubernetes ask this constantly), `/actuator/metrics`, `/actuator/info`. Add the starter, and choose which endpoints to expose; never expose them all publicly.
-
-<!-- intro: d25_t1_s2 -->
-A custom **`HealthIndicator`** adds your own checks to `/actuator/health`: "can we reach the payment service?". If a dependency is down, health reports DOWN, and the platform can stop sending users to this instance.
-
-<!-- intro: d25_t1_s3 -->
-**Micrometer** records numbers about your app (counters like "orders placed", timers like "how long checkout takes", gauges like "items in the queue"), and tools like **Prometheus** and **Grafana** collect them into dashboards and alerts. It's how teams notice problems before users report them.
-
-<!-- intro: d25_t1_s8 -->
-Spring Boot 3 changed some package names from `javax.*` to **`jakarta.*`** (old tutorials still say `javax.persistence`), and can compile apps to native executables with GraalVM for very fast startup. The first matters every time you copy code from an older article.
 
 <!-- topic: b63_t2 -->
 ## 🛠️ Project — Task Manager API (Step 10)
@@ -438,5 +429,5 @@ In PowerShell, set each one with `$env:JWT_SECRET = "…"`. In IntelliJ: *Run �
 6. Why use a logger instead of System.out? → **timestamps, levels, per-package control and structured output**
 7. Log levels from noisiest to quietest? → **TRACE, DEBUG, INFO, WARN, ERROR**
 8. Endpoint load balancers check? → **/actuator/health**
-9. What does Micrometer do? → **records metrics (counters, timers, gauges) for tools like Prometheus**
-10. Old javax.persistence in Spring Boot 3 becomes? → **jakarta.persistence**
+9. Expose only the health endpoint over HTTP? → **management.endpoints.web.exposure.include=health**
+10. Why does the prod profile have no default secrets? → **so a missing variable stops the app instead of running with a laptop setting**
