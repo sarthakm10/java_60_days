@@ -34,7 +34,7 @@ DSA practice runs alongside, introduced after the Java concept each pattern need
 
 - **Daily checklist** for every day, with a "What I covered" / "What I missed" note box
 - **Study notes** for every day, with diagrams (Mermaid) and syntax-highlighted code. In the Beginner track, sections shared with the Interview track open with an "🌱 In simple words" box, and advanced parts are folded into "🚀 Go deeper" panels
-- **Code practice:** 138 exercises in the Beginner track and 78 in the Interview track (Java, SQL and Spring Boot), each with starter code, step-by-step hints, a reference solution and the expected output or test result
+- **Code practice:** 170 exercises in the Beginner track and 110 in the Interview track (Java, SQL, Spring Boot, JavaScript and React; 32 of them are frontend exercises shared by both), each with starter code, step-by-step hints, a reference solution and the expected output or test result. An exercise solved in one track shows as solved in the other too, since the tracks share many exercises
 - **Spaced revision:** ticked topics come back after 1, 3, 7, 21 and 45 days, plus flashcard decks built automatically from the notes
 - **Frontend:** HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend system design, machine coding and interview questions (29 modules plus a guided React project). In the Beginner track it runs alongside Java from Day 13; in the Interview track it's a separate section, by topic. Both tracks also have a **Frontend** page with every module, its checklist and its notes
 - **DSA question sets:** curated LeetCode problems by topic, with a per-problem log (approach, complexity, attempts, "solve again")
@@ -192,7 +192,7 @@ Each program in `visualize/programs/` is a complete class with a `main` that use
 // @maxSteps 1000                 step limit (the default)
 ```
 
-A variable whose name contains "stack" (or a `java.util.Stack`) is drawn standing up, top first. Collections held in an object's fields, like `MinStack`'s two stacks, are drawn as `owner.field`.
+A variable whose name contains "stack" (or a `java.util.Stack`) is drawn standing up, top first. Collections held in an object's fields, like `MinStack`'s two stacks, are drawn as `owner.field`. A class with `left` and `right` is drawn as a tree, one with `next` as a linked list, and one holding an array or map of children of its own class (a trie node, `Node[] next = new Node[26]`) as a trie, with each node's letter and a ring where a word ends.
 
 After adding or editing a program, record it, then commit the `.json` files and `visualize/index.js` with it:
 

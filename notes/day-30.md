@@ -431,6 +431,7 @@ class Trie {
     }
 }   // each op O(L); space O(total characters × 26)
 ```
+<!-- visualize: ImplementTrie -->
 
 `insert("apple")` → `search("app")` is **false** (no end flag), `startsWith("app")` is **true**; after `insert("app")`, `search("app")` is **true**.
 

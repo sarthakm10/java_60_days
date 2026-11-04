@@ -20,8 +20,9 @@
     }
   };
   const TRACK_ORDER = ["beginner", "interview"];
-  // Progress that belongs to one track; everything else in state (streak, focus minutes, goal, theme…) is shared
-  const TRACK_FIELDS = ["checkedSubtopics", "notes", "solvedProblems", "problemLogs", "reviews", "practiceDone", "seenAchievements"];
+  // Progress that belongs to one track; everything else in state (streak, focus minutes, goal, theme…) is shared.
+  // Solved code exercises are shared too: the same exercise can appear in both tracks, so solving it once counts in both.
+  const TRACK_FIELDS = ["checkedSubtopics", "notes", "solvedProblems", "problemLogs", "reviews", "seenAchievements"];
   let DAYS = TRACKS.beginner.days;     // the active track's days
 
   // ── State ──
@@ -40,7 +41,7 @@
     problemLogs: {},          // { leetcodeSlug: { approach, time, space, attempts, felt, solveAgain, updated } }
     studyMinutes: {},         // { "YYYY-MM-DD": focused minutes from the timer }
     goal: { minutes: 120, items: 10 },   // daily goal
-    practiceDone: {},         // code practice: { exerciseId: { on: "YYYY-MM-DD", level: "E" | "M" | "H" } }
+    practiceDone: {},         // code practice, both tracks: { exerciseId: { on: "YYYY-MM-DD", level: "E" | "M" | "H" } }
     practiceFilter: "all",    // "all" | "todo" | "done"
     reviseTab: "due",         // "due" | "cards" | "again"
     currentView: "home",      // "home" | "grid" | "detail" | "backlog" | "sets"
@@ -67,7 +68,7 @@
   const STORAGE_KEY = "sde_prep_tracker_v2";
 
   function emptyTrackProgress() {
-    return { checkedSubtopics: {}, notes: {}, solvedProblems: {}, problemLogs: {}, reviews: {}, practiceDone: {}, seenAchievements: null };
+    return { checkedSubtopics: {}, notes: {}, solvedProblems: {}, problemLogs: {}, reviews: {}, seenAchievements: null };
   }
 
   // Normalise one track's saved progress (also reads the pre-tracks save format, which is a single track)
@@ -78,7 +79,6 @@
       solvedProblems: saved.solvedProblems || {},
       problemLogs: saved.problemLogs || {},
       reviews: saved.reviews || {},
-      practiceDone: saved.practiceDone || {},
       seenAchievements: Array.isArray(saved.seenAchievements) ? saved.seenAchievements : null
     };
   }
@@ -95,6 +95,15 @@
     DAYS = TRACKS[state.track].days;
   }
 
+  // Solved exercises from older saves lived in each track: combine them, keeping the earliest solve of each
+  function mergePracticeDone(...sources) {
+    const merged = {};
+    sources.forEach(source => Object.entries(source || {}).forEach(([id, solved]) => {
+      if (!merged[id] || (solved.on && solved.on < merged[id].on)) merged[id] = solved;
+    }));
+    return merged;
+  }
+
   function saveState() {
     syncReviewSchedule();
     storeTrackFields();
@@ -103,6 +112,7 @@
         version: 3,
         track: state.track,
         tracks: state.tracks,
+        practiceDone: state.practiceDone,
         reviewsDone: state.reviewsDone,
         studyMinutes: state.studyMinutes,
         goal: state.goal,
@@ -116,6 +126,8 @@
   }
 
   const hasProgress = (p) => ["checkedSubtopics", "notes", "solvedProblems", "practiceDone"].some(k => Object.keys(p[k] || {}).length);
+  // Every place a save (or an export) can hold solved exercises: top level, or inside each track (older saves)
+  const savedPracticeDone = (saved) => mergePracticeDone(saved.practiceDone, ...TRACK_ORDER.map(k => saved.tracks?.[k]?.practiceDone));
 
   function loadState() {
     try {
@@ -127,8 +139,9 @@
         } else {
           // Saved before tracks existed: that progress is the Interview track, and anyone who studied stays on it
           state.tracks.interview = readTrackProgress(saved);
-          state.track = hasProgress(state.tracks.interview) ? "interview" : "beginner";
+          state.track = hasProgress(saved) ? "interview" : "beginner";
         }
+        state.practiceDone = savedPracticeDone(saved);
         state.activity = saved.activity || {};
         state.profileName = saved.profileName || "";
         state.lastPalette = Number.isInteger(saved.lastPalette) ? saved.lastPalette : -1;
@@ -2485,6 +2498,7 @@
       exportedAt: new Date().toISOString(),
       track: state.track,
       tracks: state.tracks,
+      practiceDone: state.practiceDone,
       activity: state.activity,
       profileName: state.profileName,
       reviewsDone: state.reviewsDone,
@@ -2508,12 +2522,13 @@
         const data = JSON.parse(e.target.result);
         if (data.tracks) {
           TRACK_ORDER.forEach(key => { if (data.tracks[key]) state.tracks[key] = readTrackProgress(data.tracks[key]); });
-        } else if (TRACK_FIELDS.some(k => data[k])) {
+        } else if (TRACK_FIELDS.some(k => data[k]) || data.practiceDone) {
           state.tracks.interview = readTrackProgress(data);   // exported before tracks existed
         } else {
           throw new Error("No progress in file");
         }
         const track = data.tracks ? (TRACKS[data.track] ? data.track : state.track) : "interview";
+        state.practiceDone = savedPracticeDone(data);
         if (data.activity) state.activity = data.activity;
         if (typeof data.profileName === "string") state.profileName = data.profileName;
         ["reviewsDone", "studyMinutes"].forEach(k => { if (data[k]) state[k] = data[k]; });
@@ -2538,6 +2553,7 @@
   function resetProgress() {
     TRACK_ORDER.forEach(key => { state.tracks[key] = { ...emptyTrackProgress(), seenAchievements: [] }; });
     loadTrackFields();
+    state.practiceDone = {};
     state.activity = {};
     state.reviewsDone = {};
     state.studyMinutes = {};

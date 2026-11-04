@@ -51,12 +51,35 @@
   const fieldOf = (o, name) => o.fields?.find(f => f[0] === name)?.[1];
   const hasField = (o, name) => !!o.fields?.some(f => f[0] === name);
 
-  // Linked structures are drawn as a whole: a class with left + right is a tree, one with next is a list
-  function nodeKind(o) {
+  // Linked structures are drawn as a whole: a class with left + right is a tree, one with next is a list, and one
+  // holding an array or map of children of its own class (next = new Node[26], children = new HashMap<>()) is a trie
+  function nodeKind(o, heap) {
     if (!o || o.kind !== "object") return null;
+    if (heap && trieTypes(heap).has(o.type)) return "trie";
     if (hasField(o, "left") && hasField(o, "right")) return "tree";
     if (hasField(o, "next")) return "list";
     return null;
+  }
+
+  // The field holding a node's children, when it's an array or a (non-empty) map of nodes of the node's own class
+  function childrenField(o, heap) {
+    for (const [f, v] of o.fields || []) {
+      const c = isRef(v) ? heap[v.ref] : null;
+      if (c?.kind === "array" && c.type === `${o.type.split(".").pop()}[]`) return f;
+      if (c?.kind === "map" && c.entries.length && c.entries.every(([, x]) => isRef(x) && heap[x.ref]?.type === o.type)) return f;
+    }
+    return null;
+  }
+
+  // Classes that are trie nodes in a step: any instance has children of its own class (a leaf's map may be empty)
+  const trieTypeCache = new WeakMap();
+  function trieTypes(heap) {
+    let types = trieTypeCache.get(heap);
+    if (!types) {
+      types = new Set(Object.values(heap).filter(o => o.kind === "object" && childrenField(o, heap)).map(o => o.type));
+      trieTypeCache.set(heap, types);
+    }
+    return types;
   }
 
   // What a node shows inside its box: its val/key/data field, else its first plain field
@@ -84,7 +107,10 @@
         if (depth > 1 || o.entries.length > 6) return `${o.type}(${o.entries.length})`;
         return `{${o.entries.map(([k, x]) => `${inner(k)}=${inner(x)}`).join(", ")}}`;
       case "sb": return JSON.stringify(o.value);
-      case "object": return nodeKind(o) ? `${o.type.split(".").pop()}(${nodeLabel(o)})` : o.type.split(".").pop();
+      case "object": {
+        const kind = nodeKind(o, heap);
+        return kind && kind !== "trie" ? `${o.type.split(".").pop()}(${nodeLabel(o)})` : o.type.split(".").pop();
+      }
       default: return o.type;
     }
   }
@@ -352,11 +378,15 @@
       (s.statics || []).forEach(([name, v]) => { if (isRef(v)) add(v.ref, { name: name.split(".").pop(), top: false }); });
       const ret = last(s.frames).returned;
       if (isRef(ret)) add(ret.ref, { name: "returned", top: true });
-      // A plain object's collections (e.g. MinStack's two stacks) get drawn too, named owner.field
+      // A plain object's collections (e.g. MinStack's two stacks) and linked structures (a Trie's root) get drawn
+      // too, named owner.field
       for (const [id, list] of [...map]) {
         const o = s.heap[id];
-        if (o?.kind !== "object" || nodeKind(o)) continue;
-        for (const [f, v] of o.fields) if (isRef(v) && s.heap[v.ref]?.kind !== "object") add(v.ref, { name: `${list[0].name}.${f}`, top: list[0].top });
+        if (o?.kind !== "object" || nodeKind(o, s.heap)) continue;
+        for (const [f, v] of o.fields) {
+          const target = isRef(v) ? s.heap[v.ref] : null;
+          if (target && (target.kind !== "object" || nodeKind(target, s.heap))) add(v.ref, { name: `${list[0].name}.${f}`, top: list[0].top, field: true });
+        }
       }
       return map;
     }
@@ -389,9 +419,10 @@
         if (strings[id]) continue;
         if (drawn.has(id) || !s.heap[id]) continue;
         const o = s.heap[id];
-        const kind = nodeKind(o);
+        const kind = nodeKind(o, s.heap);
         if (kind === "list") parts.push(this.drawLinkedList(s, names, drawn, o.type));
         else if (kind === "tree") parts.push(this.drawTree(s, names, drawn, o.type));
+        else if (kind === "trie") parts.push(this.drawTrie(s, names, drawn, o.type));
         else { drawn.add(id); parts.push(this.drawObject(id, o, s, p, names)); }
       }
       return parts.join("");
@@ -563,6 +594,74 @@
       return `<div class="viz-obj"><div class="viz-obj-head"><span class="viz-names"></span><span class="viz-type">${esc(type.split(".").pop())} nodes · ${nodes.size}</span></div>
         <div class="viz-tree-wrap"><svg class="viz-tree" width="${width}" height="${height + 14}" viewBox="0 0 ${width} ${height + 14}">${edges.join("")}${circles.join("")}</svg></div>
         ${onStack.size ? `<div class="viz-note"><span class="viz-legend on-stack"></span> where the waiting calls are &nbsp; <span class="viz-legend is-top"></span> the current call</div>` : ""}</div>`;
+    }
+
+    // A trie: each node shows the letter that leads to it, a ring marks where a word ends, and the variables that
+    // point into it are tagged (the current method's stand out, callers' are dashed)
+    drawTrie(s, names, drawn, type) {
+      const nodes = new Map(Object.entries(s.heap).filter(([, o]) => o.type === type && o.kind === "object"));
+      nodes.forEach((_, id) => drawn.add(id));
+      // A node's children as [letter, id]: slot i of a 26-slot array is 'a' + i; a map's keys are the letters
+      const kids = (o) => {
+        const f = childrenField(o, s.heap) || o.fields.find(([, v]) => isRef(v) && ["array", "map"].includes(s.heap[v.ref]?.kind))?.[0];
+        const c = f ? s.heap[fieldOf(o, f).ref] : null;
+        if (!c) return [];
+        const pairs = c.kind === "array"
+          ? c.items.map((x, i) => [c.length === 26 ? String.fromCharCode(97 + i) : String(i), x])
+          : c.entries.map(([k, x]) => [cellText(k, s.heap), x]);
+        return pairs.filter(([, x]) => isRef(x) && nodes.has(x.ref)).map(([l, x]) => [l, x.ref]);
+      };
+      const isEnd = (o) => o.fields.some(([f, v]) => /^(is)?(end(OfWord)?|word|terminal|leaf)$/i.test(f) && (v === true || (v !== null && typeof v === "object" && "s" in v)));
+
+      const children = new Map([...nodes].map(([id, o]) => [id, kids(o)]));
+      const isChild = new Set([...children.values()].flat().map(([, c]) => c));
+      const roots = [...nodes.keys()].filter(id => !isChild.has(id));
+      // Leaves get consecutive columns; a parent sits centred over its children
+      const pos = new Map(), letter = new Map();
+      let col = 0, depthMax = 0;
+      const place = (id, depth, seen) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        depthMax = Math.max(depthMax, depth);
+        const ch = children.get(id).filter(([, c]) => !seen.has(c));
+        ch.forEach(([l, c]) => letter.set(c, l));
+        ch.forEach(([, c]) => place(c, depth + 1, seen));
+        const xs = ch.map(([, c]) => pos.get(c)?.x).filter(v => v !== undefined);
+        pos.set(id, { x: xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : col++, y: depth });
+      };
+      roots.forEach(r => { place(r, 0, new Set()); col += 0.5; });
+
+      const W = 46, H = 62, R = 16, pad = 26;
+      const xMax = Math.max(0, ...[...pos.values()].map(p => p.x));
+      const width = xMax * W + pad * 2, height = (depthMax + 1) * H + 22;
+      const cx = (p) => pad + p.x * W, cy = (p) => R + 6 + p.y * H;
+      const edges = [], circles = [];
+      for (const [id, p] of pos) {
+        for (const [, c] of children.get(id)) {
+          if (pos.has(c)) edges.push(`<line x1="${cx(p)}" y1="${cy(p)}" x2="${cx(pos.get(c))}" y2="${cy(pos.get(c))}"/>`);
+        }
+        const tags = names.get(id) || [];
+        const top = tags.some(e => e.top && !e.field), onStack = !top && tags.some(e => !e.top && !e.field);
+        const labels = [...new Set(tags.filter(e => e.top || !e.field).map(e => e.name))];
+        const end = isEnd(nodes.get(id));
+        circles.push(`<g class="viz-tnode ${top ? "is-top" : ""} ${onStack ? "on-stack" : ""} ${end ? "is-end" : ""}">
+          <circle cx="${cx(p)}" cy="${cy(p)}" r="${R}"/>
+          ${end ? `<circle class="viz-tring" cx="${cx(p)}" cy="${cy(p)}" r="${R - 4}"/>` : ""}
+          <text x="${cx(p)}" y="${cy(p)}" dy="0.35em">${esc(letter.get(id) ?? "·")}</text>
+          ${labels.length ? `<text class="viz-tlabel" x="${cx(p)}" y="${cy(p) + R + 13}">${esc(labels.join(", "))}</text>` : ""}
+        </g>`);
+      }
+      const words = [];
+      const collect = (id, prefix, seen) => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        if (isEnd(nodes.get(id))) words.push(prefix);
+        for (const [l, c] of children.get(id)) collect(c, prefix + l, seen);
+      };
+      roots.forEach(r => collect(r, "", new Set()));
+      return `<div class="viz-obj"><div class="viz-obj-head"><span class="viz-names"></span><span class="viz-type">${esc(type.split(".").pop())} trie · ${nodes.size} nodes</span></div>
+        <div class="viz-tree-wrap"><svg class="viz-tree viz-trie" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${edges.join("")}${circles.join("")}</svg></div>
+        <div class="viz-note"><span class="viz-legend is-end"></span> a word ends here${words.length ? `: ${esc(words.join(", "))}` : ""} &nbsp; <span class="viz-legend is-top"></span> the current method's variable</div></div>`;
     }
 
     // ── Call stack: the current method on top, the callers waiting below ──
