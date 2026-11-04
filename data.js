@@ -2019,7 +2019,8 @@ const CATEGORY_COLORS = {
   "Spring Boot": { bg: "#1a3c1a", text: "#3fb950", border: "#238636" },
   "DSA": { bg: "#3d1f5c", text: "#bc8cff", border: "#8b5cf6" },
   "System Design": { bg: "#5c3d1a", text: "#f0883e", border: "#d29922" },
-  "DB/DevOps": { bg: "#5c1a2e", text: "#f778ba", border: "#db61a2" }
+  "DB/DevOps": { bg: "#5c1a2e", text: "#f778ba", border: "#db61a2" },
+  "Frontend": { bg: "#0f3b38", text: "#2dd4bf", border: "#14b8a6" }
 };
 
 // ============================================================

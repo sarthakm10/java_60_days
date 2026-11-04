@@ -6,6 +6,7 @@
 //   "d1_t1_s1"              a subtopic borrowed from the Interview track (data.js), with its label and notes
 //   ["d1_t1_s1", "label"]   a borrowed subtopic shown with a simpler label
 // dsa(N) borrows the whole DSA topic of Interview day N (its question sets follow it here).
+// Frontend topics are added from data-frontend.js: each module's subtopics are spread over its `days`.
 // `practice` lists exercise ids from practice/day-NN.md (an id dN_eM lives in day N's file).
 //
 // Ids are permanent progress keys: keep them when a subtopic moves to another day.
@@ -29,8 +30,13 @@ const BEGINNER_DATA = (() => {
   const interviewSubs = new Map();
   CURRICULUM_DATA.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => interviewSubs.set(s.id, s))));
 
+  const frontendSubs = new Map();   // frontend subtopic id → { label, module }
+  FRONTEND_DATA.forEach(m => m.subtopics.forEach(([id, label]) => frontendSubs.set(id, { label, module: m.module })));
+
   const sub = (entry) => {
     const [id, label] = Array.isArray(entry) ? entry : [entry];
+    const frontend = frontendSubs.get(id);
+    if (frontend) return { id, label: label || frontend.label, frontend: true, module: frontend.module };
     const borrowed = interviewSubs.get(id);
     if (!borrowed && !label) {
       console.error(`Beginner track: unknown subtopic id ${id}`);
@@ -679,8 +685,18 @@ const BEGINNER_DATA = (() => {
     r.to = i + 1;
   });
 
+  // Each frontend module's subtopics, split evenly over its days (earlier days take the extra one)
+  const frontendByDay = {};
+  FRONTEND_DATA.forEach(m => {
+    const per = m.subtopics.length / m.days.length;
+    m.days.forEach((day, k) => {
+      const ids = m.subtopics.slice(Math.round(k * per), Math.round((k + 1) * per)).map(([id]) => id);
+      (frontendByDay[day] = frontendByDay[day] || []).push({ ...topic("Frontend", `Frontend — ${m.title}`, ids), module: m.module });
+    });
+  });
+
   return DAYS.map((d, i) => {
-    const topics = d.topics.map(t => ({ ...t, subtopics: t.subtopics.map(sub).filter(Boolean) }));
+    const topics = [...d.topics, ...(frontendByDay[i + 1] || [])].map(t => ({ ...t, subtopics: t.subtopics.map(sub).filter(Boolean) }));
     const count = topics.reduce((n, t) => n + t.subtopics.length, 0);
     return {
       day: i + 1,

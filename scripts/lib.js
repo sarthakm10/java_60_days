@@ -21,13 +21,14 @@ function fileOfExercise(id) {
   return m && practiceFile(m[1] === "b" ? "beginner" : "interview", +m[2]);
 }
 
-// Runs data.js and data-beginner.js the way the browser does and returns both tracks' days
+// Runs data.js, data-frontend.js and data-beginner.js the way the browser does and returns both tracks' days,
+// and the frontend modules shared by both
 function loadData() {
   const ctx = {};
   vm.createContext(ctx);
-  const src = ["data.js", "data-beginner.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n");
-  vm.runInContext(`${src}\n;this.interview = CURRICULUM_DATA; this.beginner = BEGINNER_DATA;`, ctx);
-  return { interview: ctx.interview, beginner: ctx.beginner };
+  const src = ["data.js", "data-frontend.js", "data-beginner.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n");
+  vm.runInContext(`${src}\n;this.interview = CURRICULUM_DATA; this.beginner = BEGINNER_DATA; this.frontend = FRONTEND_DATA; this.frontendLevels = FRONTEND_LEVELS;`, ctx);
+  return { interview: ctx.interview, beginner: ctx.beginner, frontend: ctx.frontend, frontendLevels: ctx.frontendLevels };
 }
 
 // <!-- exercise: id | level | title --> task <!-- hints --> hints <!-- solution --> solution

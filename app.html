@@ -88,6 +88,10 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>
           <span>Question Sets</span>
         </button>
+        <button class="nav-item" data-view="frontend">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+          <span>Frontend</span>
+        </button>
         <button class="nav-item" data-view="visualizer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></svg>
           <span>Code Visualizer</span>
@@ -180,6 +184,7 @@
               <button class="filter-btn" data-category="DSA"><span class="category-dot" style="background:#bc8cff"></span>DSA <span class="filter-badge">0%</span></button>
               <button class="filter-btn" data-category="System Design"><span class="category-dot" style="background:#f0883e"></span>System Design <span class="filter-badge">0%</span></button>
               <button class="filter-btn" data-category="DB/DevOps"><span class="category-dot" style="background:#f778ba"></span>DB / DevOps <span class="filter-badge">0%</span></button>
+              <button class="filter-btn" data-category="Frontend"><span class="category-dot" style="background:#2dd4bf"></span>Frontend <span class="filter-badge">0%</span></button>
             </div>
           </div>
 
@@ -211,6 +216,7 @@
         <!-- DSA Question Sets View -->
         <section class="view sets-view" id="sets-view"></section>
         <section class="view visualizer-view" id="visualizer-view"></section>
+        <section class="view frontend-view" id="frontend-view"></section>
       </div>
     </main>
   </div>
@@ -272,7 +278,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
   <script src="data.js"></script>
+  <script src="data-frontend.js"></script>
   <script src="data-beginner.js"></script>
   <script src="question-sets.js"></script>
   <script src="visualize/index.js"></script>

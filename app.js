@@ -46,6 +46,8 @@
     currentView: "home",      // "home" | "grid" | "detail" | "backlog" | "sets"
     returnView: "home",       // where "Back" from a day goes
     selectedSet: null,        // question set id, or null for the sets index
+    selectedModule: null,     // frontend module number, or null for the Frontend page's index
+    moduleTab: "checklist",   // "checklist" | "study" on a frontend module
     setFilter: "all",         // "all" | "E" | "M" | "H" | "unsolved"
     selectedDay: null,         // day number
     statusFilter: "all",      // "all" | "completed" | "in-progress" | "pending" | "has-missed"
@@ -149,7 +151,7 @@
   const VISUALIZE_MARKER = /^<!--\s*visualize:\s*(\w+)\s*-->\s*$/gm;
   // Beginner days that have their own notes file; add the day here when its file is written
   const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 100 }, (_, i) => i + 1));   // every Beginner day
-  const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️" };
+  const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️", Frontend: "🎨" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
   const interviewFiles = {};  // Interview day → Promise of notes/day-NN.md (shared by both tracks)
@@ -161,6 +163,18 @@
   const pad2 = (n) => String(n).padStart(2, "0");
   const interviewDayOf = new Map();   // subtopic id → Interview day whose notes cover it
   CURRICULUM_DATA.forEach(d => d.topics.forEach(t => t.subtopics.forEach(s => interviewDayOf.set(s.id, d.day))));
+
+  // Frontend modules (data-frontend.js) are shared by both tracks; their notes are notes/frontend/module-NN.md
+  const getModule = (n) => FRONTEND_DATA.find(m => m.module === n);
+  const frontendFiles = {};       // module → Promise of its Markdown (null while it's being written)
+  const moduleNotesCache = {};    // module → { status, html, ids }, like notesCache
+
+  function frontendNotes(n) {
+    if (!frontendFiles[n]) {
+      frontendFiles[n] = fetchText(`notes/frontend/module-${pad2(n)}.md`).catch(err => { delete frontendFiles[n]; throw err; });
+    }
+    return frontendFiles[n];
+  }
 
   function notesPath(dayNum, track = state.track) {
     return track === "interview" ? `notes/day-${pad2(dayNum)}.md` : `notes/beginner/day-${pad2(dayNum)}.md`;
@@ -251,18 +265,28 @@
       .filter(s => s.borrowed && !own?.sections[s.id]).map(s => interviewDayOf.get(s.id)))];
     const sources = {};
     await Promise.all(sourceDays.map(d => interviewNotes(d).then(md => { sources[d] = splitNotes(md); })));
+    const modules = [...new Set(day.topics.flatMap(t => t.subtopics).filter(s => s.frontend).map(s => s.module))];
+    const frontendSources = {};
+    await Promise.all(modules.map(n => frontendNotes(n).then(md => { frontendSources[n] = md === null ? null : splitNotes(md); })));
 
     let borrowedAny = false;
     const body = [];
     day.topics.forEach((t, ti) => {
-      const topicIntro = own?.topicIntros[`b${dayNum}_t${ti + 1}`];   // a beginner file marks its topics b<day>_t<n>
+      let topicIntro = own?.topicIntros[`b${dayNum}_t${ti + 1}`];   // a beginner file marks its topics b<day>_t<n>
       const sections = t.subtopics.map(s => {
         if (own?.sections[s.id]) return own.sections[s.id];
+        if (s.frontend) {
+          const text = frontendSources[s.module]?.sections[s.id];
+          return text ? adaptBorrowedSection(text) : null;
+        }
         const borrowed = s.borrowed && sources[interviewDayOf.get(s.id)]?.sections[s.id];
         if (!borrowed) return null;
         borrowedAny = true;
         return adaptBorrowedSection(borrowed, own?.subIntros[s.id]);
       }).filter(Boolean);
+      if (t.module && sections.length) {
+        topicIntro = `> 🎨 Part of **Frontend ${t.module}: ${getModule(t.module).title}**. The whole module, with its recap, is on the **Frontend** page.`;
+      }
       if (sections.length || topicIntro) {
         body.push(`## ${[TOPIC_ICONS[t.category], t.name].filter(Boolean).join(" ")}`, topicIntro, ...sections);
       }
@@ -365,7 +389,7 @@
   }
 
   // Post-process rendered Markdown: diagrams, code highlighting, heading ids, per-subtopic "done" toggles
-  function enhanceStudyNotes(article, toc, dayNum) {
+  function enhanceStudyNotes(article, toc, rerender) {
     article.querySelectorAll("pre > code.language-mermaid").forEach(code => {
       const div = document.createElement("div");
       div.className = "mermaid-diagram";
@@ -441,7 +465,7 @@
         saveState();
         const scroller = $(".content-scroll");
         const top = scroller.scrollTop;
-        renderDayDetail(dayNum);
+        rerender();
         scroller.scrollTop = top;
         renderSidebar();
         if (cb.checked) celebrateProgress(before);
@@ -524,7 +548,7 @@
     }
 
     // Category filter
-    if (state.categoryFilter !== "all") {
+    if (state.categoryFilter !== "all" && !(state.categoryFilter === "Frontend" && state.track === "interview")) {
       days = days.filter(d => d.categories.includes(state.categoryFilter));
     }
 
@@ -557,7 +581,26 @@
     return current;
   }
 
+  // The subjects (topic categories), in display order
+  const SUBJECTS = [
+    { name: "Java", icon: "☕", color: "--accent-blue" },
+    { name: "Spring Boot", icon: "🌿", color: "--accent-green" },
+    { name: "DSA", icon: "🧮", color: "--accent-purple" },
+    { name: "System Design", icon: "🏗️", color: "--accent-orange" },
+    { name: "DB/DevOps", icon: "🗄️", color: "--accent-pink" },
+    { name: "Frontend", icon: "🎨", color: "--accent-blue" }
+  ];
+
+  // Ticked subtopics of some frontend modules (all of them by default)
+  function frontendStats(modules = FRONTEND_DATA) {
+    const ids = modules.flatMap(m => m.subtopics.map(([id]) => id));
+    const checked = ids.filter(id => state.checkedSubtopics[id]).length;
+    return { total: ids.length, checked, percentage: ids.length ? Math.round((checked / ids.length) * 100) : 0 };
+  }
+
   function getCategoryStats(categoryName) {
+    // In the Interview track, frontend is a section of its own, not part of the days
+    if (categoryName === "Frontend" && state.track === "interview") return frontendStats();
     let total = 0, checked = 0;
     DAYS.forEach(d => {
       d.topics.forEach(t => {
@@ -752,7 +795,7 @@
       reviews: sumValues(state.reviewsDone),
       focusHours: Math.floor(sumValues(state.studyMinutes) / 60),
       exercises: Object.keys(state.practiceDone).length,
-      categories: ["Java", "Spring Boot", "DSA", "System Design", "DB/DevOps"].map(getCategoryStats)
+      categories: SUBJECTS.map(c => getCategoryStats(c.name))
     };
   }
 
@@ -977,12 +1020,14 @@
     });
 
     // Category badges
-    const categories = ["Java", "Spring Boot", "DSA", "System Design", "DB/DevOps"];
-    categories.forEach(cat => {
-      const stats = getCategoryStats(cat);
-      const badge = $(`[data-category="${cat}"] .filter-badge`);
+    SUBJECTS.forEach(({ name }) => {
+      const stats = getCategoryStats(name);
+      const badge = $(`[data-category="${name}"] .filter-badge`);
       if (badge) badge.textContent = `${stats.percentage}%`;
     });
+    // Interview days have no frontend topics (it's a section of its own), so there's nothing to filter by
+    const frontendFilter = $('[data-category="Frontend"]');
+    if (frontendFilter) frontendFilter.hidden = state.track === "interview";
 
     // Heatmap
     renderHeatmap();
@@ -1138,6 +1183,7 @@
           <div class="topic-group-header">
             <span class="category-dot" style="background:${topicColor?.text || '#888'}"></span>
             <span class="topic-group-name">${escapeHTML(topic.name)}</span>
+            ${topic.module ? `<button class="topic-module-link" data-module="${topic.module}" title="Open the whole module on the Frontend page">Module ${topic.module} →</button>` : ""}
             <span class="topic-group-progress">${topicChecked}/${topicTotal}</span>
           </div>
           <div class="subtopic-list">${subtopicsHTML}</div>
@@ -1292,7 +1338,7 @@
     if (state.detailTab === "study") {
       const article = detail.querySelector("#study-article");
       if (article) {
-        const diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), dayNum);
+        const diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), () => renderDayDetail(dayNum));
         if (state.pendingNoteScroll) {
           const target = detail.querySelector(`#note-${state.pendingNoteScroll}`);
           state.pendingNoteScroll = null;
@@ -1315,6 +1361,9 @@
 
     detail.querySelectorAll(".day-set-chip").forEach(chip => {
       chip.addEventListener("click", () => openSet(chip.dataset.set));
+    });
+    detail.querySelectorAll(".topic-module-link").forEach(btn => {
+      btn.addEventListener("click", () => openFrontendModule(+btn.dataset.module));
     });
 
     // Checkbox events
@@ -1596,6 +1645,209 @@
     list.querySelectorAll(".set-day-link").forEach(btn => btn.addEventListener("click", () => openDayDetail(parseInt(btn.dataset.day), "study")));
   }
 
+  // ── Render: Frontend — modules by level; a module page has its checklist and notes ──
+  function openFrontendModule(n, tab = "checklist") {
+    state.selectedModule = n || null;
+    state.moduleTab = tab;
+    switchView("frontend");
+  }
+
+  function frontendDaysLabel(m) {
+    const days = m.days;
+    return days.length > 1 ? `Days ${days[0]}–${days[days.length - 1]}` : `Day ${days[0]}`;
+  }
+
+  function renderFrontendView() {
+    const container = $("#frontend-view");
+    const m = state.selectedModule && getModule(state.selectedModule);
+    if (m) return renderFrontendModule(container, m);
+    const beginner = state.track === "beginner";
+    const all = frontendStats();
+    container.innerHTML = `
+      <div class="sets-header">
+        <div>
+          <h2 class="sets-title">🎨 Frontend</h2>
+          <p class="sets-subtitle">${beginner
+            ? "HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend interview prep. In your plan it runs alongside Java from Day 13; here it is on its own."
+            : "A separate frontend prep track, basics to advanced: JavaScript, TypeScript, React, performance, security, system design and machine coding. It isn't part of the 60 days."}</p>
+        </div>
+        <div class="sets-summary">
+          <div class="sets-summary-value">${all.checked}<span>/${all.total}</span></div>
+          <div class="sets-summary-label">subtopics done · ${FRONTEND_DATA.length} modules</div>
+        </div>
+      </div>
+      ${FRONTEND_LEVELS.map((level, k) => {
+        const modules = FRONTEND_DATA.filter(x => x.level === k);
+        const stats = frontendStats(modules);
+        return `
+          <section class="viz-group">
+            <h3 class="viz-group-title"><span class="set-icon">${level.icon}</span>${escapeHTML(level.name)}<span class="viz-group-count">${stats.checked}/${stats.total}</span></h3>
+            <p class="fe-level-blurb">${escapeHTML(level.blurb)}</p>
+            <div class="sets-grid">${modules.map(frontendModuleCardHTML).join("")}</div>
+          </section>`;
+      }).join("")}`;
+    container.querySelectorAll(".set-card[data-module]").forEach(card => card.addEventListener("click", () => openFrontendModule(+card.dataset.module)));
+  }
+
+  function frontendModuleCardHTML(m) {
+    const stats = frontendStats([m]);
+    const done = stats.checked === stats.total;
+    return `
+      <button class="set-card ${done ? "complete" : ""}" data-module="${m.module}">
+        <div class="set-card-header">
+          <span class="set-icon fe-num">${done ? "✓" : m.module}</span>
+          <span class="set-name">${escapeHTML(m.title)}</span>
+          <span class="set-count">${stats.checked}/${stats.total}</span>
+        </div>
+        <div class="set-progress-bar"><div class="set-progress-fill" style="width:${stats.percentage}%"></div></div>
+        <div class="set-days">${state.track === "beginner" ? `In your plan on ${frontendDaysLabel(m)}` : `${stats.total} subtopics`}</div>
+      </button>`;
+  }
+
+  function loadModuleNotes(n) {
+    if (moduleNotesCache[n] && moduleNotesCache[n].status !== "error") return;
+    moduleNotesCache[n] = { status: "loading" };
+    frontendNotes(n)
+      .then(md => { moduleNotesCache[n] = md === null ? { status: "missing" } : { status: "ready", ...parseNotes(md) }; })
+      .catch(() => { moduleNotesCache[n] = { status: "error" }; })
+      .finally(() => { if (state.currentView === "frontend" && state.selectedModule === n) renderFrontendView(); });
+  }
+
+  function renderFrontendModule(container, m) {
+    loadModuleNotes(m.module);
+    const notes = moduleNotesCache[m.module];
+    const noteIds = notes.status === "ready" ? notes.ids : new Set();
+    const stats = frontendStats([m]);
+    const level = FRONTEND_LEVELS[m.level];
+    const tab = state.moduleTab === "study" ? "study" : "checklist";
+    const prev = getModule(m.module - 1), next = getModule(m.module + 1);
+    const beginner = state.track === "beginner";
+
+    const checklistHTML = `
+      <div class="checklist-panel fe-checklist">
+        <div class="checklist-section-header">
+          <span class="checklist-section-title">${ICONS.clipboardList} Subtopic Checklist</span>
+          <span class="checklist-section-count">${stats.checked}/${stats.total} done</span>
+        </div>
+        <div class="topic-group">
+          <div class="subtopic-list">${m.subtopics.map(([id, label]) => {
+            const checked = !!state.checkedSubtopics[id];
+            return `
+              <div class="subtopic-item ${checked ? "checked" : ""} ${isSearchHighlight(id) ? "search-highlight" : ""}" data-id="${id}">
+                <input type="checkbox" class="subtopic-checkbox" data-id="${id}" ${checked ? "checked" : ""}>
+                <label class="subtopic-label" data-id="${id}">${escapeHTML(label)}</label>
+                ${noteIds.has(id) ? `<button class="subtopic-notes-btn" data-id="${id}" title="Read the notes for this subtopic">${ICONS.bookOpen}</button>` : ""}
+              </div>`;
+          }).join("")}</div>
+        </div>
+        ${beginner ? `
+          <div class="day-sets">
+            <div class="day-sets-title">📅 Where this module is in your plan</div>
+            <div class="day-sets-list">${m.days.map(d => `<button class="day-set-chip" data-day="${d}"><span>Day ${d}</span><span class="day-set-count">${escapeHTML(getDayData(d)?.title || "")}</span></button>`).join("")}</div>
+          </div>` : ""}
+      </div>`;
+
+    const studyHTML = notes.status === "ready"
+      ? `<div class="reading-progress"><span id="reading-progress-fill"></span></div>
+         <div class="study-notes"><nav class="study-toc" id="study-toc"></nav><article class="md-content" id="study-article">${notes.html}</article></div>`
+      : `<div class="study-notes"><div class="study-notes-message">${
+          notes.status === "loading" ? "Loading notes…"
+          : notes.status === "missing" ? `<strong>Notes for this module are being written.</strong><p>For now, work through the checklist: each item says what to learn. The notes will appear here when they're ready.</p>`
+          : `<strong>Couldn't load the notes.</strong><p>Check your connection and reload the page.</p>`}</div></div>`;
+
+    container.innerHTML = `
+      <button class="detail-back-btn" id="fe-back">${ICONS.arrowLeft} All frontend modules</button>
+      <div class="detail-header ${stats.checked === stats.total ? "completed" : ""}">
+        <div class="ring" style="--p:${stats.percentage}"><span class="ring-value">${stats.percentage}%</span></div>
+        <div class="detail-main">
+          <div class="detail-day-label">Frontend ${m.module} of ${FRONTEND_DATA.length} · ${level.icon} ${escapeHTML(level.name)}${beginner ? ` · ${frontendDaysLabel(m)}` : ""}</div>
+          <div class="detail-title">${escapeHTML(m.title)}</div>
+          <div class="detail-meta">
+            <div class="detail-info">${categoryTagsHTML(["Frontend"])}</div>
+            <div class="detail-info">${ICONS.checkCircle} ${stats.checked}/${stats.total} subtopics</div>
+            <button class="mark-complete-btn ${stats.checked === stats.total ? "completed" : ""}" id="fe-mark">
+              ${ICONS.checkCircle} ${stats.checked === stats.total ? "Completed!" : "Mark all complete"}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="detail-tabs">
+        <button class="detail-tab ${tab === "checklist" ? "active" : ""}" data-tab="checklist">${ICONS.clipboardList} Checklist</button>
+        <button class="detail-tab ${tab === "study" ? "active" : ""}" data-tab="study">${ICONS.bookOpen} Study Notes
+          ${notes.status === "ready" ? `<span class="detail-tab-badge">${noteIds.size}</span>` : ""}</button>
+      </div>
+      ${tab === "study" ? studyHTML : checklistHTML}
+      <div class="fe-pager">
+        ${prev ? `<button class="btn" data-module="${prev.module}">${ICONS.arrowLeft} ${prev.module}. ${escapeHTML(prev.title)}</button>` : "<span></span>"}
+        ${next ? `<button class="btn" data-module="${next.module}">${next.module}. ${escapeHTML(next.title)} ${ICONS.arrowRight}</button>` : ""}
+      </div>`;
+
+    const rerender = () => renderFrontendView();
+    const tick = (id, on) => {
+      if (on) { state.checkedSubtopics[id] = true; recordActivity(); } else delete state.checkedSubtopics[id];
+    };
+    const afterChange = (before, celebrate) => {
+      saveState();
+      const scroller = $(".content-scroll");
+      const top = scroller.scrollTop;
+      rerender();
+      scroller.scrollTop = top;
+      renderSidebar();
+      if (celebrate) celebrateProgress(before);
+    };
+
+    container.querySelector("#fe-back").addEventListener("click", () => openFrontendModule(null));
+    container.querySelectorAll(".fe-pager [data-module]").forEach(b => b.addEventListener("click", () => {
+      openFrontendModule(+b.dataset.module, state.moduleTab);
+      $(".content-scroll").scrollTop = 0;
+    }));
+    container.querySelectorAll(".detail-tab").forEach(t => t.addEventListener("click", () => {
+      if (state.moduleTab === t.dataset.tab) return;
+      state.moduleTab = t.dataset.tab;
+      rerender();
+    }));
+    container.querySelector("#fe-mark").addEventListener("click", () => {
+      const ids = m.subtopics.map(([id]) => id);
+      const allChecked = ids.every(id => state.checkedSubtopics[id]);
+      const before = progressSnapshot();
+      if (!allChecked) recordActivity(ids.filter(id => !state.checkedSubtopics[id]).length);
+      ids.forEach(id => { if (allChecked) delete state.checkedSubtopics[id]; else state.checkedSubtopics[id] = true; });
+      afterChange(before, !allChecked);
+      if (allChecked) showToast("Module unmarked", "info");
+    });
+
+    if (tab === "study") {
+      const article = container.querySelector("#study-article");
+      if (article) {
+        const diagramsReady = enhanceStudyNotes(article, container.querySelector("#study-toc"), rerender);
+        if (state.pendingNoteScroll) {
+          const target = container.querySelector(`#note-${state.pendingNoteScroll}`);
+          state.pendingNoteScroll = null;
+          target?.scrollIntoView({ block: "start" });
+          diagramsReady.then(() => { if (target?.isConnected) target.scrollIntoView({ block: "start" }); });
+        }
+      }
+      return;
+    }
+
+    container.querySelectorAll(".subtopic-checkbox").forEach(cb => cb.addEventListener("change", () => {
+      const before = progressSnapshot();
+      tick(cb.dataset.id, cb.checked);
+      afterChange(before, cb.checked);
+    }));
+    container.querySelectorAll(".subtopic-label").forEach(lbl => lbl.addEventListener("click", () => {
+      const cb = container.querySelector(`.subtopic-checkbox[data-id="${lbl.dataset.id}"]`);
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event("change"));
+    }));
+    container.querySelectorAll(".subtopic-notes-btn").forEach(btn => btn.addEventListener("click", () => {
+      state.moduleTab = "study";
+      state.pendingNoteScroll = btn.dataset.id;
+      rerender();
+    }));
+    container.querySelectorAll(".day-set-chip[data-day]").forEach(chip => chip.addEventListener("click", () => openDayDetail(+chip.dataset.day)));
+  }
+
   function renderSetsView() {
     const container = $("#sets-view");
     const set = state.selectedSet && getSetById(state.selectedSet);
@@ -1723,15 +1975,7 @@
   // ── Render: Subject Progress ──
   function renderSubjectProgress() {
     const container = $("#subject-progress");
-    const categories = [
-      { name: "Java", icon: "☕", color: "--accent-blue" },
-      { name: "Spring Boot", icon: "🌿", color: "--accent-green" },
-      { name: "DSA", icon: "🧮", color: "--accent-purple" },
-      { name: "System Design", icon: "🏗️", color: "--accent-orange" },
-      { name: "DB/DevOps", icon: "🗄️", color: "--accent-pink" }
-    ];
-
-    container.innerHTML = categories.map(cat => {
+    container.innerHTML = SUBJECTS.map(cat => {
       const stats = getCategoryStats(cat.name);
       const colors = CATEGORY_COLORS[cat.name] || { bg: "#333", text: "#999" };
       return `
@@ -1768,6 +2012,7 @@
     markdownCache = {};
     cardCache = {};
     allCardsPromise = null;
+    allCardsReady = false;
     cardSession = null;
     trackExercises = {};
     searchIndex = null;
@@ -1817,8 +2062,8 @@
   }
 
   // ── View switching ──
-  const VIEW_SECTIONS = { home: "#home-view", grid: "#roadmap-view", revise: "#revise-view", practice: "#practice-view", detail: "#day-detail", backlog: "#backlog-view", sets: "#sets-view", visualizer: "#visualizer-view" };
-  const RETURN_LABELS = { home: "Dashboard", grid: "Roadmap", revise: "Revise", practice: "Practice", visualizer: "Code Visualizer" };
+  const VIEW_SECTIONS = { home: "#home-view", grid: "#roadmap-view", revise: "#revise-view", practice: "#practice-view", detail: "#day-detail", backlog: "#backlog-view", sets: "#sets-view", visualizer: "#visualizer-view", frontend: "#frontend-view" };
+  const RETURN_LABELS = { home: "Dashboard", grid: "Roadmap", revise: "Revise", practice: "Practice", visualizer: "Code Visualizer", frontend: "Frontend" };
 
   function showSection(view) {
     Object.entries(VIEW_SECTIONS).forEach(([name, sel]) => $(sel).classList.toggle("active", name === view));
@@ -1863,6 +2108,8 @@
       renderSetsView();
     } else if (view === "visualizer") {
       renderVisualizerView();
+    } else if (view === "frontend") {
+      renderFrontendView();
     }
     renderSidebar();
     $(".content-scroll").scrollTop = 0;
@@ -1989,10 +2236,7 @@
         ? `Tick one item today to keep it alive. Best: ${streak.best}.`
         : `Tick anything today to start a streak.`;
 
-    const categories = [
-      { name: "Java", icon: "☕" }, { name: "Spring Boot", icon: "🌿" }, { name: "DSA", icon: "🧮" },
-      { name: "System Design", icon: "🏗️" }, { name: "DB/DevOps", icon: "🗄️" }
-    ];
+    const categories = SUBJECTS;
 
     let i = 0;
     const r = () => `reveal" style="--i:${i++}`;
@@ -2332,7 +2576,13 @@
       const r = state.reviews[s.id];
       if (isDue(r, today)) items.push({ id: s.id, label: s.label, day: d.day, topic: t.name, review: r });
     })));
-    return items.sort((a, b) => a.review.due.localeCompare(b.review.due) || a.day - b.day);
+    if (state.track === "interview") {
+      FRONTEND_DATA.forEach(m => m.subtopics.forEach(([id, label]) => {
+        const r = state.reviews[id];
+        if (isDue(r, today)) items.push({ id, label, module: m.module, topic: m.title, review: r });
+      }));
+    }
+    return items.sort((a, b) => a.review.due.localeCompare(b.review.due) || (a.day || 999) - (b.day || 999));
   }
 
   const dueCardKeys = () => Object.keys(state.reviews).filter(k => k.startsWith("card:") && isDue(state.reviews[k]));
@@ -2368,6 +2618,7 @@
   // ── Flashcards, parsed from each day's notes (rapid-fire lines + interview Q&A blocks) ──
   let cardCache = {};           // active track: day → cards ([] when the day has no notes yet)
   let allCardsPromise = null;
+  let allCardsReady = false;
   let cardSession = null;       // { deckLabel, queue, index, flipped, tally }
 
   function hashText(text) {
@@ -2394,10 +2645,16 @@
       .filter(c => !seen.has(c.key) && seen.add(c.key));
   }
 
+  // A deck is a day number, or "f<module>" for a frontend module
+  const isModuleDeck = (deck) => typeof deck === "string" && /^f\d+$/.test(deck);
+  const deckLabel = (deck) => (isModuleDeck(deck) ? `Frontend ${deck.slice(1)}` : `Day ${deck}`);
+  const deckTitle = (deck) => (isModuleDeck(deck) ? getModule(+deck.slice(1)).title : getDayData(deck).title);
+
   function loadCards(day) {
     const cache = cardCache;
     if (cache[day]) return Promise.resolve(cache[day]);
-    return dayMarkdown(day)
+    const md = isModuleDeck(day) ? frontendNotes(+day.slice(1)) : dayMarkdown(day);
+    return md
       .then(md => (cache[day] = md ? parseCards(md, day) : []))
       .catch(() => (cache[day] = []));
   }
@@ -2405,8 +2662,10 @@
   // Load in batches of 5 so a deck list doesn't fire every request at once
   function loadAllCards() {
     allCardsPromise = allCardsPromise || (async () => {
-      const days = DAYS.map(d => d.day);
-      for (let i = 0; i < days.length; i += 5) await Promise.all(days.slice(i, i + 5).map(loadCards));
+      const decks = DAYS.map(d => d.day);
+      if (state.track === "interview") decks.push(...FRONTEND_DATA.map(m => `f${m.module}`));
+      for (let i = 0; i < decks.length; i += 5) await Promise.all(decks.slice(i, i + 5).map(loadCards));
+      allCardsReady = true;
     })();
     return allCardsPromise;
   }
@@ -2422,26 +2681,27 @@
 
   function startCardSession(deck) {
     const all = Object.values(cardCache).flat();
-    let queue, deckLabel;
+    let queue, label;
     if (deck === "due") {
       const due = new Set(dueCardKeys());
       queue = shuffle(all.filter(c => due.has(c.key)));
-      deckLabel = "Due flashcards";
+      label = "Due flashcards";
     } else if (deck === "mixed") {
       const started = new Set(DAYS.filter(d => getDayCompletionInfo(d.day).checked > 0).map(d => d.day));
+      FRONTEND_DATA.filter(m => frontendStats([m]).checked > 0).forEach(m => started.add(`f${m.module}`));
       const pool = all.filter(c => started.has(c.day));
       queue = shuffle(pool.length ? pool : all.filter(c => c.day === 1)).slice(0, 20);
-      deckLabel = "Mixed — days you've started";
+      label = "Mixed — days you've started";
     } else {
       const cards = cardCache[deck] || [];
       const due = cards.filter(c => isDue(state.reviews[c.key]));
       const fresh = cards.filter(c => !state.reviews[c.key]);
       const rest = cards.filter(c => state.reviews[c.key] && !isDue(state.reviews[c.key]));
       queue = [...shuffle(due), ...shuffle(fresh), ...shuffle(rest)];
-      deckLabel = `Day ${deck} · ${getDayData(deck).title}`;
+      label = `${deckLabel(deck)} · ${deckTitle(deck)}`;
     }
     if (!queue.length) { showToast("No cards in this deck yet.", "info"); return; }
-    cardSession = { deckLabel, queue, index: 0, flipped: false, tally: { again: 0, good: 0, easy: 0 } };
+    cardSession = { deckLabel: label, queue, index: 0, flipped: false, tally: { again: 0, good: 0, easy: 0 } };
     renderReviseView();
   }
 
@@ -2539,10 +2799,10 @@
           <div class="review-row" data-id="${t.id}">
             <div class="review-main">
               <div class="review-label">${escapeHTML(t.label)}</div>
-              <div class="review-meta">Day ${t.day} · ${escapeHTML(t.topic)} ${stageDotsHTML(t.review.stage)}</div>
+              <div class="review-meta">${t.day ? `Day ${t.day}` : `🎨 Frontend ${t.module}`} · ${escapeHTML(t.topic)} ${stageDotsHTML(t.review.stage)}</div>
             </div>
             <div class="review-actions">
-              <button class="review-notes" data-day="${t.day}" data-id="${t.id}" title="Open the study notes">${ICONS.bookOpen}</button>
+              <button class="review-notes" ${t.day ? `data-day="${t.day}"` : `data-module="${t.module}"`} data-id="${t.id}" title="Open the study notes">${ICONS.bookOpen}</button>
               <button class="grade again" data-grade="again">Again <small>${gapLabel(t.id, "again")}</small></button>
               <button class="grade good" data-grade="good">Good <small>${gapLabel(t.id, "good")}</small></button>
               <button class="grade easy" data-grade="easy">Easy <small>${gapLabel(t.id, "easy")}</small></button>
@@ -2553,7 +2813,7 @@
 
   function reviseCardsHTML() {
     // Deck list needs every day's notes parsed first
-    if (!Object.keys(cardCache).length || Object.keys(cardCache).length < DAYS.length) {
+    if (!allCardsReady) {
       loadAllCards().then(() => { if (state.currentView === "revise" && state.reviseTab === "cards") renderReviseView(); });
       return `<div class="revise-empty"><div class="revise-empty-icon">🃏</div><p>Building your flashcard decks from the study notes…</p></div>`;
     }
@@ -2571,7 +2831,7 @@
           </div>
           <div class="bar"><div class="bar-fill" style="width:${(s.index / s.queue.length) * 100}%"></div></div>
           <div class="flashcard ${s.flipped ? "flipped" : ""}" id="flashcard" tabindex="0">
-            <div class="fc-kind">${card.kind} · Day ${card.day} ${review ? stageDotsHTML(review.stage) : `<span class="fc-new">new</span>`}</div>
+            <div class="fc-kind">${card.kind} · ${deckLabel(card.day)} ${review ? stageDotsHTML(review.stage) : `<span class="fc-new">new</span>`}</div>
             <div class="fc-q">${marked.parseInline(card.q)}</div>
             ${s.flipped
               ? `<div class="fc-answer md-content">${card.kind === "Rapid-fire" ? marked.parseInline(card.a) : marked.parse(card.a)}</div>`
@@ -2600,7 +2860,8 @@
     }
 
     const due = dueCardKeys().length;
-    const days = DAYS.filter(d => (cardCache[d.day] || []).length);
+    const decks = [...DAYS.map(d => d.day), ...(state.track === "interview" ? FRONTEND_DATA.map(m => `f${m.module}`) : [])]
+      .filter(deck => (cardCache[deck] || []).length);
     return `
       <div class="deck-actions">
         <button class="deck-hero" data-deck="due" ${due ? "" : "disabled"}>
@@ -2613,15 +2874,15 @@
         </button>
       </div>
       <div class="deck-grid">
-        ${days.map(d => {
-          const cards = cardCache[d.day];
+        ${decks.map(deck => {
+          const cards = cardCache[deck];
           const seen = cards.filter(c => state.reviews[c.key]).length;
           const dueHere = cards.filter(c => isDue(state.reviews[c.key])).length;
           const pct = Math.round((seen / cards.length) * 100);
           return `
-            <button class="deck-card" data-deck="${d.day}">
-              <span class="deck-day">Day ${d.day}</span>
-              <span class="deck-title">${escapeHTML(d.title)}</span>
+            <button class="deck-card" data-deck="${deck}">
+              <span class="deck-day">${deckLabel(deck)}</span>
+              <span class="deck-title">${escapeHTML(deckTitle(deck))}</span>
               <span class="deck-meta">${cards.length} cards · ${seen ? `${seen} seen` : "new"}${dueHere ? ` · <b>${dueHere} due</b>` : ""}</span>
               <span class="bar"><span class="bar-fill" style="display:block;width:${pct}%"></span></span>
             </button>`;
@@ -2678,15 +2939,17 @@
         setTimeout(() => { renderReviseView(); renderSidebar(); celebrateProgress(before); }, 220);
       }));
       row.querySelector(".review-notes").addEventListener("click", (e) => {
-        state.pendingNoteScroll = e.currentTarget.dataset.id;
-        openDayDetail(parseInt(e.currentTarget.dataset.day), "study");
+        const btn = e.currentTarget;
+        state.pendingNoteScroll = btn.dataset.id;
+        if (btn.dataset.module) openFrontendModule(+btn.dataset.module, "study");
+        else openDayDetail(parseInt(btn.dataset.day), "study");
       });
     });
 
     // Flashcards
     container.querySelectorAll("[data-deck]").forEach(b => b.addEventListener("click", () => {
       const deck = b.dataset.deck;
-      startCardSession(deck === "due" || deck === "mixed" ? deck : parseInt(deck));
+      startCardSession(deck === "due" || deck === "mixed" || isModuleDeck(deck) ? deck : parseInt(deck));
     }));
     container.querySelector("#fc-exit")?.addEventListener("click", () => { cardSession = null; renderReviseView(); });
     container.querySelector("#flashcard")?.addEventListener("click", (e) => {
@@ -3405,6 +3668,14 @@
         entries.push({ type: "subtopic", day: d.day, id: s.id, title: s.label, meta: `Day ${d.day} · ${t.name}`, text: `${s.label} ${t.name}` });
       }));
     });
+    FRONTEND_DATA.forEach(m => {
+      const level = FRONTEND_LEVELS[m.level];
+      entries.push({ type: "module", module: m.module, title: `Frontend ${m.module} · ${m.title}`,
+        meta: `${level.name}${state.track === "beginner" ? ` · ${frontendDaysLabel(m)}` : ""}`, text: `frontend ${m.title} ${level.name}` });
+      if (state.track === "interview") m.subtopics.forEach(([id, label]) => {
+        entries.push({ type: "subtopic", module: m.module, id, title: label, meta: `Frontend ${m.module} · ${m.title}`, text: `${label} ${m.title} frontend` });
+      });
+    });
     getUniqueProblems().forEach(({ problem, sets }) => {
       const [num, title, slug, diff] = problem;
       entries.push({ type: "problem", slug, num: String(num), setId: sets[0].id, diff, title: `${num}. ${title}`,
@@ -3420,6 +3691,7 @@
   const SEARCH_GROUPS = [
     { type: "day", label: "Days", limit: 4 },
     { type: "subtopic", label: "Topics", limit: 7 },
+    { type: "module", label: "Frontend modules", limit: 3 },
     { type: "problem", label: "LeetCode problems", limit: 6 },
     { type: "set", label: "Question sets", limit: 3 }
   ];
@@ -3460,8 +3732,9 @@
   function searchItemHTML(item, query, index) {
     const done = item.type === "subtopic" ? state.checkedSubtopics[item.id]
       : item.type === "problem" ? state.solvedProblems[item.slug]
-      : item.type === "day" ? isDayCompleted(item.day) : false;
-    const icon = { day: "📅", subtopic: "📘", problem: "🧩", set: "🗂️" }[item.type];
+      : item.type === "day" ? isDayCompleted(item.day)
+      : item.type === "module" ? frontendStats([getModule(item.module)]).percentage === 100 : false;
+    const icon = { day: "📅", subtopic: "📘", problem: "🧩", set: "🗂️", module: "🎨" }[item.type];
     const pill = item.type === "problem" ? `<span class="difficulty-pill ${DIFFICULTY[item.diff].cls}">${DIFFICULTY[item.diff].label}</span>` : "";
     return `
       <div class="search-item" role="option" id="search-opt-${index}" data-index="${index}">
@@ -3483,6 +3756,13 @@
     if (item.type === "day") {
       state.highlight = null;
       openDayDetail(item.day);
+    } else if (item.type === "module") {
+      state.highlight = null;
+      openFrontendModule(item.module);
+    } else if (item.type === "subtopic" && item.module) {
+      state.highlight = item.id;
+      openFrontendModule(item.module);
+      $(`.subtopic-item[data-id="${item.id}"]`)?.scrollIntoView({ block: "center" });
     } else if (item.type === "subtopic") {
       state.highlight = item.id;
       openDayDetail(item.day);
@@ -3638,6 +3918,7 @@
     $$(".nav-item").forEach(item => {
       item.addEventListener("click", () => {
         if (item.dataset.view === "sets") openSet(null);
+        else if (item.dataset.view === "frontend") openFrontendModule(null);
         else switchView(item.dataset.view);
       });
     });
@@ -3653,7 +3934,7 @@
     document.body.appendChild(toTop);
     scroller.addEventListener("scroll", () => {
       toTop.classList.toggle("visible", scroller.scrollTop > 900);
-      const fill = $("#reading-progress-fill");
+      const fill = $(".view.active #reading-progress-fill");   // a day and a frontend module can both hold notes
       if (fill) {
         const max = scroller.scrollHeight - scroller.clientHeight;
         fill.style.width = `${max > 0 ? Math.min(100, (scroller.scrollTop / max) * 100) : 0}%`;

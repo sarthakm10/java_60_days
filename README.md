@@ -36,6 +36,7 @@ DSA practice runs alongside, introduced after the Java concept each pattern need
 - **Study notes** for every day, with diagrams (Mermaid) and syntax-highlighted code. In the Beginner track, sections shared with the Interview track open with an "🌱 In simple words" box, and advanced parts are folded into "🚀 Go deeper" panels
 - **Code practice:** 138 exercises in the Beginner track and 78 in the Interview track (Java, SQL and Spring Boot), each with starter code, step-by-step hints, a reference solution and the expected output or test result
 - **Spaced revision:** ticked topics come back after 1, 3, 7, 21 and 45 days, plus flashcard decks built automatically from the notes
+- **Frontend:** HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend system design, machine coding and interview questions (28 modules). In the Beginner track it runs alongside Java from Day 13; in the Interview track it's a separate section, by topic. Both tracks also have a **Frontend** page with every module, its checklist and its notes
 - **DSA question sets:** curated LeetCode problems by topic, with a per-problem log (approach, complexity, attempts, "solve again")
 - Dashboard with streaks, XP, levels and badges, a focus timer, global search (press `/`), light and dark themes, and a mobile layout
 - **Export / import** of all progress as a JSON file
@@ -70,9 +71,11 @@ app.js                   all application logic (tracks, rendering, progress, rev
 styles.css               styles, including light/dark themes and the mobile layout
 data.js                  Interview track: days, topics and subtopics (CURRICULUM_DATA)
 data-beginner.js         Beginner track: days built from new and borrowed subtopics (BEGINNER_DATA)
+data-frontend.js         Frontend modules shared by both tracks (FRONTEND_DATA), and the Beginner days each one is on
 question-sets.js         DSA question sets (LeetCode problems by topic)
 notes/day-NN.md          Interview study notes, one file per day
 notes/beginner/day-NN.md Beginner study notes, one file per day
+notes/frontend/module-NN.md  Frontend notes, one file per module
 practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
 visualize/programs/*.java   programs for the code visualizer
@@ -96,6 +99,15 @@ Subtopic ids (`d12_t1_s3`, `b45_t1_s2`) and exercise ids (`d20_e1`, `b47_e1`) ar
 A Beginner day in `data-beginner.js` lists its subtopics as either a new one (`["b3_t1_s2", "label"]`), a borrowed Interview subtopic (`"d1_t1_s1"`), or a borrowed one with a simpler label (`["d1_t1_s1", "label"]`). `dsa(N)` borrows Interview day N's whole DSA topic, together with its question sets.
 
 A Beginner day's notes are put together per subtopic: from `notes/beginner/day-NN.md` when that file has the subtopic, otherwise from the Interview notes that cover it.
+
+### Frontend modules
+
+`data-frontend.js` lists 28 modules in six levels (HTML & CSS, JavaScript, TypeScript, React, Frontend engineering, Interview prep). Each module has subtopic ids `fN_sM` and the Beginner days it's spread over (`days`):
+
+- **Beginner track:** `data-beginner.js` adds a "Frontend — module title" topic to each of those days, splitting the module's subtopics between them. The day's notes take those sections from the module's file, so frontend sections are never written in `notes/beginner/`.
+- **Interview track:** the modules stay out of the 60 days. They live on the **Frontend** page, where ticked subtopics still count toward the Frontend subject, come back in Revise, and get their own flashcard decks.
+
+A module's notes, `notes/frontend/module-NN.md`, have one `<!-- subtopic: fN_sM -->` section per subtopic, in order, then a `## 📝 Module N Recap`. Inside the sections use `###` and `####` headings only (a `##` would end a section early on a Beginner day); `#### 🚀` subsections are folded into "Go deeper" panels on Beginner days. A module without a file yet shows "being written" and its checklist.
 
 ### Notes markers
 
@@ -150,7 +162,7 @@ node scripts/check-all.js
 
 | Script | Checks | Needs |
 | --- | --- | --- |
-| `check-notes.js` | every subtopic has its section, markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
+| `check-notes.js` | every subtopic has its section (frontend modules too, once their file exists), markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
 | `check-practice.js` | exercise format; Java starters compile and solutions print exactly the expected output; Beginner `practice` lists match the files | Node, a JDK |
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
