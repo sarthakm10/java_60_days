@@ -1,6 +1,7 @@
 // Usage: node scripts/render-images.js
-// Renders scripts/brand-images.html into og-image.png (1200×630 link preview) and
-// apple-touch-icon.png (180×180) at the repo root, using headless Chrome or Edge.
+// Renders scripts/brand-images.html into og-image.png (1200×630 link preview), apple-touch-icon.png (180×180) and
+// the installed app's icons (icon-192.png, icon-512.png, icon-maskable-512.png) at the repo root,
+// using headless Chrome or Edge.
 // Set CHROME=<path to the browser> if it isn't found. Needs internet for the Google fonts.
 const fs = require("fs");
 const path = require("path");
@@ -40,4 +41,7 @@ function render(url, out, width, height) {
 }
 
 render(page, path.join(root, "og-image.png"), 1200, 630);
-render(`${page}?icon`, path.join(root, "apple-touch-icon.png"), 180, 180);
+render(`${page}?icon=180`, path.join(root, "apple-touch-icon.png"), 180, 180);
+render(`${page}?icon=192`, path.join(root, "icon-192.png"), 192, 192);
+render(`${page}?icon=512`, path.join(root, "icon-512.png"), 512, 512);
+render(`${page}?icon=512&maskable`, path.join(root, "icon-maskable-512.png"), 512, 512);

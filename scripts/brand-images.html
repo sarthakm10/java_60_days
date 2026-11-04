@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
-  Source of og-image.png (the 1200×630 link preview) and apple-touch-icon.png (180×180, with ?icon).
+  Source of og-image.png (the 1200×630 link preview) and the app icons: ?icon=180 for apple-touch-icon.png, ?icon=192 and
+  ?icon=512 for the installed app (manifest.webmanifest), and ?icon=512&maskable for Android's shaped icons.
   Rendered by scripts/render-images.js; open it in a browser at 1200×630 to preview.
 -->
 <html lang="en">
@@ -52,16 +53,26 @@
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
     .chips span { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(18,22,40,.6); font-size: 15px; font-weight: 600; color: var(--text-2); }
 
-    /* ?icon: the apple-touch-icon, full bleed (iOS rounds the corners itself) */
-    body.icon { width: 180px; height: 180px; background: var(--grad); display: grid; place-items: center; }
-    html.icon { width: 180px; height: 180px; }
+    /* ?icon=SIZE: an app icon, full bleed (iOS and Android round or shape the corners themselves).
+       The rocket fills 62% of the icon; with &maskable, 48%, inside the circle Android may crop it to. */
+    body.icon { width: var(--size); height: var(--size); background: var(--grad); display: grid; place-items: center; }
+    html.icon { width: var(--size); height: var(--size); }
+    body.icon .icon-mark { width: calc(var(--size) * var(--mark)); height: calc(var(--size) * var(--mark)); }
     body.icon > :not(.icon-mark) { display: none; }
     .icon-mark { display: none; }
     body.icon .icon-mark { display: block; }
   </style>
 </head>
 <body>
-  <script>if (location.search.includes("icon")) { document.documentElement.className = "icon"; document.body.className = "icon"; }</script>
+  <script>
+    const query = new URLSearchParams(location.search);
+    if (query.has("icon")) {
+      document.documentElement.className = "icon";
+      document.body.className = "icon";
+      document.documentElement.style.setProperty("--size", (+query.get("icon") || 180) + "px");
+      document.documentElement.style.setProperty("--mark", query.has("maskable") ? 0.48 : 0.62);
+    }
+  </script>
 
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
   <div class="grid"></div>

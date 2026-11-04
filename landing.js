@@ -344,6 +344,8 @@
 
   // ── Start ──
   function start() {
+    // Offline support and "Install app" (sw.js); the app itself offers "Save for offline"
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
     const stats = computeStats();
     buildTimeline();
     buildHeatmap();

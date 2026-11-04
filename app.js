@@ -3960,6 +3960,72 @@
     });
   }
 
+  // ── Offline use ──
+  // sw.js keeps a copy of every file the app fetches; "Save for offline" asks it to fetch all of them now
+  // (offline-files.json), so every day's notes and exercises open without a network. Installed as an app
+  // (Add to Home screen), it saves everything by itself the first time.
+  const OFFLINE_KEY = "jf_offline_saved";   // when everything was last saved, for the button's tooltip
+
+  function offlineSavedOn() {
+    try { return localStorage.getItem(OFFLINE_KEY); } catch (e) { return null; }
+  }
+
+  function updateOfflineButton() {
+    const saved = offlineSavedOn();
+    $("#btn-offline").title = saved
+      ? `Saved for offline use on ${new Date(saved + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}. Click to update the saved copy`
+      : "Save everything for offline use";
+  }
+
+  function saveForOffline() {
+    const worker = navigator.serviceWorker?.controller;
+    if (!worker) {
+      showToast("Offline saving needs the site opened online once (over https). Reload and try again.", "info");
+      return;
+    }
+    navigator.storage?.persist?.();   // ask the browser not to clear the saved copy when space runs low
+    showToast("Saving everything for offline use…", "info");
+    worker.postMessage({ type: "download-all" });
+  }
+
+  function initOffline() {
+    if (!("serviceWorker" in navigator)) {
+      $("#btn-offline").hidden = true;
+      return;
+    }
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+    updateOfflineButton();
+    $("#btn-offline").addEventListener("click", saveForOffline);
+
+    navigator.serviceWorker.addEventListener("message", ({ data }) => {
+      if (data?.type === "download-progress") {
+        showToast(`Saving for offline use… ${data.done} of ${data.total} files`, "info");
+      } else if (data?.type === "download-done") {
+        if (data.failed) {
+          showToast(`Saved ${data.total - data.failed} of ${data.total} files. Some failed: try again when the connection is better.`, "error");
+          return;
+        }
+        try { localStorage.setItem(OFFLINE_KEY, dateKey()); } catch (e) { /* ignore */ }
+        updateOfflineButton();
+        showToast("Everything is saved: the whole site now works offline", "success");
+      } else if (data?.type === "download-error") {
+        showToast("Couldn't save for offline use: check your connection and try again", "error");
+      }
+    });
+
+    addEventListener("offline", () => showToast("You're offline: showing your saved copy", "info"));
+    addEventListener("online", () => showToast("Back online", "success"));
+
+    // Running as an installed app and never saved: save everything once, as soon as the worker is in charge
+    const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    if (installed && !offlineSavedOn()) {
+      navigator.serviceWorker.ready.then(() => {
+        if (navigator.serviceWorker.controller) saveForOffline();
+        else navigator.serviceWorker.addEventListener("controllerchange", saveForOffline, { once: true });
+      });
+    }
+  }
+
   // ── Init ──
   function init() {
     loadState();
@@ -4064,6 +4130,8 @@
         else { renderDaysGrid(); renderSidebar(); }
       });
     });
+
+    initOffline();
 
     // Export
     $("#btn-export").addEventListener("click", exportProgress);

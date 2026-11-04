@@ -1,5 +1,6 @@
 // Usage: node scripts/check-all.js [--spring] [--offline]
-// Runs every content check: notes, Java exercises, SQL exercises, visualizer recordings, and with --spring the Spring ones
+// Runs every content check: notes, Java exercises, SQL exercises, visualizer recordings, the offline file list,
+// and with --spring the Spring ones
 // (slow: builds Maven projects; --offline is passed on to it).
 const path = require("path");
 const { spawnSync } = require("child_process");
@@ -13,6 +14,7 @@ const steps = [
   ["Java exercises", ...node("check-practice.js")],
   python ? ["SQL exercises", python, [path.join(__dirname, "check-sql.py")]] : ["SQL exercises", null, []],
   ["Visualizer recordings", ...node("check-traces.js")],
+  ["Offline file list", ...node("build-offline-list.js", "--check")],
 ];
 if (args.includes("--spring")) steps.push(["Spring exercises", ...node("check-spring.js", ...args.filter(a => a === "--offline"))]);
 

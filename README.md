@@ -40,8 +40,20 @@ DSA practice runs alongside, introduced after the Java concept each pattern need
 - **DSA question sets:** curated LeetCode problems by topic, with a per-problem log (approach, complexity, attempts, "solve again")
 - Dashboard with streaks, XP, levels and badges, a focus timer, global search (press `/`), light and dark themes, and a mobile layout
 - **Export / import** of all progress as a JSON file
+- **Works offline, and installs as an app** on a phone or computer (see below)
 
 Progress is stored in your browser's `localStorage`. Clearing site data erases it, so use **Export** (sidebar) to keep a backup or move to another device.
+
+## Offline, and as an app on your phone
+
+The site is a Progressive Web App: a service worker (`sw.js`) keeps a copy of every file it loads, and `manifest.webmanifest` lets the browser install it like an app.
+
+- **Offline:** the ☁ **Save for offline** button (sidebar, next to Export) saves everything at once: every day's notes and exercises in both tracks, the visualizer recordings and the code-highlighting libraries (about 330 files, around 10 MB). After that the whole site works with no connection. Online, it always loads the newest version and refreshes the saved copy as you go; click the button again now and then to refresh everything.
+- **Android:** open the site in Chrome, tap ⋮ → **Add to Home screen** (or **Install app**). It opens full screen from its own icon, like any app, and saves everything for offline use the first time it starts. Your progress lives in that installed app's storage, so **Export** from the browser and **Import** in the app to move it across.
+- **iPhone:** in Safari, Share → **Add to Home Screen**.
+- **Desktop:** Chrome or Edge show an install icon in the address bar.
+
+Offline saving needs `https` (or `localhost`), so it works on the deployed site and locally, but not on a plain `http://` address on your network.
 
 ## Run it locally
 
@@ -83,6 +95,10 @@ visualize/programs/*.java   programs for the code visualizer
 visualize/traces/*.json     their step-by-step recordings (generated)
 visualize/index.js          LeetCode slug → recording, for the Question Sets' buttons (generated)
 favicon.svg, apple-touch-icon.png, og-image.png  icons and the link-preview image
+icon-192.png, icon-512.png, icon-maskable-512.png  the installed app's icons
+manifest.webmanifest     makes the site installable as an app
+sw.js                    service worker: offline copies of every file
+offline-files.json       everything "Save for offline" downloads (generated)
 scripts/                 content checks, the visualizer's recorder, and the source of the preview image
 vscode-extension/        Java Step Visualizer: the same visualizer for your own code, inside VS Code
 ```
@@ -170,6 +186,7 @@ node scripts/check-all.js
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
 | `check-traces.js` | every visualizer program has an up-to-date recording that finished cleanly, and its settings name real variables | Node |
+| `build-offline-list.js --check` | `offline-files.json` lists every notes, exercise and recording file (run it without `--check` to update the list after adding or removing files) | Node |
 
 `check-all.js` runs all but the Spring one; add `--spring` for the Spring builds, which take a few minutes. Each script also runs on its own and takes a track and days, for example `node scripts/check-practice.js beginner 20-30` or `python scripts/check-sql.py 47`.
 
@@ -204,7 +221,7 @@ With no name it records every program; after only adding or moving a `<!-- visua
 
 ### Link preview image
 
-`og-image.png` (shown when the site's link is shared) and `apple-touch-icon.png` are rendered from `scripts/brand-images.html`. After changing that file, run `node scripts/render-images.js` (needs Chrome or Edge installed).
+`og-image.png` (shown when the site's link is shared), `apple-touch-icon.png` and the app icons (`icon-*.png`) are rendered from `scripts/brand-images.html`. After changing that file, run `node scripts/render-images.js` (needs Chrome or Edge installed).
 
 ## VS Code extension
 
