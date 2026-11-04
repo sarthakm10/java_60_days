@@ -1042,31 +1042,6 @@
     const frontendFilter = $('[data-category="Frontend"]');
     if (frontendFilter) frontendFilter.hidden = state.track === "interview";
 
-    // Heatmap
-    renderHeatmap();
-  }
-
-  function renderHeatmap() {
-    const grid = $("#heatmap-grid");
-    grid.innerHTML = "";
-    const currentDay = getCurrentDay();
-    for (let i = 1; i <= DAYS.length; i++) {
-      const cell = document.createElement("div");
-      cell.className = "heatmap-cell";
-      cell.textContent = i;
-      cell.title = `Day ${i}: ${getDayData(i)?.title || ""}`;
-      cell.dataset.day = i;
-
-      const status = getDayStatus(i);
-      if (status === "completed") cell.classList.add("completed");
-      else if (status === "in-progress") cell.classList.add("partial");
-      if (dayHasMissedNotes(i)) cell.classList.add("has-missed");
-      if (i === currentDay && status !== "completed") cell.classList.add("current");
-      if (state.selectedDay === i) cell.classList.add("active");
-
-      cell.addEventListener("click", () => openDayDetail(i));
-      grid.appendChild(cell);
-    }
   }
 
   function categoryTagsHTML(categories) {

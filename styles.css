@@ -440,63 +440,6 @@ button { font-family: inherit; }
 
 .nav-item.active svg { color: var(--accent); }
 
-.sidebar-section-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-tertiary);
-  margin: 0 6px 10px;
-}
-
-/* Mini 60-day grid */
-.heatmap-grid {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 4px;
-  padding: 0 4px;
-}
-
-.heatmap-cell {
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-secondary);
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: transform var(--transition-fast), background var(--transition-fast);
-}
-
-.heatmap-cell:hover { transform: scale(1.18); color: var(--text-primary); }
-
-.heatmap-cell.partial {
-  background: color-mix(in srgb, var(--a2) 28%, var(--bg-tertiary));
-  color: var(--text-primary);
-}
-
-.heatmap-cell.completed {
-  background: var(--grad);
-  border-color: transparent;
-  color: #fff;
-}
-
-.heatmap-cell.current {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  color: var(--text-primary);
-}
-
-.heatmap-cell.has-missed { box-shadow: inset 0 -3px 0 var(--accent-orange); }
-
-.heatmap-cell.active {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 1px;
-}
-
 .sidebar-actions {
   margin-top: auto;
   display: flex;
@@ -4552,7 +4495,6 @@ button { font-family: inherit; }
 /* Touch screens: no hover lift, bigger hit areas */
 @media (hover: none) {
   .day-card:hover, .set-card:hover, .stat-tile:hover, .subject-card:hover { transform: none; }
-  .heatmap-cell:hover { transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
