@@ -1,7 +1,7 @@
 // ============================================================
 // Java Fullstack — Frontend curriculum (shared by both tracks)
 //
-// 28 modules from web basics to React internals and frontend interview prep. Notes live in
+// 28 modules from web basics to React internals and frontend interview prep, plus a guided React project (module 29). Notes live in
 // notes/frontend/module-NN.md, one <!-- subtopic: fN_sM --> section per subtopic.
 // - Beginner track: each module's subtopics are spread over the Beginner days in `days`, as a "Frontend" topic
 //   next to that day's Java and DSA (data-beginner.js adds them).
@@ -203,6 +203,20 @@ const FRONTEND_DATA = [
     ["f22_s4", "CSR, SSR, SSG and hydration"],
     ["f22_s5", "Next.js and React Server Components: an overview"],
     ["f22_s6", "What's new in React 19: Actions, use, useOptimistic, and the React Compiler"]
+  ] },
+
+  // A guided project across the React days: one step per day, ending in the full-stack Task Manager
+  { module: 29, level: 3, title: "Project: Build the Task Manager UI", days: [55, 58, 61, 64, 66, 67, 69, 70, 73, 76], subtopics: [
+    ["f29_s1", "Step 1: set up the project and build the task list from components and props"],
+    ["f29_s2", "Step 2: make it interactive: add, update, delete and filter tasks with state"],
+    ["f29_s3", "Step 3: load and save through a fake API, with loading, error and empty states"],
+    ["f29_s4", "Step 4: move the logic into custom hooks, add search with debounce and a dark mode context"],
+    ["f29_s5", "Step 5: add pages with React Router: projects, a project's tasks, task details"],
+    ["f29_s6", "Step 6: replace the hand-written fetching with TanStack Query"],
+    ["f29_s7", "Step 7: connect to your Spring Boot API: sign up, log in with JWT, protected routes"],
+    ["f29_s8", "Step 8: forms with React Hook Form and Zod, server errors, and session expiry"],
+    ["f29_s9", "Step 9: polish: pagination, skeletons, an error boundary, lazy routes and an accessibility pass"],
+    ["f29_s10", "Step 10: test it with Vitest, Testing Library and MSW, then deploy both halves"]
   ] },
 
   // ===================== FRONTEND ENGINEERING =====================
