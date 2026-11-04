@@ -1,12 +1,12 @@
 # Frontend 29 — Project: Build the Task Manager UI
 
-> **Ten steps, one per React day, from an empty folder to a deployed full-stack app.** You'll build the React front end for the Task Manager API you write on Beginner Days 65–67 (projects, tasks, JWT login). Each step uses what that day's module taught, ends with a checkpoint, and leaves you with a working app to commit. By step 10 you have a portfolio project you can demo and explain in an interview.
+> **Ten steps, one per React day, from an empty folder to a deployed full-stack app.** You'll build the React front end for the Task Manager API you build on Beginner Days 54–67 (projects, tasks, JWT login). Each step uses what that day's module taught, ends with a checkpoint, and leaves you with a working app to commit. By step 10 you have a portfolio project you can demo and explain in an interview.
 
 **How to use this project**
 
 - Do each step on its day, after reading the module notes. Type the code yourself; copy only when stuck.
 - Commit after every checkpoint (`git commit -m "step 3: fake API with loading states"`), so you can always go back.
-- Steps 1–6 use a **fake API** in the browser, so you don't need the backend yet. Step 7 switches to your real Spring Boot API, which you'll have built by then (Days 65–67).
+- Steps 1–6 use a **fake API** in the browser, so you don't need the backend yet. Step 7 switches to your real Spring Boot API, which you'll have built by then (Days 54–67).
 - The code uses TypeScript (Modules 13–14), React 19, React Router 7 and TanStack Query 5. If a newer version has changed something small, the error message and the library's docs will point you to the fix.
 
 ```mermaid
@@ -798,7 +798,7 @@ What changed for the user:
 <!-- subtopic: f29_s7 -->
 ### Step 7: connect to your Spring Boot API and log in
 
-**Goal:** replace the fake API with your real Task Manager API from Days 65–67, including sign-up and JWT login (Module 20). Start your Spring Boot app (`./mvnw spring-boot:run`) on port 8080.
+**Goal:** replace the fake API with your real Task Manager API from Days 54–67, including sign-up and JWT login (Module 20). Start your Spring Boot app (`./mvnw spring-boot:run`) on port 8080.
 
 **1. Proxy `/api` to Spring in development**, so there's no CORS to fight yet:
 
@@ -956,7 +956,7 @@ Wrap the three app routes in `<Route element={<RequireAuth />}>…</Route>`, add
 - [ ] With Spring running, signing up creates a user (check the database) and logs you in.
 - [ ] Projects and tasks now come from PostgreSQL: create a task in the UI and see it with `GET /api/...` in Postman (with the token).
 - [ ] Logging out (or deleting the token in DevTools and refreshing) sends you to `/login`, and you come back to the page you wanted after logging in.
-- [ ] Two different users never see each other's projects (your Day 66 ownership checks). Commit: `step 7: real API and JWT login`.
+- [ ] Two different users never see each other's projects (your Day 62 ownership checks). Commit: `step 7: real API and JWT login`.
 
 **If it doesn't work:** a 401 on everything means the `Authorization` header is missing or the token is wrong (check the Network tab); a 404 on `/api/...` from Vite means the proxy isn't running (restart `npm run dev` after editing the config); a 403 on POST may be Spring's CSRF protection, which a stateless JWT API should disable.
 
@@ -1070,7 +1070,7 @@ Use it on the project page (`submitLabel="Add task"`, calling `add`) and on the 
 
 **Goal:** the difference between "it works" and "it's good" (Modules 21, 24).
 
-**1. Real pagination.** Your API pages results (`?page=0&size=20`, Day 67). Use TanStack Query's `useInfiniteQuery` with a "Load more" button:
+**1. Real pagination.** Your API pages results (`?page=0&size=20`, Day 59). Use TanStack Query's `useInfiniteQuery` with a "Load more" button:
 
 (Export the `Page` type from `tasksApi.ts` and import it and `request` into the hook.)
 

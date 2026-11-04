@@ -21,7 +21,7 @@ Each track keeps its own progress. Your streak, focus timer, daily goal and them
 4. Modern Java: lambdas, streams, Optional, the Date/Time API, Java 10–21 features
 5. Concurrency and the JVM: threads, synchronization, executors, concurrent collections, virtual threads, memory and GC
 6. Backend foundations: HTTP/REST/JSON, Maven and unit testing, SQL (joins, window functions, indexes, transactions), JDBC, NoSQL
-7. Spring Boot: dependency injection, REST APIs, validation, testing, Spring Data JPA, transactions, security with JWT, Actuator, and a three-day Task Manager API project
+7. Spring Boot: dependency injection, REST APIs, validation, testing, Spring Data JPA, transactions, security with JWT, Actuator, and a guided Task Manager API project: one step on each Spring day (54–64), finished on Days 65–67
 8. Design: SOLID, design patterns, low-level design (machine coding)
 9. Deploy and scale: Docker, microservices, Kafka, Kubernetes and CI/CD, AWS, Terraform
 10. System design and interview prep: system design fundamentals and practice, revision, behavioral interviews, resume, a final mock interview

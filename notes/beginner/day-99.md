@@ -7,7 +7,7 @@
 <!-- topic: b99_t1 -->
 ## 🗄️ Behavioral — Project Deep-Dive
 
-Interviewers will pick **one project and go deep**. Use your Task Manager (Days 65–67) and prepare each checklist item:
+Interviewers will pick **one project and go deep**. Use your Task Manager (Days 54–67) and prepare each checklist item:
 
 - **Architecture on a whiteboard:** client → controller → service → repository → PostgreSQL, plus security, Flyway and tests. Draw it in two minutes.
 - **Three design decisions and their trade-offs:** for example, why ownership checks return 404, why Flyway instead of `ddl-auto`, how paging is capped. Every decision has a downside; name it.

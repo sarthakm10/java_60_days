@@ -488,6 +488,9 @@ const BEGINNER_DATA = (() => {
         ["b54_t1_s4", "application.properties / application.yml — server.port, logging levels, your own settings"],
         ["b54_t1_s5", "Your first endpoint — @RestController with @GetMapping returning text, then a JSON object"]
       ]),
+      topic("Spring Boot", "Project — Task Manager API (Step 1)", [
+        ["b54_t2_s1", "Step 1: plan the Task Manager API, create the project with a ping endpoint, and make the first commit"]
+      ]),
       dsa(46)
     ] },
     { p: 6, title: "Building a REST API", practice: ["d20_e1"], topics: [
@@ -496,14 +499,23 @@ const BEGINNER_DATA = (() => {
         ["b55_t1_s4", "Layers — Controller → Service → Repository, and DTOs to shape requests and responses"],
         ["b55_t1_s5", "Test every endpoint with Postman or curl, including the error cases"]
       ]),
+      topic("Spring Boot", "Project — Task Manager API (Step 2)", [
+        ["b55_t2_s1", "Step 2: projects and tasks API in memory — DTO records, a service per feature, 201 Created with Location"]
+      ]),
       dsa(47)
     ] },
     { p: 6, title: "Validation and Error Handling", practice: ["d20_e2"], topics: [
       topic("Spring Boot", "Spring Boot — Validation & Errors", ["d20_t1_s6", "d20_t1_s7", "d20_t1_s8"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 3)", [
+        ["b56_t2_s1", "Step 3: validation on the request DTOs and one @RestControllerAdvice that returns ProblemDetail errors"]
+      ]),
       dsa(56)
     ] },
     { p: 6, title: "Testing Spring Boot Apps", practice: ["d24_e1", "d24_e2", "d24_e3"], topics: [
       topic("Spring Boot", "Testing — Mockito & Spring Tests", ["d24_t1_s1", "d24_t1_s6", "d24_t1_s2", "d24_t1_s3", "d24_t1_s4"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 4)", [
+        ["b57_t2_s1", "Step 4: unit tests for TaskService with Mockito and @WebMvcTest tests for TaskController"]
+      ]),
       dsa(48)
     ] },
     { p: 6, title: "Spring Data JPA — Entities and Repositories", practice: ["d21_e1"], topics: [
@@ -513,52 +525,73 @@ const BEGINNER_DATA = (() => {
         ["b58_t1_s4", "Derived query methods — findByEmail, findByAgeGreaterThan, existsBy…"],
         "d21_t1_s5"
       ]),
+      topic("Spring Boot", "Project — Task Manager API (Step 5)", [
+        ["b58_t2_s1", "Step 5: store projects and tasks in PostgreSQL with JPA entities and repositories"]
+      ]),
       dsa(49)
     ] },
     { p: 6, title: "JPA Relationships and the N+1 Problem", practice: ["d21_e2", "d21_e3"], topics: [
       topic("Spring Boot", "Spring Data JPA — Relationships & Performance", ["d21_t1_s2", "d21_t1_s3", "d21_t1_s4", "d21_t1_s6", "d21_t1_s8"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 6)", [
+        ["b59_t2_s1", "Step 6: @ManyToOne task → project, paged and filtered task lists, project counts in one query (no N+1)"]
+      ]),
       dsa(50)
     ] },
     { p: 6, title: "Transactions and Database Migrations", practice: ["d22_e1", "d22_e2", "d22_e3"], topics: [
-      topic("Spring Boot", "Spring — Transactions & Hibernate", ["d22_t1_s1", "d22_t1_s2", "d22_t1_s3", "d22_t1_s4", "d22_t1_s5", "d22_t1_s6", "d22_t1_s7"])
+      topic("Spring Boot", "Spring — Transactions & Hibernate", ["d22_t1_s1", "d22_t1_s2", "d22_t1_s3", "d22_t1_s4", "d22_t1_s5", "d22_t1_s6", "d22_t1_s7"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 7)", [
+        ["b60_t2_s1", "Step 7: Flyway migrations, @Transactional services, deleting a project with its tasks, @Version → 409"]
+      ])
     ] },
     { p: 6, title: "Spring Security — The Basics", practice: ["d23_e1"], topics: [
       topic("Spring Boot", "Spring Security — Basics", [
         ["b61_t1_s1", "Authentication (who are you?) vs authorization (what may you do?) in simple words"],
         "d23_t1_s1", "d23_t1_s8", "d23_t1_s6", "d23_t1_s7"
+      ]),
+      topic("Spring Boot", "Project — Task Manager API (Step 8)", [
+        ["b61_t2_s1", "Step 8: users and sign-up with BCrypt, Spring Security with HTTP Basic, CORS for the React app"]
       ])
     ] },
     { p: 6, title: "Spring Security — JWT and OAuth2", practice: ["d23_e2", "d23_e3"], topics: [
-      topic("Spring Boot", "Spring Security — Tokens", ["d23_t1_s2", "d23_t1_s3", "d23_t1_s4", "d23_t1_s5"])
+      topic("Spring Boot", "Spring Security — Tokens", ["d23_t1_s2", "d23_t1_s3", "d23_t1_s4", "d23_t1_s5"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 9)", [
+        ["b62_t2_s1", "Step 9: JWT login with Bearer tokens, and every user sees only their own projects and tasks"]
+      ])
     ] },
     { p: 6, title: "Configuration, Profiles, Logging and Actuator", practice: ["d25_e1", "d25_e2", "d25_e3"], topics: [
-      topic("Spring Boot", "Spring Boot — Production Features", ["d25_t1_s4", "d25_t1_s5", "d25_t1_s6", "d25_t1_s7", "d25_t1_s1", "d25_t1_s2", "d25_t1_s3", "d25_t1_s8"])
+      topic("Spring Boot", "Spring Boot — Production Features", ["d25_t1_s4", "d25_t1_s5", "d25_t1_s6", "d25_t1_s7", "d25_t1_s1", "d25_t1_s2", "d25_t1_s3", "d25_t1_s8"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 10)", [
+        ["b63_t2_s1", "Step 10: typed @ConfigurationProperties, dev and prod profiles, Actuator health and safe logging"]
+      ])
     ] },
     { p: 6, title: "AOP and How Spring Works Inside", practice: ["d19_e3", "d26_e1", "d20_e3"], topics: [
       topic("Spring Boot", "Spring — Under the Hood", ["d19_t1_s8", "d26_t1_s6", "d26_t1_s5", "d26_t1_s1"]),
+      topic("Spring Boot", "Project — Task Manager API (Step 11)", [
+        ["b64_t2_s1", "Step 11: a timing aspect that logs slow service calls, and seeing Spring's proxies"]
+      ]),
       dsa(40)
     ] },
-    { p: 6, title: "Project Day 1 — Plan and Build a Task Manager API", topics: [
-      topic("Spring Boot", "Project — Task Manager API (Part 1)", [
-        ["b65_t1_s1", "Plan the app — users, projects and tasks; sketch the tables and the endpoints"],
-        ["b65_t1_s2", "Create the project with Web, Data JPA, Validation, PostgreSQL and Flyway"],
-        ["b65_t1_s3", "Entities, repositories and Flyway migration scripts"],
-        ["b65_t1_s4", "CRUD endpoints for tasks with DTOs and validation"]
+    { p: 6, title: "Project Day 1 — Walk Through, Document and Test the API", topics: [
+      topic("Spring Boot", "Project — Finish the Task Manager API (Part 1)", [
+        ["b65_t1_s1", "Step 12: walk through the whole API with curl, every success and error case"],
+        ["b65_t1_s2", "Step 13: interactive API docs with Swagger UI (springdoc) and its Authorize button"],
+        ["b65_t1_s3", "Step 14: an end-to-end @SpringBootTest against a real test database"],
+        ["b65_t1_s4", "Step 15: demo data on startup in the dev profile"]
       ])
     ] },
-    { p: 6, title: "Project Day 2 — Security and Tests", topics: [
-      topic("Spring Boot", "Project — Task Manager API (Part 2)", [
-        ["b66_t1_s1", "Sign-up and login with BCrypt and JWT"],
-        ["b66_t1_s2", "Users can only see and change their own tasks"],
-        ["b66_t1_s3", "Unit tests for the service and @WebMvcTest tests for the controller"],
-        ["b66_t1_s4", "Global error handling that returns the same error JSON everywhere"]
+    { p: 6, title: "Project Day 2 — Errors, Security Review and a Runnable Jar", topics: [
+      topic("Spring Boot", "Project — Finish the Task Manager API (Part 2)", [
+        ["b66_t1_s1", "Step 16: one error format everywhere — ProblemDetail for 401, 403 and unexpected 500s"],
+        ["b66_t1_s2", "Step 17: a security review — what protects the API, where, and what you'd add next"],
+        ["b66_t1_s3", "Step 18: a code review, the last controller tests and a full test run"],
+        ["b66_t1_s4", "Step 19: build a runnable jar and start it with the prod profile"]
       ])
     ] },
-    { p: 6, title: "Project Day 3 — Polish and Phase 7 Review", practice: ["d26_e2", "d26_e3"], topics: [
-      topic("Spring Boot", "Project — Task Manager API (Part 3)", [
-        ["b67_t1_s1", "Pagination, sorting and filtering on the task list"],
-        ["b67_t1_s2", "dev and prod profiles, logging and an Actuator health check"],
-        ["b67_t1_s3", "A README with setup steps and the API list; push to GitHub"]
+    { p: 6, title: "Project Day 3 — README, GitHub and Phase 7 Review", practice: ["d26_e2", "d26_e3"], topics: [
+      topic("Spring Boot", "Project — Finish the Task Manager API (Part 3)", [
+        ["b67_t1_s1", "Step 20: a README with setup steps, the API table and your design decisions"],
+        ["b67_t1_s2", "Step 21: push to GitHub and tag v1.0"],
+        ["b67_t1_s3", "Step 22: check the API matches what the React app (Module 29, step 7) expects"]
       ]),
       topic("Spring Boot", "Spring — Review", ["d26_t1_s2", "d26_t1_s3", "d26_t1_s4"])
     ] },

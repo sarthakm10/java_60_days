@@ -255,7 +255,7 @@
     ["⚡", "Lambdas, streams, Optional, the Date/Time API and the newest Java features."],
     ["🧵", "Threads, synchronization, thread pools, concurrent collections, virtual threads, memory and garbage collection."],
     ["🌐", "How the web works, Maven and unit tests, SQL from scratch to window functions, JDBC and NoSQL."],
-    ["🌿", "Dependency injection, REST APIs, validation, testing, JPA, transactions and JWT security, then a three-day Task Manager API project."],
+    ["🌿", "Dependency injection, REST APIs, validation, testing, JPA, transactions and JWT security, and a Task Manager API built step by step, one step a day."],
     ["📐", "SOLID, the classic design patterns and low-level design interview problems."],
     ["☁️", "Docker, microservices, Kafka, Kubernetes, CI/CD, AWS and Terraform."],
     ["🎯", "System design, revision, behavioural answers, your resume and a final mock interview."]

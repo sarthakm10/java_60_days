@@ -15,7 +15,7 @@ Today's checklist items are **self-tests**. Work through them in this order, out
 4. **AWS self-test** (Days 85–91): S3, EC2 vs ECS vs Lambda, IAM roles, VPC subnets, Terraform's workflow.
 5. **Design patterns** (Days 69–70): for ten short descriptions, name the pattern ("wraps an object to add behaviour" → Decorator).
 
-Your own Task Manager (Days 65–67) is the best revision tool: explain how each of these topics shows up in it, because interviewers will ask about your project.
+Your own Task Manager (Days 54–67) is the best revision tool: explain how each of these topics shows up in it, because interviewers will ask about your project.
 
 ## 📝 Day 96 Recap
 

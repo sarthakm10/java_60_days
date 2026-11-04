@@ -144,6 +144,126 @@ Spring converts it to JSON (with Jackson) and sends it as the response body.
 </details>
 
 <!-- topic: b54_t2 -->
+## 🛠️ Project — Task Manager API (Step 1)
+
+<!-- subtopic: b54_t2_s1 -->
+### Step 1: plan the API, create the project, and make the first commit
+
+From today until Day 67 you build one real backend, a step a day, each step using what that day taught. It's a task manager like a simple Trello or Todoist: people sign up, create **projects**, and add **tasks** to them. At the end you have a portfolio project you can explain in an interview, and on Day 69 the React app from the Frontend section (Module 29) connects to it.
+
+**Where it's going.** This is the finished API. You'll build it one piece at a time, so don't worry if some words are new.
+
+| Method | Path | Does | Success |
+|---|---|---|---|
+| POST | `/api/auth/signup` | create an account | 201 |
+| POST | `/api/auth/login` | log in, get a token | 200 |
+| POST | `/api/projects` | create a project | 201 |
+| GET | `/api/projects` | my projects, with task counts | 200 |
+| GET | `/api/projects/{id}` | one project | 200 |
+| DELETE | `/api/projects/{id}` | delete a project and its tasks | 204 |
+| POST | `/api/projects/{id}/tasks` | add a task | 201 |
+| GET | `/api/projects/{id}/tasks` | a page of tasks, filtered and sorted | 200 |
+| GET | `/api/tasks/{id}` | one task | 200 |
+| PATCH | `/api/tasks/{id}` | change some fields | 200 |
+| DELETE | `/api/tasks/{id}` | delete a task | 204 |
+
+And the data, as tables (Day 51's ER diagrams):
+
+```mermaid
+erDiagram
+    USERS ||--o{ PROJECTS : owns
+    PROJECTS ||--o{ TASKS : contains
+    USERS {
+        bigint id PK
+        varchar email
+        varchar password_hash
+    }
+    PROJECTS {
+        bigint id PK
+        bigint owner_id FK
+        varchar name
+    }
+    TASKS {
+        bigint id PK
+        bigint project_id FK
+        varchar title
+        varchar status
+        int priority
+        date due_date
+    }
+```
+
+The rules: a task's title is required (at most 200 characters), its priority is 1 to 5 (3 if not given), its status is `TODO`, `IN_PROGRESS` or `DONE` (new tasks start as `TODO`), and a due date can't be in the past. Users only ever see their own projects and tasks.
+
+| Day | Step |
+|---|---|
+| 54 | 1. the project and a first endpoint |
+| 55 | 2. projects and tasks, stored in memory |
+| 56 | 3. validation and error responses |
+| 57 | 4. tests |
+| 58 | 5. a real database with JPA |
+| 59 | 6. relationships, paging and the N+1 problem |
+| 60 | 7. Flyway migrations and transactions |
+| 61 | 8. users, sign-up and Spring Security |
+| 62 | 9. JWT login, and each user sees only their data |
+| 63 | 10. configuration, profiles and health checks |
+| 64 | 11. an aspect that times every service call |
+| 65–67 | 12–22. finish: docs, end-to-end tests, a security review, a runnable jar, a README, GitHub |
+
+Every step ends with a ✅ **Checkpoint** (what should work now) and a commit, so you can always go back to a version that worked.
+
+**1. Create the project.** At [start.spring.io](https://start.spring.io): **Maven**, **Java**, Spring Boot **4.0.x**, Group `com.example`, Artifact `taskmanager`, Java **21**. Dependencies: **Spring Web**, **Validation** and **Spring Boot DevTools**. Generate, unzip into your projects folder and open it in IntelliJ. Your package is `com.example.taskmanager`; every class goes in it or below it.
+
+**2. A first endpoint**, to prove the app runs:
+
+```java
+// src/main/java/com/example/taskmanager/PingController.java
+package com.example.taskmanager;
+
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+// A tiny endpoint that proves the app is up: GET /api/ping → {"status":"ok"}
+@RestController
+public class PingController {
+
+    @GetMapping("/api/ping")
+    public Map<String, String> ping() {
+        return Map.of("status", "ok");
+    }
+}
+```
+
+**3. Run it** (▶ next to `main` in `TaskManagerApplication`, or `./mvnw spring-boot:run`) and call it:
+
+```bash
+curl http://localhost:8080/api/ping
+```
+
+```text
+{"status":"ok"}
+```
+
+(No curl? Open the address in your browser, or use Postman. On Windows, `curl.exe` is built in; in PowerShell type `curl.exe`, not `curl`.)
+
+**4. Your first commit.** The Initializr already made a `.gitignore` that leaves out `target/` and IDE files.
+
+```bash
+git init
+git add .
+git commit -m "step 1: project and ping endpoint"
+```
+
+**✅ Checkpoint**
+
+- [ ] `GET /api/ping` answers `{"status":"ok"}`.
+- [ ] `git log` shows your first commit.
+
+**If it doesn't work:** "Port 8080 was already in use" means another app (maybe an old run) has the port: stop it, or set `server.port=8081` in `application.properties`. A 404 on `/api/ping` usually means the controller is outside the `com.example.taskmanager` package, so component scanning never finds it.
+
+<!-- topic: b54_t3 -->
 ## 🧮 DSA — Timed Practice
 
 Interviews have time limits, so practise with one: solve one easy and two medium problems in 60 minutes, without looking anything up. Then two design-flavoured problems (Design Twitter, Flatten Nested List Iterator) that combine maps, lists and heaps, and Task Scheduler (heap + greedy). Note which problems ran over time; those patterns go on your revision list.
