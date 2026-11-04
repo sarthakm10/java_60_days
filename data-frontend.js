@@ -140,7 +140,7 @@ const FRONTEND_DATA = [
   ] },
 
   // ===================== REACT =====================
-  { module: 15, level: 3, title: "React Fundamentals", days: [53, 54, 55], subtopics: [
+  { module: 15, level: 3, title: "React Fundamentals", days: [53, 54, 55], practice: ["f15_e1"], subtopics: [
     ["f15_s1", "Why React: components and declarative UI; create a project with Vite"],
     ["f15_s2", "JSX: expressions in braces, className, one parent element, fragments"],
     ["f15_s3", "Components and props: passing data down, children, and keeping components pure"],
@@ -148,7 +148,7 @@ const FRONTEND_DATA = [
     ["f15_s5", "Conditional rendering: &&, the ternary, and early returns"],
     ["f15_s6", "Styling React components: CSS files, CSS Modules and Tailwind"]
   ] },
-  { module: 16, level: 3, title: "State and Events", days: [56, 57, 58], subtopics: [
+  { module: 16, level: 3, title: "State and Events", days: [56, 57, 58], practice: ["f16_e1", "f16_e2"], subtopics: [
     ["f16_s1", "useState: state vs props, and why a plain variable doesn't re-render"],
     ["f16_s2", "Handling events in React"],
     ["f16_s3", "Updating objects and arrays without mutating them; functional updates"],
@@ -156,7 +156,7 @@ const FRONTEND_DATA = [
     ["f16_s5", "Forms: controlled vs uncontrolled inputs"],
     ["f16_s6", "Derived state: compute it during rendering instead of storing it"]
   ] },
-  { module: 17, level: 3, title: "Effects and Data Fetching", days: [59, 60, 61], subtopics: [
+  { module: 17, level: 3, title: "Effects and Data Fetching", days: [59, 60, 61], practice: ["f17_e1", "f17_e2"], subtopics: [
     ["f17_s1", "useEffect: when it runs, the dependency array, and cleanup"],
     ["f17_s2", "Fetching data: loading, error and empty states"],
     ["f17_s3", "Race conditions and cancelling requests"],
@@ -164,7 +164,7 @@ const FRONTEND_DATA = [
     ["f17_s5", "You might not need an effect: common mistakes"],
     ["f17_s6", "useRef: DOM access and values that don't trigger a render"]
   ] },
-  { module: 18, level: 3, title: "Hooks in Depth", days: [62, 63, 64], subtopics: [
+  { module: 18, level: 3, title: "Hooks in Depth", days: [62, 63, 64], practice: ["f18_e1", "f18_e2"], subtopics: [
     ["f18_s1", "The rules of hooks, and why they exist"],
     ["f18_s2", "useReducer for complex state"],
     ["f18_s3", "useContext: sharing data without prop drilling"],
@@ -188,7 +188,7 @@ const FRONTEND_DATA = [
     ["f20_s5", "Forms with validation: React Hook Form and Zod, and showing server errors"],
     ["f20_s6", "Build and deploy: frontend on Vercel or Netlify, backend separately, environment config"]
   ] },
-  { module: 21, level: 3, title: "React Performance", days: [71, 72, 73], subtopics: [
+  { module: 21, level: 3, title: "React Performance", days: [71, 72, 73], practice: ["f21_e1"], subtopics: [
     ["f21_s1", "How React renders: render phase vs commit phase, and what triggers a re-render"],
     ["f21_s2", "React.memo, useMemo and useCallback: avoiding wasted renders"],
     ["f21_s3", "Keys and component identity: when React keeps or resets state"],
@@ -205,7 +205,7 @@ const FRONTEND_DATA = [
     ["f22_s6", "What's new in React 19: Actions, use, useOptimistic, and the React Compiler"]
   ] },
 
-  { module: 30, level: 3, title: "React Patterns, TypeScript and Next.js", days: [71, 72, 74], subtopics: [
+  { module: 30, level: 3, title: "React Patterns, TypeScript and Next.js", days: [71, 72, 74], practice: ["f30_e1", "f30_e2"], subtopics: [
     ["f30_s1", "React with TypeScript: typing props, children, events and state"],
     ["f30_s2", "React with TypeScript, further: refs, generic components, context, reducers and HTML props"],
     ["f30_s3", "Component patterns: composition, compound components, render props and higher-order components"],

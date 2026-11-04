@@ -6,7 +6,8 @@
 //   block compiles, and the first one runs (stdin from **Sample input**) and prints exactly the **Expected output**.
 //   (A **Sample output** instead means the output varies, so it's only run.)
 // - JavaScript exercises: the starter parses, and the first solution block runs with Node and prints exactly the
-//   **Expected output**. DOM exercises (an html block with a script) need a browser, so their scripts only have to parse.
+//   **Expected output**. DOM exercises (an html block with a script) need a browser, so their scripts only have to parse;
+//   React exercises (a page loading React from a CDN, JSX compiled by Babel in the browser) are checked for that shape.
 // - SQL and Spring exercises are only checked for structure here; check-sql.py and check-spring.js run them.
 // - Every exercise a Beginner day lists exists, and every Beginner exercise is listed by some day.
 const fs = require("fs");
@@ -107,7 +108,24 @@ function checkDom(ex, tmp) {
   return problems;
 }
 
-const CHECKERS = { java: checkJava, js: checkJs, dom: checkDom };
+// React exercises are a page that loads React from a CDN through an import map and compiles JSX with Babel in
+// the browser. Without a browser, check the page's shape: a valid import map, Babel, and a JSX script.
+function checkReact(ex) {
+  const problems = [];
+  for (const [which, md] of [["starter", ex.task], ["solution", ex.solution]]) {
+    const html = (md.match(/```html\r?\n([\s\S]*?)```/) || [])[1];
+    if (!html) { problems.push(`no ${which} html block`); continue; }
+    const map = (html.match(/<script type="importmap">([\s\S]*?)<\/script>/) || [])[1];
+    try { if (!JSON.parse(map).imports?.react) problems.push(`${which}: the import map has no "react"`); }
+    catch { problems.push(`${which}: missing or invalid import map`); }
+    if (!/@babel\/standalone@[\d.]+\//.test(html)) problems.push(`${which}: no pinned @babel/standalone script`);
+    if (!/<script type="text\/babel" data-type="module"/.test(html)) problems.push(`${which}: no <script type="text/babel" data-type="module">`);
+    if (!/createRoot\(/.test(html)) problems.push(`${which}: never renders (no createRoot)`);
+  }
+  return problems;
+}
+
+const CHECKERS = { java: checkJava, js: checkJs, dom: checkDom, react: checkReact };
 
 function checkExercise(ex, label, idPattern, ids) {
   count++;
@@ -127,7 +145,7 @@ function checkExercise(ex, label, idPattern, ids) {
     try { problems.push(...checker(ex, tmp)); } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
   }
   if (kind !== "java" && kind !== "js") skipped++;
-  const note = { java: "", js: "(js) ", dom: "(dom: scripts parse) " }[kind] ?? `(${kind}: structure only) `;
+  const note = { java: "", js: "(js) ", dom: "(dom: scripts parse) ", react: "(react: page structure) " }[kind] ?? `(${kind}: structure only) `;
   if (problems.length) fail(`${label} ${ex.id}: ${problems.join("\n  ")}`);
   else console.log(`✓ ${label} ${ex.id} ${note}${ex.level} · ${ex.title}`);
 }
@@ -187,5 +205,5 @@ if (tracks.includes("beginner")) {
   }
 }
 
-console.log(`${count} exercises (${skipped} SQL/Spring/DOM checked for structure only), ${failures} problem(s)`);
+console.log(`${count} exercises (${skipped} SQL/Spring/DOM/React checked for structure only), ${failures} problem(s)`);
 process.exit(failures ? 1 : 0);

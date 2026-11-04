@@ -53,6 +53,7 @@ function exercises(md) {
 function exerciseKind(task) {
   if (/```sql/.test(task)) return "sql";
   if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(task)) return "spring";
+  if (/```html/.test(task) && /text\/babel/.test(task)) return "react";   // a page with React from a CDN
   if (/```html/.test(task)) return "dom";                 // a page with a script, run in the browser
   if (/```(?:js|javascript)\r?\n/.test(task)) return "js";
   return "java";

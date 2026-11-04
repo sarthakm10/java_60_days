@@ -145,7 +145,7 @@ In the Beginner track, every `#### 🚀 …` subsection of a borrowed section is
 … the reference solution and why it works …
 ```
 
-An exercise id starts with its file key: `d20_e1` lives in `practice/day-20.md`, `b47_e1` in `practice/beginner/day-47.md`, `f10_e2` in `practice/frontend/module-10.md`. The practice tab shows a run tip for each kind of exercise a day has: Java, Spring Boot, SQL, JavaScript (a `js` starter block, run with Node) or DOM (an `html` page with a script, opened in a browser).
+An exercise id starts with its file key: `d20_e1` lives in `practice/day-20.md`, `b47_e1` in `practice/beginner/day-47.md`, `f10_e2` in `practice/frontend/module-10.md`. The practice tab shows a run tip for each kind of exercise a day has: Java, Spring Boot, SQL, JavaScript (a `js` starter block, run with Node) DOM (an `html` page with a script, opened in a browser), or React (an `html` page that loads React from a CDN through an import map and compiles JSX with Babel in the browser, so learners install nothing).
 
 A frontend module lists its exercises in `practice` in `data-frontend.js`. They show on the module page in both tracks, on the module's last Beginner day, and on the Interview track's Code Practice page.
 
@@ -166,7 +166,7 @@ node scripts/check-all.js
 | Script | Checks | Needs |
 | --- | --- | --- |
 | `check-notes.js` | every subtopic has its section (frontend modules too, once their file exists), markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
-| `check-practice.js` | exercise format; Java and JavaScript solutions print exactly the expected output (DOM scripts must parse); Beginner and frontend `practice` lists match the files | Node, a JDK |
+| `check-practice.js` | exercise format; Java and JavaScript solutions print exactly the expected output (DOM scripts must parse; React pages must have their import map, Babel and a render); Beginner and frontend `practice` lists match the files | Node, a JDK |
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |
 | `check-traces.js` | every visualizer program has an up-to-date recording that finished cleanly, and its settings name real variables | Node |

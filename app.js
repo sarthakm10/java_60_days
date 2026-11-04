@@ -3136,12 +3136,13 @@
   function exerciseKind(task) {
     if (/```\w*\r?\n(?:\/\/|#)\s*src\//.test(task)) return "spring";
     if (/```sql/.test(task)) return "sql";
+    if (/```html/.test(task) && /text\/babel/.test(task)) return "react";   // React from a CDN, JSX compiled in the page
     if (/```html/.test(task)) return "dom";
     if (/```(?:js|javascript)\r?\n/.test(task)) return "js";
     return "java";
   }
   // The kinds of exercise in a list, in a fixed order, for the run tips
-  const practiceKinds = (list) => ["java", "spring", "sql", "js", "dom"].filter(k => list.some(e => exerciseKind(e.task) === k));
+  const practiceKinds = (list) => ["java", "spring", "sql", "js", "dom", "react"].filter(k => list.some(e => exerciseKind(e.task) === k));
   // The day of the active track that holds a file's first exercise (Spring setup lives in file d19's intro)
   const dayOfPracticeFile = (file) => state.track === "interview"
     ? +file.slice(1)
@@ -3239,16 +3240,18 @@
     const sql = `Run the <b>Setup</b> block once in any SQL database: an online playground like sqliteonline.com or db-fiddle.com (pick PostgreSQL), or your own PostgreSQL. Then write each query and compare its result with the expected one; number formatting can differ slightly between databases.`;
     const js = `Save the code as a <code>.mjs</code> file (for example <code>closures.mjs</code>) and run <code>node closures.mjs</code> (Node 18+), or paste it into the browser console (F12).`;
     const dom = `Save the code as an <code>.html</code> file and open it with VS Code's Live Server (or just in your browser). Keep DevTools open to see errors and <code>console.log</code> output.`;
+    const react = `Save the code as an <code>.html</code> file and open it with Live Server. React and Babel load from a CDN, so you need an internet connection but nothing to install. The page compiles the JSX itself, which is fine for practice; real projects use Vite (Module 15).`;
     const text = kind === "spring" ? spring
       : kind === "sql" ? sql
       : kind === "js" ? js
       : kind === "dom" ? dom
-      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}${state.track === "beginner" ? ` <b>SQL exercises:</b> ${sql}` : ""} <b>JavaScript exercises:</b> ${js}`
+      : kind === "react" ? react
+      : kind === "all" ? `<b>Days 1–${springFrom - 1}:</b> ${java} <b>Days ${springFrom}+:</b> ${spring}${state.track === "beginner" ? ` <b>SQL exercises:</b> ${sql}` : ""} <b>JavaScript exercises:</b> ${js} <b>React exercises:</b> ${react}`
       : java;
-    const heading = { sql: "Run these in a SQL database", js: "Run these with Node or in the browser", dom: "Open these pages in a browser" }[kind] || "Run these in your own IDE";
+    const heading = { sql: "Run these in a SQL database", js: "Run these with Node or in the browser", dom: "Open these pages in a browser", react: "Open these React pages in a browser" }[kind] || "Run these in your own IDE";
     return `
       <div class="run-tip">
-        <span class="run-tip-icon">${{ spring: "🍃", sql: "🗄️", js: "🟨", dom: "🌐" }[kind] || "☕"}</span>
+        <span class="run-tip-icon">${{ spring: "🍃", sql: "🗄️", js: "🟨", dom: "🌐", react: "⚛️" }[kind] || "☕"}</span>
         <div>
           <strong>${heading}</strong>
           <p>${text} Type it yourself first, use the hints when stuck, and open the solution last.</p>
