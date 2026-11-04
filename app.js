@@ -1285,6 +1285,7 @@
         if (state.detailTab === tab.dataset.tab) return;
         state.detailTab = tab.dataset.tab;
         renderDayDetail(dayNum);
+        rememberNav();
       });
     });
 
@@ -1793,7 +1794,7 @@
       if (celebrate) celebrateProgress(before);
     };
 
-    container.querySelector("#fe-back").addEventListener("click", () => openFrontendModule(null));
+    container.querySelector("#fe-back").addEventListener("click", () => backTo({ view: "frontend", module: null }, () => openFrontendModule(null)));
     container.querySelectorAll(".fe-pager [data-module]").forEach(b => b.addEventListener("click", () => {
       openFrontendModule(+b.dataset.module, state.moduleTab);
       $(".content-scroll").scrollTop = 0;
@@ -1802,6 +1803,7 @@
       if (state.moduleTab === t.dataset.tab) return;
       state.moduleTab = t.dataset.tab;
       rerender();
+      rememberNav();
     }));
     container.querySelector("#fe-mark").addEventListener("click", () => {
       const ids = m.subtopics.map(([id]) => id);
@@ -1882,7 +1884,7 @@
     container.querySelectorAll(".set-card, .problem-set-link").forEach(el => {
       el.addEventListener("click", () => openSet(el.dataset.set));
     });
-    container.querySelector("#sets-back")?.addEventListener("click", () => openSet(null));
+    container.querySelector("#sets-back")?.addEventListener("click", () => backTo({ view: "sets", set: null }, () => openSet(null)));
     container.querySelector("#sets-viz")?.addEventListener("click", () => switchView("visualizer"));
     container.querySelectorAll(".problem-log-btn").forEach(btn => {
       btn.addEventListener("click", () => openProblemLog(btn.dataset.slug));
@@ -2097,6 +2099,7 @@
   }
 
   function openDayDetail(dayNum, tab = "checklist") {
+    saveScrollPosition();
     if (RETURN_LABELS[state.currentView]) state.returnView = state.currentView;
     else if (state.currentView !== "detail") state.returnView = "grid";
     state.selectedDay = dayNum;
@@ -2107,14 +2110,18 @@
     renderSidebar();
     $(".content-scroll").scrollTop = 0;
     closeMobileMenu();
+    rememberNav();
   }
 
   function closeDayDetail() {
-    state.selectedDay = null;
-    switchView(state.returnView || "grid");
+    backTo({ view: state.returnView || "grid", module: state.selectedModule, set: state.selectedSet }, () => {
+      state.selectedDay = null;
+      switchView(state.returnView || "grid");
+    });
   }
 
   function switchView(view) {
+    saveScrollPosition();
     state.currentView = view;
     if (view !== "detail") state.selectedDay = null;
     showSection(view);
@@ -2140,11 +2147,123 @@
     renderSidebar();
     $(".content-scroll").scrollTop = 0;
     closeMobileMenu();
+    rememberNav();
   }
 
   function closeMobileMenu() {
     $(".sidebar").classList.remove("open");
     $("#mobile-overlay").classList.remove("active");
+  }
+
+  // ── Back button ──
+  // Each screen (a view, a day, a frontend module, a question set) is an entry in the browser's history, so the
+  // phone's back button (or the browser's) goes back inside the app instead of closing it. Back first closes
+  // whatever is open on top (the menu, a dialog, the visualizer, search results). In the installed app, back on
+  // the first screen asks for a second press before the app closes.
+  let restoringNav = false;
+  let exitArmed = false;
+  const installedApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+
+  function navState() {
+    const nav = { view: state.currentView };
+    if (nav.view === "detail") Object.assign(nav, { day: state.selectedDay, tab: state.detailTab, returnView: state.returnView });
+    if (nav.view === "frontend") Object.assign(nav, { module: state.selectedModule || null, moduleTab: state.moduleTab });
+    if (nav.view === "sets") nav.set = state.selectedSet || null;
+    return nav;
+  }
+
+  // Which screen a nav is: the view, plus the day, module or set it shows
+  const navKey = (nav) => !nav ? "" : nav.view + ":" + (({ detail: nav.day, frontend: nav.module, sets: nav.set })[nav.view] ?? "");
+
+  function rememberNav() {
+    if (restoringNav) return;
+    exitArmed = false;
+    const current = history.state?.nav;
+    const next = navState();
+    if (navKey(current) === navKey(next)) {
+      history.replaceState({ ...history.state, nav: { ...next, prev: current.prev, scroll: current.scroll } }, "");
+    } else if (current && current.view === next.view && navKey(current) !== current.view + ":") {
+      // From one day (or module, or set) straight to another: replace, so back returns to the list, not day by day
+      history.replaceState({ nav: { ...next, prev: current.prev } }, "");
+    } else {
+      history.pushState({ nav: { ...next, prev: current && { ...current, prev: undefined } } }, "");
+    }
+  }
+
+  // The in-app "Back to …" buttons: step back in history when that's where it leads, so entries don't pile up
+  function backTo(target, go) {
+    const prev = history.state?.nav?.prev;
+    if (prev && navKey(prev) === navKey(target)) history.back();
+    else go();
+  }
+
+  function restoreNav(nav) {
+    restoringNav = true;
+    try {
+      if (nav.view === "detail" && nav.day) {
+        openDayDetail(nav.day, nav.tab || "checklist");
+        if (nav.returnView) state.returnView = nav.returnView;
+      } else {
+        if (nav.view === "frontend") { state.selectedModule = nav.module; state.moduleTab = nav.moduleTab || "checklist"; }
+        if (nav.view === "sets") state.selectedSet = nav.set;
+        switchView(nav.view || "home");
+      }
+    } finally {
+      restoringNav = false;
+    }
+    if (nav.scroll) {
+      // Now, and again once content that loads a moment later (a day's notes) is in
+      $(".content-scroll").scrollTop = nav.scroll;
+      setTimeout(() => { if (navKey(history.state?.nav) === navKey(nav)) $(".content-scroll").scrollTop = nav.scroll; }, 400);
+    }
+  }
+
+  // Closes the topmost thing open over the page; false if nothing was open
+  function closeOverlay() {
+    if (window.CodeVisualizer?.isOpen()) { CodeVisualizer.close(); return true; }
+    if ($("#log-modal")) { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); return true; }
+    if ($("#reset-modal").classList.contains("active")) { $("#reset-modal").classList.remove("active"); return true; }
+    if (timerPanelOpen) { toggleTimerPanel(false); return true; }
+    if (!$("#search-results").hidden) { $("#search-results").hidden = true; $("#search-input").blur(); return true; }
+    if ($(".sidebar").classList.contains("open")) { closeMobileMenu(); return true; }
+    return false;
+  }
+
+  function initNavHistory() {
+    const first = navState();
+    if (installedApp) {
+      // A guard entry under the first screen: back from there lands on it instead of closing the app
+      history.replaceState({ nav: first, guard: true }, "");
+      history.pushState({ nav: first }, "");
+    } else {
+      history.replaceState({ nav: first }, "");
+    }
+
+    addEventListener("popstate", (e) => {
+      const nav = e.state?.nav;
+      if (closeOverlay()) {
+        history.pushState({ nav: { ...navState(), prev: nav } }, "");   // stay on this screen
+        return;
+      }
+      if (e.state?.guard) {
+        if (state.currentView !== "home") {
+          restoreNav({ view: "home" });
+          history.pushState({ nav: { view: "home", prev: nav } }, "");
+        } else if (!exitArmed) {
+          exitArmed = true;   // the next back leaves the guard entry, which closes the app
+          showToast("Press back again to close the app", "info");
+        }
+        return;
+      }
+      if (nav) restoreNav(nav);
+    });
+
+  }
+
+  // Called just before leaving a screen: remember how far down it was scrolled, for coming back to it
+  function saveScrollPosition() {
+    const nav = history.state?.nav;
+    if (nav && !restoringNav) history.replaceState({ ...history.state, nav: { ...nav, scroll: $(".content-scroll").scrollTop } }, "");
   }
 
   // ── Render: Dashboard ──
@@ -4187,6 +4306,7 @@
 
     // Initial render
     renderAll();
+    initNavHistory();
   }
 
   // Boot
