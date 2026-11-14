@@ -2,7 +2,7 @@
   "name": "java-step-visualizer",
   "displayName": "Java Step Visualizer",
   "description": "Step through your own Java program line by line: variables, arrays, lists, maps, linked lists, trees, the call stack and the output, right next to the editor. Re-records every time you save.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "java-fullstack",
   "engines": {
     "vscode": "^1.80.0"

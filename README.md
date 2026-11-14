@@ -194,6 +194,14 @@ node scripts/check-all.js
 
 The visualizer replays a real run of a Java program, one step per line, like Python Tutor but recorded ahead of time so the site needs no server. Learners reach a recording three ways: the **Code Visualizer** page in the sidebar (every recording, grouped by question set, with search), a **Visualize** button on its LeetCode problem in the Question Sets, and a **Step through this code** button under the code in the notes.
 
+Stepping one line forward or back animates the change (`visualizer.js`, "Motion"):
+- pointers slide between cells, and swapped values fly across;
+- the `@window` band stretches and slides;
+- list and tree nodes glide to their new places;
+- the code highlight moves to the next line.
+
+The cells the next line reads or writes are outlined. Each array has a **History** of every change it went through, and clicking a change jumps to that step. Without a `@pointers` setting, the plain variables the code indexes an array with (`nums[i]`) are drawn as its pointers.
+
 Each program in `visualize/programs/` is a complete class with a `main` that uses a small example input, usually the method from the notes plus their dry-run input. Settings go in comments at the top:
 
 ```java
@@ -232,7 +240,7 @@ node vscode-extension/package-vsix.js
 ```
 
 ```bash
-code --install-extension vscode-extension/dist/java-step-visualizer-0.1.0.vsix
+code --install-extension vscode-extension/dist/java-step-visualizer-0.2.0.vsix
 ```
 
 Then open a `.java` file and click ▶ in the editor's title bar. [vscode-extension/README.md](vscode-extension/README.md) covers the settings and how to work on it.

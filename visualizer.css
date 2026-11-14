@@ -126,6 +126,7 @@ body.viz-open { overflow: hidden; }
 }
 
 .viz-code {
+  position: relative;
   overflow: auto;
   padding: 14px 0;
   background: var(--bg-primary);
@@ -159,15 +160,23 @@ body.viz-open { overflow: hidden; }
 .viz-line.is-ran .viz-ln { color: var(--text-tertiary); }
 .viz-line.is-caller { border-left-color: color-mix(in srgb, var(--accent-2) 55%, transparent); background: color-mix(in srgb, var(--accent-2) 6%, transparent); }
 
-.viz-line.is-next,
-.viz-line.is-return,
-.viz-line.is-error {
-  border-left-color: var(--accent);
+/* The line about to run: one highlight that slides from line to line (.viz-cursor, moved by visualizer.js) */
+.viz-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.75em;
+  pointer-events: none;
   background: color-mix(in srgb, var(--a1) 17%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+  transition: transform 0.3s cubic-bezier(0.3, 0.9, 0.3, 1), height 0.2s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
-.viz-line.is-return { border-left-color: var(--accent-green); background: var(--accent-green-bg); }
-.viz-line.is-error { border-left-color: var(--accent-red); background: var(--accent-red-bg); }
+.viz-cursor.no-anim { transition: none; }
+.viz-cursor[data-kind="return"] { background: var(--accent-green-bg); box-shadow: inset 3px 0 0 var(--accent-green); }
+.viz-cursor[data-kind="error"] { background: var(--accent-red-bg); box-shadow: inset 3px 0 0 var(--accent-red); }
+.viz-line.is-next, .viz-line.is-return, .viz-line.is-error { background: transparent; }
 .viz-line.is-next .viz-ln, .viz-line.is-return .viz-ln, .viz-line.is-error .viz-ln { color: var(--text-primary); font-weight: 600; }
 .viz-line.is-next .viz-ln::before { content: "➜ "; color: var(--accent); }
 
@@ -237,6 +246,7 @@ body.viz-open { overflow: hidden; }
 
 /* ── One drawn object ── */
 .viz-obj {
+  position: relative;
   padding: 12px 14px 14px;
   border-radius: var(--radius-md);
   background: var(--bg-tertiary);
@@ -266,9 +276,10 @@ body.viz-open { overflow: hidden; }
 .viz-type { font-size: 0.74rem; color: var(--text-tertiary); white-space: nowrap; }
 
 /* Array-like rows of cells */
-.viz-cells { display: flex; gap: 4px; width: max-content; }
+.viz-cells { position: relative; isolation: isolate; display: flex; gap: 4px; width: max-content; padding: 3px 4px 0; }
 
 .viz-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -276,6 +287,7 @@ body.viz-open { overflow: hidden; }
 }
 
 .viz-cell .viz-val {
+  position: relative;
   display: grid;
   place-items: center;
   min-width: 42px;
@@ -287,12 +299,49 @@ body.viz-open { overflow: hidden; }
   font-family: var(--font-mono);
   font-size: 0.88rem;
   font-weight: 600;
-  transition: background var(--transition-normal), border-color var(--transition-normal);
+  transition: background var(--transition-normal), border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .viz-cell.in-window .viz-val { background: color-mix(in srgb, var(--accent-2) 16%, var(--bg-secondary)); border-color: color-mix(in srgb, var(--accent-2) 55%, transparent); }
 .viz-cell.ghost .viz-val { border-style: dashed; background: transparent; }
-.viz-cell.changed .viz-val { animation: vizFlash 0.9s var(--ease); border-color: var(--accent-yellow); }
+.viz-cell.changed .viz-val { animation: vizPop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1), vizFlash 0.9s var(--ease); border-color: var(--accent-yellow); }
+.viz-cell.moved .viz-val { animation: vizFlashMove 1s var(--ease); border-color: var(--accent-2); }
+
+/* A pointer's cell takes its colour */
+.viz-cell.is-pointed .viz-val { border-color: var(--pc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--pc) 26%, transparent); }
+
+/* The cells the next line reads (blue) or writes (yellow) */
+.viz-cell.is-read .viz-val { outline: 2px dashed var(--accent-blue); outline-offset: 2px; }
+.viz-cell.is-write .viz-val { outline: 2px dashed var(--accent-yellow); outline-offset: 2px; }
+
+/* The value a cell had, floating off as the new one lands */
+.viz-was {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-decoration: line-through;
+  white-space: nowrap;
+  animation: vizWas 1.1s ease-out forwards;
+}
+
+/* The @window range: one band behind the cells */
+.viz-band {
+  position: absolute;
+  z-index: -1;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--accent-2) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-2) 55%, transparent);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+.viz-ghost { pointer-events: none; z-index: 2; }
 
 .viz-idx {
   margin-top: 3px;
@@ -312,6 +361,7 @@ body.viz-open { overflow: hidden; }
   font-weight: 700;
   color: #fff;
   background: var(--accent-blue);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ptr, var(--accent-blue)) 45%, transparent);
 }
 
 .viz-ptr:first-child::before {   /* the arrow head pointing up at the cell */
@@ -397,6 +447,15 @@ body.viz-open { overflow: hidden; }
 .viz-map td:first-child { border-left: 3px solid var(--border-primary); }
 .viz-map tr.changed td { animation: vizFlash 0.9s var(--ease); }
 .viz-map tr.changed td:first-child { border-left-color: var(--accent-yellow); }
+.viz-map tr.added td { animation: vizFlashNew 1s var(--ease); }
+.viz-map tr.added td:first-child { border-left-color: var(--accent-green); }
+.viz-map tr.is-read td { background: color-mix(in srgb, var(--accent-blue) 13%, var(--bg-secondary)); }
+.viz-map tr.is-read td:first-child { border-left-color: var(--accent-blue); }
+.viz-map tr.is-write td { background: color-mix(in srgb, var(--accent-yellow) 13%, var(--bg-secondary)); }
+.viz-map tr.is-write td:first-child { border-left-color: var(--accent-yellow); }
+
+/* A value that just changed rolls in from below */
+.viz-tick { display: inline-block; animation: vizTick 0.38s var(--ease); }
 
 .viz-fields th, .viz-locals th {
   padding: 4px 14px 4px 0;
@@ -470,6 +529,8 @@ body.viz-open { overflow: hidden; }
 .viz-tree circle { fill: var(--bg-secondary); stroke: var(--accent-line); stroke-width: 2; transition: fill var(--transition-normal), stroke var(--transition-normal); }
 .viz-tree text { fill: var(--text-primary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; text-anchor: middle; }
 .viz-tree .viz-tlabel { fill: var(--accent); font-size: 11px; }
+.viz-tnode, .viz-tcursor { transform-box: fill-box; transform-origin: center; }
+.viz-tree .viz-tcursor { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0.85; animation: vizDash 1.6s linear infinite; }
 .viz-tnode.on-stack circle { stroke: var(--accent-2); stroke-dasharray: 4 3; fill: color-mix(in srgb, var(--accent-2) 10%, var(--bg-secondary)); }
 .viz-tnode.is-top circle { stroke: var(--accent); stroke-dasharray: none; fill: color-mix(in srgb, var(--a1) 22%, var(--bg-secondary)); }
 .viz-tnode.is-end > circle:first-child { stroke: var(--accent-green); }
@@ -486,10 +547,97 @@ body.viz-open { overflow: hidden; }
 }
 
 .viz-legend.on-stack { border-color: var(--accent-2); border-style: dashed; }
+.viz-legend.read, .viz-legend.write { border-radius: 3px; border-style: dashed; border-color: var(--accent-blue); margin-right: 5px; }
+.viz-legend.write { border-color: var(--accent-yellow); }
+.viz-access-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.viz-access-note code { font-family: var(--font-mono); font-size: 0.95em; padding: 0 4px; border-radius: 5px; background: var(--bg-secondary); color: var(--text-secondary); }
+.viz-miss { font-style: italic; }
+
+/* ── History: every change an array went through ── */
+.viz-hist { margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-primary); }
+
+.viz-hist summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.viz-hist summary::-webkit-details-marker { display: none; }
+.viz-hist summary::before { content: "\25B8"; display: inline-block; transition: transform var(--transition-fast); }
+.viz-hist[open] summary::before { transform: rotate(90deg); }
+.viz-hist summary span { font-weight: 500; letter-spacing: 0; text-transform: none; }
+.viz-hist summary:hover { color: var(--text-secondary); }
+.viz-hist-more { margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
+
+.viz-hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 210px;
+  margin: 6px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.viz-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0.78;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.viz-hist-row:hover { opacity: 1; background: var(--bg-hover); }
+.viz-hist-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.viz-hist-row.is-latest { opacity: 1; background: var(--bg-secondary); border-color: var(--accent-line); }
+.viz-hist-row.is-now { animation: vizRowIn 0.45s var(--ease); }
+
+.viz-hist-step { flex: none; min-width: 30px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.viz-hist-step::before { content: "#"; }
+.viz-hist-cells { flex: none; display: flex; gap: 2px; }
+
+.viz-mini {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.viz-mini.hot { border-color: var(--accent-yellow); background: color-mix(in srgb, var(--accent-yellow) 20%, var(--bg-secondary)); color: var(--text-primary); font-weight: 700; }
+.viz-mini.swap { border-color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 20%, var(--bg-secondary)); color: var(--text-primary); font-weight: 700; }
+.viz-mini.empty, .viz-mini.more { border-style: dashed; font-style: italic; color: var(--text-muted); }
+.viz-hist-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); }
+.viz-hist-row.is-latest .viz-hist-what { color: var(--text-primary); }
+.viz-hist-line { flex: none; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 .viz-legend.is-end { border-color: var(--accent-green); box-shadow: inset 0 0 0 1px var(--bg-secondary), inset 0 0 0 3px var(--accent-green); }
 
 /* Call stack */
-.viz-stack { display: flex; flex-direction: column; gap: 8px; }
+.viz-stack, .viz-frames { position: relative; display: flex; flex-direction: column; gap: 8px; }
 
 .viz-frame {
   padding: 10px 14px;
@@ -529,7 +677,7 @@ body.viz-open { overflow: hidden; }
   white-space: pre-wrap;
 }
 
-.viz-out mark { background: var(--accent-green-bg); color: var(--accent-green); border-radius: 4px; }
+.viz-out mark { background: var(--accent-green-bg); color: var(--accent-green); border-radius: 4px; animation: vizFadeIn 0.4s ease-out; }
 
 /* ── Controls ── */
 .viz-controls {
@@ -563,6 +711,23 @@ body.viz-open { overflow: hidden; }
   0% { background: color-mix(in srgb, var(--accent-yellow) 38%, transparent); }
   100% { background: var(--bg-secondary); }
 }
+
+@keyframes vizFlashNew {
+  0% { background: color-mix(in srgb, var(--accent-green) 34%, transparent); }
+  100% { background: var(--bg-secondary); }
+}
+
+@keyframes vizFlashMove {
+  0% { background: color-mix(in srgb, var(--accent-2) 30%, transparent); }
+  100% { background: var(--bg-secondary); }
+}
+
+@keyframes vizPop { 0% { transform: scale(0.8); } 60% { transform: scale(1.1); } 100% { transform: none; } }
+@keyframes vizWas { 0% { opacity: 0.95; transform: translate(-50%, 10px); } 100% { opacity: 0; transform: translate(-50%, -22px); } }
+@keyframes vizTick { 0% { opacity: 0; transform: translateY(70%); } 100% { opacity: 1; transform: none; } }
+@keyframes vizRowIn { 0% { opacity: 0; transform: translateY(8px); background: color-mix(in srgb, var(--accent-yellow) 22%, transparent); } 100% { opacity: 1; transform: none; } }
+@keyframes vizFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vizDash { to { stroke-dashoffset: -16; } }
 
 /* ── The button under a code block in the notes ── */
 .viz-launch {
@@ -758,9 +923,13 @@ body.viz-open { overflow: hidden; }
   .viz-count { margin-left: auto; font-size: 0.76rem; }
   .viz-slider { order: 3; flex-basis: 100%; }
   .viz-launch-sub { display: none; }
+  .viz-hist-line { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .viz-overlay, .viz-dialog, .viz-cell.changed .viz-val, .viz-map tr.changed td, .viz-fields tr.changed td,
-  .viz-locals tr.changed td, .viz-sb.changed { animation: none; }
+  .viz-overlay, .viz-dialog, .viz-cell.changed .viz-val, .viz-cell.moved .viz-val, .viz-map tr.changed td, .viz-map tr.added td,
+  .viz-fields tr.changed td, .viz-locals tr.changed td, .viz-sb.changed, .viz-tick, .viz-hist-row.is-now, .viz-out mark,
+  .viz-tree .viz-tcursor { animation: none; }
+  .viz-was { display: none; }
+  .viz-cursor { transition: none; }
 }

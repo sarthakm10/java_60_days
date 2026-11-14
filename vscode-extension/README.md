@@ -4,13 +4,15 @@ Step through **your own** Java program, one line at a time, right next to the ed
 
 - **The editor follows along.** The line about to run is highlighted. The lines where earlier calls are waiting are marked, and what the last line changed is written at its end, for example `⟵ right 3 → 2`.
 - **The panel beside it** shows the program's data the way you'd draw it on paper:
-  - arrays as boxes, with your `left` / `right` / `mid` indexes underneath;
+  - arrays as boxes, with your `left` / `right` / `mid` indexes underneath (or, without a `@pointers` comment, the variables your code indexes the array with, like `i` in `nums[i]`);
   - `HashMap`s as tables;
   - stacks standing up, and queues with front and back;
   - linked lists as boxes and arrows, and trees as trees;
   - 2D arrays as grids;
   - the call stack, so you watch recursion go down and come back;
   - everything printed so far.
+- **Things move.** Pointers slide from cell to cell, swapped values fly across, a sliding window stretches and slides, list and tree nodes glide to their new places, and a pushed stack item drops in on top. The cells the next line reads are outlined in blue, and the ones it writes in yellow.
+- **Every change is kept.** Under each array, **History** lists every step that changed it: what changed (`[2] 0 → 1`, `swapped [0] ↔ [3]`, `added 5 at the end`), the line that did it, and the whole array after it. Click a row to go to that step.
 - **Your changes show up.** Save the file and it records again, staying near the line you were on. Or set `javaStepVisualizer.update` to `onType` to have it record a moment after you stop typing.
 
 It runs your real program with your JDK, under Java's own debugger interface, and records every step. Nothing is sent anywhere.
@@ -67,7 +69,7 @@ The extension is plain JavaScript with no npm dependencies and no build step. It
 
 ```bash
 node vscode-extension/package-vsix.js                                      # builds dist/java-step-visualizer-<version>.vsix
-code --install-extension vscode-extension/dist/java-step-visualizer-0.1.0.vsix
+code --install-extension vscode-extension/dist/java-step-visualizer-0.2.0.vsix
 node vscode-extension/test-runner.js                                       # records a small test project without VS Code
 ```
 
