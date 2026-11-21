@@ -41,6 +41,8 @@
     problemLogs: {},          // { leetcodeSlug: { approach, time, space, attempts, felt, solveAgain, updated } }
     studyMinutes: {},         // { "YYYY-MM-DD": focused minutes from the timer }
     goal: { minutes: 120, items: 10 },   // daily goal
+    drillStats: {},           // pattern drill, both tracks: { setId: [right, seen] }
+    drillScope: "studied",    // "studied" (patterns up to the day you've reached) | "all"
     practiceDone: {},         // code practice, both tracks: { exerciseId: { on: "YYYY-MM-DD", level: "E" | "M" | "H" } }
     practiceFilter: "all",    // "all" | "todo" | "done"
     reviseTab: "due",         // "due" | "cards" | "again"
@@ -117,6 +119,8 @@
         studyMinutes: state.studyMinutes,
         goal: state.goal,
         goalMetOn: state.goalMetOn,
+        drillStats: state.drillStats,
+        drillScope: state.drillScope,
         activity: state.activity,
         profileName: state.profileName,
         lastPalette: state.lastPalette,
@@ -149,6 +153,8 @@
         state.studyMinutes = saved.studyMinutes || {};
         state.goal = { ...state.goal, ...(saved.goal || {}) };
         state.goalMetOn = saved.goalMetOn || null;
+        state.drillStats = saved.drillStats || {};
+        state.drillScope = saved.drillScope === "all" ? "all" : "studied";
         state.theme = saved.theme || "dark";
       }
     } catch (e) { /* corrupted */ }
@@ -1239,7 +1245,7 @@
     // Navigation highlight ("detail" keeps the section it was opened from lit)
     const navView = state.currentView === "detail" ? state.returnView : state.currentView;
     $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === navView));
-    const dueCount = getDueTopics().length + dueCardKeys().length;
+    const dueCount = getDueTopics().length + dueCardKeys().length + getDueResolves().length;
     $$(".nav-badge[data-badge='revise']").forEach(b => {
       b.textContent = dueCount > 99 ? "99+" : dueCount;
       b.hidden = !dueCount;
@@ -1840,6 +1846,7 @@
         ${premium ? `<span class="problem-premium" title="Needs LeetCode Premium">🔒 Premium</span>` : ""}
         ${setLinks}
         ${log?.solveAgain ? `<span class="log-flag" title="Flagged to solve again">🔁</span>` : ""}
+        ${solved && isDue(state.reviews[resolveKey(slug)]) ? `<span class="resolve-tag" title="Due to be solved again from scratch (Revise → Re-solve)">↻ re-solve due</span>` : ""}
         ${visualizationFor(slug) ? `<button class="problem-viz-btn" data-viz="${visualizationFor(slug)}" title="Step through a worked solution, line by line"><svg viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg>Visualize</button>` : ""}
         <button class="problem-log-btn ${log ? "has-log" : ""}" data-slug="${slug}" title="${log ? "Open your log" : "Log approach, complexity, attempts"}">📝</button>
         <span class="difficulty-pill ${d.cls}">${d.label}</span>
@@ -2166,8 +2173,13 @@
 
   function renderSetsView() {
     const container = $("#sets-view");
+    if (state.selectedSet === "drill") {
+      renderDrill(container);
+      return;
+    }
     const set = state.selectedSet && getSetById(state.selectedSet);
     container.innerHTML = set ? setDetailHTML(set) : setsIndexHTML();
+    container.querySelector("#sets-drill")?.addEventListener("click", () => openSet("drill"));
 
     container.querySelectorAll(".set-card, .problem-set-link").forEach(el => {
       el.addEventListener("click", () => openSet(el.dataset.set));
@@ -2251,6 +2263,11 @@
                <button class="link-btn sets-viz-link" id="sets-sheet">📘 Read the practice sheet →</button>`
             : `<p class="sets-subtitle">${sets.length} topic sets · ${unique.length} LeetCode problems · tick a problem once and it counts in every set it appears in.</p>`}
           ${vizCatalog().length ? `<button class="link-btn sets-viz-link" id="sets-viz">▶ Step through ${vizCatalog().length} worked solutions in the Code Visualizer →</button>` : ""}
+          <button class="drill-entry" id="sets-drill">
+            <span class="drill-entry-icon">🎯</span>
+            <span><strong>Pattern drill</strong><small>See a problem, name the pattern that solves it. ${DRILL_ROUND} problems a round.</small></span>
+            <span class="drill-entry-go">Start →</span>
+          </button>
         </div>
         <div class="sets-summary">
           <div class="sets-summary-value">${solvedCount}<span>/${unique.length}</span></div>
@@ -2304,6 +2321,238 @@
     switchView("sets");
     $(".content-scroll").scrollTop = 0;
   }
+
+
+  // ── Pattern drill: see a problem, name the question set (pattern) that solves it ──
+  // Spotting the pattern is the hard part of an interview problem, and a set page always gives it away. A round asks
+  // about DRILL_ROUND problems from the patterns studied so far, each with four choices; patterns you miss come up more.
+  const DRILL_ROUND = 10;
+  let drill = null;   // round in progress: { track, scope, questions: [{ problem, setIds, answer, options }], index, picks }
+
+  const shuffled = (list) => {
+    const out = [...list];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+
+  // The furthest day reached: the current day, or a later day with something ticked
+  function drillReachedDay() {
+    let reached = getCurrentDay();
+    DAYS.forEach(d => {
+      if (d.day > reached && d.topics.some(t => t.subtopics.some(s => state.checkedSubtopics[s.id]))) reached = d.day;
+    });
+    return reached;
+  }
+
+  function drillSets(scope) {
+    const sets = activeSets().filter(s => s.problems.length && setDays(s).length);
+    if (scope === "all") return sets;
+    const reached = drillReachedDay();
+    return sets.filter(s => Math.min(...setDays(s)) <= reached);
+  }
+
+  // How often a pattern was missed (0–1); unseen patterns count as half-missed
+  const drillMissRate = (setId) => {
+    const [right, seen] = state.drillStats[setId] || [0, 0];
+    return seen ? 1 - right / seen : 0.5;
+  };
+
+  function newDrillRound() {
+    let scope = state.drillScope;
+    let sets = drillSets(scope);
+    if (sets.length < 4) { scope = "all"; sets = drillSets("all"); }   // too few patterns studied yet for four choices
+    const bySlug = new Map();
+    sets.forEach(s => s.problems.forEach(p => {
+      if (!bySlug.has(p[2])) bySlug.set(p[2], { problem: p, setIds: [] });
+      bySlug.get(p[2]).setIds.push(s.id);
+    }));
+    // Random order, nudged toward patterns you miss; at most two problems from one pattern per round
+    const ranked = [...bySlug.values()]
+      .map(q => ({ q, key: Math.random() * (1 + 1.5 * Math.max(...q.setIds.map(drillMissRate))) }))
+      .sort((x, y) => y.key - x.key)
+      .map(r => r.q);
+    const perSet = {};
+    const picked = [];
+    for (const q of ranked) {
+      if (picked.length === DRILL_ROUND) break;
+      const answer = q.setIds[Math.floor(Math.random() * q.setIds.length)];
+      if ((perSet[answer] || 0) >= 2) continue;
+      perSet[answer] = (perSet[answer] || 0) + 1;
+      // Wrong choices: mostly from the same part of the sheet (similar-looking patterns), never another set of this problem
+      const others = sets.filter(s => !q.setIds.includes(s.id));
+      const part = getSetById(answer).part;
+      const near = shuffled(others.filter(s => part && s.part === part)).slice(0, 2);
+      const rest = shuffled(others.filter(s => !near.includes(s))).slice(0, 3 - near.length);
+      picked.push({ ...q, answer, options: shuffled([answer, ...near.map(s => s.id), ...rest.map(s => s.id)]) });
+    }
+    drill = { track: state.track, scope, questions: picked, index: 0, picks: [] };
+  }
+
+  function answerDrill(setId) {
+    const q = drill.questions[drill.index];
+    if (!q || drill.picks[drill.index] !== undefined) return;
+    drill.picks[drill.index] = setId;
+    const stats = state.drillStats[q.answer] || (state.drillStats[q.answer] = [0, 0]);
+    stats[1]++;
+    if (q.setIds.includes(setId)) stats[0]++;
+    saveState();
+    renderSetsView();
+    $(".drill-feedback")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function nextDrill() {
+    if (drill.picks[drill.index] === undefined) return;
+    drill.index++;
+    renderSetsView();
+    $(".content-scroll").scrollTop = 0;
+  }
+
+  function drillScoreHTML() {
+    const right = drill.picks.filter((pick, i) => drill.questions[i].setIds.includes(pick)).length;
+    return `<span class="drill-score">✓ ${right} / ${drill.picks.length}</span>`;
+  }
+
+  // Patterns seen at least twice, worst first
+  function drillWeakSets() {
+    return activeSets()
+      .map(s => ({ s, stats: state.drillStats[s.id] }))
+      .filter(x => x.stats && x.stats[1] >= 2 && x.stats[0] < x.stats[1])
+      .sort((x, y) => x.stats[0] / x.stats[1] - y.stats[0] / y.stats[1])
+      .slice(0, 4);
+  }
+
+  function drillQuestionHTML() {
+    const q = drill.questions[drill.index];
+    const [, title, , diff, , , statement] = q.problem;
+    const pick = drill.picks[drill.index];
+    const answered = pick !== undefined;
+    const correct = answered && q.setIds.includes(pick);
+    const answerSet = getSetById(q.answer);
+    const alsoIn = q.setIds.filter(id => id !== q.answer).map(id => getSetById(id)?.name).filter(Boolean);
+    const d = DIFFICULTY[diff];
+    return `
+      <div class="drill-progress">
+        <span>Question ${drill.index + 1} of ${drill.questions.length}</span>
+        ${drillScoreHTML()}
+      </div>
+      <div class="set-progress-bar"><div class="set-progress-fill" style="width:${(drill.index + (answered ? 1 : 0)) / drill.questions.length * 100}%"></div></div>
+      <div class="drill-card">
+        <div class="drill-problem">
+          <div class="drill-problem-meta">${problemNumHTML(q.problem)}<span class="difficulty-pill ${d.cls}">${d.label}</span></div>
+          <h3 class="drill-problem-title">${escapeHTML(title)}</h3>
+          ${statement ? `<p class="drill-statement">${escapeHTML(statement)}</p>` : ""}
+          <a class="link-btn drill-open" href="${problemUrl(q.problem)}" target="_blank" rel="noopener noreferrer">Read the full problem on ${problemSite(q.problem)} ↗</a>
+        </div>
+        <p class="drill-ask">Which pattern solves it?</p>
+        <div class="drill-options">
+          ${q.options.map((id, i) => {
+            const s = getSetById(id);
+            const cls = !answered ? "" : id === q.answer ? "right" : id === pick ? "wrong" : "dim";
+            return `<button class="drill-option ${cls}" data-drill-pick="${id}" ${answered ? "disabled" : ""}>
+              <span class="drill-key">${i + 1}</span><span class="drill-option-icon">${s.icon}</span><span>${escapeHTML(s.name)}</span>
+            </button>`;
+          }).join("")}
+        </div>
+        ${answered ? `
+          <div class="drill-feedback ${correct ? "right" : "wrong"}">
+            <div class="drill-verdict">${correct ? "✅ Right!" : `❌ Not quite. It's <strong>${escapeHTML(answerSet.name)}</strong>.`}</div>
+            <p class="drill-spot"><span>How to spot it:</span> ${answerSet.description}</p>
+            ${alsoIn.length ? `<p class="drill-also">It also appears under: ${alsoIn.map(escapeHTML).join(", ")}.</p>` : ""}
+            <div class="drill-actions">
+              <button class="btn primary" id="drill-next">${drill.index + 1 < drill.questions.length ? "Next →" : "See results"}</button>
+              <button class="link-btn problem-set-link-plain" data-open-set="${q.answer}">Open the ${escapeHTML(answerSet.name)} set</button>
+            </div>
+          </div>` : `<p class="drill-tip">Tip: press 1–4 to answer, Enter for the next one.</p>`}
+      </div>
+    `;
+  }
+
+  function drillResultsHTML() {
+    const right = drill.picks.filter((pick, i) => drill.questions[i].setIds.includes(pick)).length;
+    const total = drill.questions.length;
+    const verdict = right === total ? "Perfect round! 🏆" : right >= total * 0.8 ? "Great spotting! 🎯" : right >= total * 0.5 ? "Getting there 💪" : "Keep drilling: it clicks with practice 🌱";
+    const weak = drillWeakSets();
+    return `
+      <div class="drill-card drill-results">
+        <div class="drill-result-score">${right}<span>/${total}</span></div>
+        <p class="drill-result-verdict">${verdict}</p>
+        <div class="drill-review">
+          ${drill.questions.map((q, i) => {
+            const ok = q.setIds.includes(drill.picks[i]);
+            return `<div class="drill-review-row ${ok ? "right" : "wrong"}">
+              <span class="drill-review-mark">${ok ? "✓" : "✗"}</span>
+              <span class="drill-review-title">${escapeHTML(q.problem[1])}</span>
+              <span class="drill-review-answer">${ok ? "" : `<s>${escapeHTML(getSetById(drill.picks[i]).name)}</s> → `}${escapeHTML(getSetById(q.answer).name)}</span>
+            </div>`;
+          }).join("")}
+        </div>
+        ${weak.length ? `
+          <div class="drill-weak">
+            <h4>Patterns to revisit</h4>
+            <div class="drill-weak-list">
+              ${weak.map(({ s, stats }) => `<button class="drill-weak-item" data-open-set="${s.id}">${s.icon} ${escapeHTML(s.name)} <span>${stats[0]}/${stats[1]}</span></button>`).join("")}
+            </div>
+          </div>` : ""}
+        <div class="drill-actions">
+          <button class="btn primary" id="drill-again">New round</button>
+          <button class="link-btn" id="drill-done">Back to question sets</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDrill(container) {
+    if (!drill || drill.track !== state.track) newDrillRound();
+    const studied = drillSets("studied").length;
+    const all = drillSets("all").length;
+    const finished = drill.index >= drill.questions.length;
+    container.innerHTML = `
+      <button class="detail-back-btn" id="sets-back">${ICONS.arrowLeft} All Question Sets</button>
+      <div class="drill-header">
+        <div>
+          <h2 class="sets-title">🎯 Pattern Drill</h2>
+          <p class="sets-subtitle">Read the problem and name the pattern before you think about code. Patterns you miss come up more often.</p>
+        </div>
+        <div class="drill-scope" role="group" aria-label="Which patterns">
+          <button class="set-filter-btn ${drill.scope === "studied" ? "active" : ""}" data-drill-scope="studied" ${studied < 4 ? "disabled title=\"Unlocks once you reach 4 patterns\"" : ""}>Studied so far (${studied})</button>
+          <button class="set-filter-btn ${drill.scope === "all" ? "active" : ""}" data-drill-scope="all">All patterns (${all})</button>
+        </div>
+      </div>
+      ${finished ? drillResultsHTML() : drillQuestionHTML()}
+    `;
+
+    container.querySelector("#sets-back").addEventListener("click", () => backTo({ view: "sets", set: null }, () => openSet(null)));
+    container.querySelectorAll("[data-drill-pick]").forEach(btn => btn.addEventListener("click", () => answerDrill(btn.dataset.drillPick)));
+    container.querySelector("#drill-next")?.addEventListener("click", nextDrill);
+    container.querySelector("#drill-again")?.addEventListener("click", () => { newDrillRound(); renderSetsView(); });
+    container.querySelector("#drill-done")?.addEventListener("click", () => openSet(null));
+    container.querySelectorAll("[data-open-set]").forEach(btn => btn.addEventListener("click", () => openSet(btn.dataset.openSet)));
+    container.querySelectorAll("[data-drill-scope]").forEach(btn => btn.addEventListener("click", () => {
+      if (btn.dataset.drillScope === drill.scope) return;
+      state.drillScope = btn.dataset.drillScope;
+      saveState();
+      newDrillRound();
+      renderSetsView();
+    }));
+  }
+
+  // 1–4 answer, Enter goes on; only while the drill is on screen and no text field has focus
+  document.addEventListener("keydown", (e) => {
+    if (state.currentView !== "sets" || state.selectedSet !== "drill" || !drill || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
+    if (drill.index >= drill.questions.length) return;
+    const q = drill.questions[drill.index];
+    if (/^[1-4]$/.test(e.key) && drill.picks[drill.index] === undefined && q.options[e.key - 1]) {
+      e.preventDefault();
+      answerDrill(q.options[e.key - 1]);
+    } else if (e.key === "Enter" && drill.picks[drill.index] !== undefined) {
+      e.preventDefault();
+      nextDrill();
+    }
+  });
 
   // ── Render: Subject Progress ──
   function renderSubjectProgress() {
@@ -2668,7 +2917,8 @@
     const todayCount = state.activity[dateKey()] || 0;
     const dueTopicsCount = getDueTopics().length;
     const dueCardsCount = dueCardKeys().length;
-    const dueTotal = dueTopicsCount + dueCardsCount;
+    const dueResolvesCount = getDueResolves().length;
+    const dueTotal = dueTopicsCount + dueCardsCount + dueResolvesCount;
 
     const missionTopics = day.topics.map(t => {
       const checked = t.subtopics.filter(s => state.checkedSubtopics[s.id]).length;
@@ -2772,7 +3022,11 @@
         <section class="card recall-card revision-due ${r()}">
           <div class="card-title">🧠 Revision due</div>
           <div class="stat-big">${dueTotal}<small> to review</small></div>
-          <div class="recall-q">${dueTopicsCount ? `${dueTopicsCount} topic${dueTopicsCount === 1 ? "" : "s"}` : ""}${dueTopicsCount && dueCardsCount ? " · " : ""}${dueCardsCount ? `${dueCardsCount} flashcard${dueCardsCount === 1 ? "" : "s"}` : ""} waiting. Ten minutes now saves hours of re-learning later.</div>
+          <div class="recall-q">${[
+            dueTopicsCount && `${dueTopicsCount} topic${dueTopicsCount === 1 ? "" : "s"}`,
+            dueCardsCount && `${dueCardsCount} flashcard${dueCardsCount === 1 ? "" : "s"}`,
+            dueResolvesCount && `${dueResolvesCount} problem${dueResolvesCount === 1 ? "" : "s"} to re-solve`
+          ].filter(Boolean).join(" · ")} waiting. Ten minutes now saves hours of re-learning later.</div>
           <div class="recall-actions">
             <button class="btn small primary" id="home-revise">Start revision ${ICONS.arrowRight}</button>
             <button class="btn small" id="home-cards">🃏 Flashcards</button>
@@ -2849,9 +3103,9 @@
 
     bindGoalTile();
     $("#home-revise")?.addEventListener("click", () => {
-      state.reviseTab = dueTopicsCount ? "due" : "cards";
+      state.reviseTab = dueTopicsCount ? "due" : dueCardsCount ? "cards" : "again";
       cardSession = null;
-      if (!dueTopicsCount) loadAllCards().then(() => startCardSession("due"));
+      if (!dueTopicsCount && dueCardsCount) loadAllCards().then(() => startCardSession("due"));
       switchView("revise");
     });
     $("#home-cards")?.addEventListener("click", () => { state.reviseTab = "cards"; switchView("revise"); });
@@ -2903,7 +3157,8 @@
       profileName: state.profileName,
       reviewsDone: state.reviewsDone,
       studyMinutes: state.studyMinutes,
-      goal: state.goal
+      goal: state.goal,
+      drillStats: state.drillStats
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -2931,7 +3186,7 @@
         state.practiceDone = savedPracticeDone(data);
         if (data.activity) state.activity = data.activity;
         if (typeof data.profileName === "string") state.profileName = data.profileName;
-        ["reviewsDone", "studyMinutes"].forEach(k => { if (data[k]) state[k] = data[k]; });
+        ["reviewsDone", "studyMinutes", "drillStats"].forEach(k => { if (data[k]) state[k] = data[k]; });
         if (data.goal) state.goal = { ...state.goal, ...data.goal };
         // No confetti burst for imported badges: each track re-baselines when it is next opened
         TRACK_ORDER.forEach(key => { if (state.tracks[key]) state.tracks[key].seenAchievements = null; });
@@ -2957,6 +3212,8 @@
     state.activity = {};
     state.reviewsDone = {};
     state.studyMinutes = {};
+    state.drillStats = {};
+    drill = null;
     resetTimer();
     saveState();
     switchView("home");
@@ -3002,6 +3259,14 @@
   // ── Spaced revision: ticked topics and flashcards come back after 1, 3, 7, 21 and 45 days ──
   const REVIEW_INTERVALS = [1, 3, 7, 21, 45];   // stage n → next review in REVIEW_INTERVALS[n] days; past the end = mastered
 
+  // Solved problems come back to be solved again from scratch, 3, 10 and 30 days on (state.reviews keys "solve:<slug>").
+  // Stage 0 waits for the first re-solve; each good re-solve moves one stage on, "easy" two; past the end = mastered.
+  const RESOLVE_INTERVALS = [3, 10, 30];
+  const RESOLVE_AGAIN_DAYS = 2;            // "Struggled": try it again soon, from stage 0
+  const resolveKey = (slug) => `solve:${slug}`;
+  const isProblemKey = (key) => key.startsWith("solve:");
+  const isCardKey = (key) => key.startsWith("card:");
+
   function addDaysKey(days) {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -3016,8 +3281,15 @@
       const inDays = missing.length > 5 ? 1 + (i % 14) : REVIEW_INTERVALS[0];
       state.reviews[id] = { stage: 0, due: addDaysKey(inDays), reps: 0 };
     });
+    // Solved problems: scheduled for their first re-solve; unticked ones leave the rotation
+    const unscheduled = Object.keys(state.solvedProblems).filter(slug => !state.reviews[resolveKey(slug)]);
+    unscheduled.forEach((slug, i) => {
+      const inDays = RESOLVE_INTERVALS[0] + (unscheduled.length > 5 ? i % 14 : 0);
+      state.reviews[resolveKey(slug)] = { stage: 0, due: addDaysKey(inDays), reps: 0 };
+    });
     Object.keys(state.reviews).forEach(key => {
-      if (!key.startsWith("card:") && !state.checkedSubtopics[key]) delete state.reviews[key];
+      if (isProblemKey(key)) { if (!state.solvedProblems[key.slice(6)]) delete state.reviews[key]; }
+      else if (!isCardKey(key) && !state.checkedSubtopics[key]) delete state.reviews[key];
     });
   }
 
@@ -3040,6 +3312,44 @@
   }
 
   const dueCardKeys = () => Object.keys(state.reviews).filter(k => k.startsWith("card:") && isDue(state.reviews[k]));
+
+  // Solved problems due for a re-solve today, oldest first (only ones in the active track's sets)
+  function getDueResolves() {
+    const today = dateKey();
+    const due = Object.entries(state.reviews).filter(([key, r]) => isProblemKey(key) && isDue(r, today));
+    if (!due.length) return [];
+    const bySlug = new Map(getUniqueProblems().map(u => [u.problem[2], u]));
+    return due
+      .filter(([key]) => bySlug.has(key.slice(6)))
+      .map(([key, review]) => ({ key, slug: key.slice(6), review, problem: bySlug.get(key.slice(6)).problem }))
+      .sort((x, y) => x.review.due.localeCompare(y.review.due));
+  }
+
+  function resolveNextStage(key, grade) {
+    const stage = state.reviews[key]?.stage || 0;
+    return grade === "again" ? 0 : stage + (grade === "easy" ? 2 : 1);
+  }
+
+  // Days until the next re-solve after this grade (null = mastered)
+  function resolveGapDays(key, grade) {
+    if (grade === "again") return RESOLVE_AGAIN_DAYS;
+    const stage = resolveNextStage(key, grade);
+    return stage < RESOLVE_INTERVALS.length ? RESOLVE_INTERVALS[stage] : null;
+  }
+
+  function resolveGapLabel(key, grade) {
+    const days = resolveGapDays(key, grade);
+    return days === null ? "done" : days < 30 ? `${days}d` : `${Math.round(days / 30)}mo`;
+  }
+
+  function rateResolve(key, grade) {
+    const prev = state.reviews[key] || { stage: 0, reps: 0 };
+    const days = resolveGapDays(key, grade);
+    const today = dateKey();
+    state.reviews[key] = { stage: resolveNextStage(key, grade), due: days === null ? null : addDaysKey(days), reps: (prev.reps || 0) + 1, last: today };
+    state.reviewsDone[today] = (state.reviewsDone[today] || 0) + 1;
+    recordActivity(1);
+  }
 
   function nextStage(key, grade) {
     const stage = state.reviews[key]?.stage || 0;
@@ -3190,27 +3500,28 @@
     const mastered = Object.values(state.reviews).filter(r => r.due === null).length;
     const scheduled = Object.values(state.reviews).filter(r => r.due).length;
     const solveAgain = Object.entries(state.problemLogs).filter(([, l]) => l.solveAgain);
+    const dueResolves = getDueResolves();
 
     const tabs = [
       ["due", "🧠 Topics due", dueTopics.length],
       ["cards", "🃏 Flashcards", dueCards],
-      ["again", "🔁 Solve again", solveAgain.length]
+      ["again", "🔁 Re-solve", dueResolves.length + solveAgain.length]
     ];
 
     let body = "";
     if (state.reviseTab === "due") body = reviseDueHTML(dueTopics);
     else if (state.reviseTab === "cards") body = reviseCardsHTML();
-    else body = reviseAgainHTML(solveAgain);
+    else body = reviseAgainHTML(solveAgain, dueResolves);
 
     container.innerHTML = `
       <div class="view-header">
         <div>
           <h2 class="view-title">Revise</h2>
-          <p class="view-subtitle">Topics you tick come back after 1, 3, 7, 21 and 45 days. A few minutes here each day is what makes it stick.</p>
+          <p class="view-subtitle">Topics you tick come back after 1, 3, 7, 21 and 45 days, and problems you solve come back to be solved again after 3, 10 and 30 days. A few minutes here each day is what makes it stick.</p>
         </div>
       </div>
       <div class="revise-stats">
-        <div class="revise-stat"><strong>${dueTopics.length + dueCards}</strong><span>due today</span></div>
+        <div class="revise-stat"><strong>${dueTopics.length + dueCards + dueResolves.length}</strong><span>due today</span></div>
         <div class="revise-stat"><strong>${doneToday}</strong><span>reviewed today</span></div>
         <div class="revise-stat"><strong>${scheduled}</strong><span>in rotation</span></div>
         <div class="revise-stat"><strong>${mastered}</strong><span>mastered</span></div>
@@ -3233,7 +3544,7 @@
 
   function reviseDueHTML(dueTopics) {
     if (!dueTopics.length) {
-      const upcoming = Object.entries(state.reviews).filter(([k, r]) => !k.startsWith("card:") && r.due).map(([, r]) => r.due).sort();
+      const upcoming = Object.entries(state.reviews).filter(([k, r]) => !isCardKey(k) && !isProblemKey(k) && r.due).map(([, r]) => r.due).sort();
       const next = upcoming[0];
       const nextCount = upcoming.filter(d => d === next).length;
       return `
@@ -3344,18 +3655,40 @@
       </div>`;
   }
 
-  function reviseAgainHTML(entries) {
-    if (!entries.length) {
-      return `
-        <div class="revise-empty">
-          <div class="revise-empty-icon">🔁</div>
-          <h3>No problems flagged</h3>
-          <p>Open the 📝 log on any LeetCode problem and tick <strong>Solve again</strong> — tricky ones collect here so you can redo them before interviews.</p>
-          <button class="btn primary" data-goto-view="sets">Go to question sets</button>
-        </div>`;
-    }
+  function resolveDotsHTML(stage) {
+    return `<span class="stage-dots" title="Re-solve ${Math.min(stage, RESOLVE_INTERVALS.length)} of ${RESOLVE_INTERVALS.length}">${
+      RESOLVE_INTERVALS.map((_, i) => `<i class="${i < stage ? "on" : ""}"></i>`).join("")}</span>`;
+  }
+
+  function reviseAgainHTML(entries, dueResolves) {
     const bySlug = new Map(getUniqueProblems().map(u => [u.problem[2], u]));
-    return `
+    const dueHTML = dueResolves.length ? `
+      <h3 class="revise-section-title">↻ Due to re-solve today <span>${dueResolves.length}</span></h3>
+      <p class="revise-hint">Solve each one again from a blank file, without looking at your old code. Then rate it: <strong>Struggled</strong> brings it back in ${RESOLVE_AGAIN_DAYS} days.</p>
+      <div class="problem-list">
+        ${dueResolves.map(({ key, slug, review, problem }) => {
+          const [, title, , diff] = problem;
+          const log = state.problemLogs[slug];
+          return `
+            <div class="problem-row again-row resolve-row" data-key="${key}">
+              ${problemNumHTML(problem)}
+              <span class="again-main">
+                <a class="problem-title" href="${problemUrl(problem)}" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
+                <span class="again-meta">${review.reps ? `Re-solved ${review.reps} time${review.reps === 1 ? "" : "s"}` : "First re-solve"}${review.last ? ` · last on ${review.last}` : ""} ${resolveDotsHTML(review.stage)}</span>
+              </span>
+              <button class="problem-log-btn ${log ? "has-log" : ""}" data-slug="${slug}" title="${log ? "Open your log" : "Log approach, complexity, attempts"}">📝</button>
+              <span class="difficulty-pill ${DIFFICULTY[diff].cls}">${DIFFICULTY[diff].label}</span>
+              <span class="resolve-grades">
+                <button class="grade again" data-resolve-grade="again">Struggled <small>${resolveGapLabel(key, "again")}</small></button>
+                <button class="grade good" data-resolve-grade="good">Solved <small>${resolveGapLabel(key, "good")}</small></button>
+                <button class="grade easy" data-resolve-grade="easy">Easy <small>${resolveGapLabel(key, "easy")}</small></button>
+              </span>
+            </div>`;
+        }).join("")}
+      </div>` : "";
+
+    const flaggedHTML = entries.length ? `
+      <h3 class="revise-section-title">🔁 Flagged to solve again <span>${entries.length}</span></h3>
       <div class="problem-list">
         ${entries.map(([slug, log]) => {
           const u = bySlug.get(slug);
@@ -3373,6 +3706,21 @@
               <span class="difficulty-pill ${DIFFICULTY[diff].cls}">${DIFFICULTY[diff].label}</span>
             </div>`;
         }).join("")}
+      </div>` : "";
+
+    if (dueHTML || flaggedHTML) return dueHTML + flaggedHTML;
+
+    const upcoming = Object.entries(state.reviews).filter(([k, r]) => isProblemKey(k) && r.due && bySlug.has(k.slice(6))).map(([, r]) => r.due).sort();
+    const next = upcoming[0];
+    const nextCount = upcoming.filter(d => d === next).length;
+    return `
+      <div class="revise-empty">
+        <div class="revise-empty-icon">${upcoming.length ? "🎉" : "🔁"}</div>
+        <h3>${upcoming.length ? "No re-solves due" : "Nothing to re-solve yet"}</h3>
+        <p>${upcoming.length
+          ? `Next up: <strong>${nextCount} problem${nextCount === 1 ? "" : "s"}</strong> on ${new Date(next + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}. ${upcoming.length} solved problem${upcoming.length === 1 ? " is" : "s are"} in rotation.`
+          : "Tick a problem as solved and it comes back here to be solved again from scratch after 3, 10 and 30 days. You can also flag tricky ones with <strong>Solve again</strong> in a problem's 📝 log."}</p>
+        <button class="btn primary" data-goto-view="sets">Go to question sets</button>
       </div>`;
   }
 
@@ -3414,6 +3762,20 @@
     container.querySelectorAll("[data-card-grade]").forEach(b => b.addEventListener("click", () => gradeCurrentCard(b.dataset.cardGrade)));
     const answer = container.querySelector(".fc-answer");
     if (answer && window.Prism) Prism.highlightAllUnder(answer);
+
+    // Re-solves due
+    container.querySelectorAll(".resolve-row").forEach(row => {
+      row.querySelectorAll("[data-resolve-grade]").forEach(btn => btn.addEventListener("click", () => {
+        const before = progressSnapshot();
+        const grade = btn.dataset.resolveGrade;
+        rateResolve(row.dataset.key, grade);
+        saveState();
+        row.classList.add("leaving");
+        const review = state.reviews[row.dataset.key];
+        showToast(review.due === null ? "Mastered: it leaves the rotation 🏆" : grade === "again" ? `Back in ${RESOLVE_AGAIN_DAYS} days. You've got this 💪` : `Next re-solve on ${review.due}`);
+        setTimeout(() => { renderReviseView(); renderSidebar(); celebrateProgress(before); }, 220);
+      }));
+    });
 
     // Solve-again list
     container.querySelectorAll(".problem-log-btn").forEach(b => b.addEventListener("click", () => openProblemLog(b.dataset.slug)));
