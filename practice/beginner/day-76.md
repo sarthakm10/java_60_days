@@ -161,4 +161,4 @@ public class Resilience {
 }
 ```
 
-Retry and circuit breaker work together: retries handle short blips, and the breaker stops endless retrying against a service that's really down, so threads aren't wasted waiting on it (Day 76's cascade failure). Resilience4j adds jitter, sliding windows of calls and metrics, but the state machine is exactly this one.
+Retry and circuit breaker work together: retries handle short blips, and the breaker stops endless retrying against a service that's really down, so threads aren't wasted waiting on it (Day 79's cascade failure). Resilience4j adds jitter, sliding windows of calls and metrics, but the state machine is exactly this one.

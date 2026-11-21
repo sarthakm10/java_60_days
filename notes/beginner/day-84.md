@@ -1,48 +1,69 @@
-# Day 84 — Kubernetes, CI/CD and Team Git Workflows
+# Day 84 — AWS: Accounts, IAM and Networking
 
-> Docker runs one container. **Kubernetes** runs hundreds across many servers, restarts them when they crash, and scales them with traffic. And **CI/CD** gets code from a Git push to production automatically. Read each 🌱 **In simple words** box first.
+> Seven days of cloud. Most backend jobs ask for AWS experience, and the ideas carry over to Azure and Google Cloud. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** know the main Kubernetes objects, how deployments roll out safely, what a CI/CD pipeline does, and how teams use Git together.
+**Today's goal:** understand what "the cloud" is, set up an AWS account safely, and learn the two foundations everything else sits on: IAM (who may do what) and VPC (the private network).
 
 <!-- topic: b84_t1 -->
-## 🗄️ DevOps — K8s & CI/CD
+## 🗄️ AWS — Getting Started
 
-<!-- intro: d31_t1_s1 -->
-**Kubernetes** (K8s) runs containers across a cluster of machines. You describe what you want in YAML, and it keeps reality matching. The objects to know: a **Pod** (one or more containers running together), a **Deployment** ("always keep 3 copies of this pod running, using this image"), a **Service** (a stable name and address for a set of pods, so others find them, Day 75's service discovery), **ConfigMap** and **Secret** (settings and passwords passed to pods, Day 63) and an **Ingress** (routes outside HTTP traffic to services).
+<!-- subtopic: b85_t1_s1 -->
+### Cloud in simple words
 
-<!-- intro: d31_t1_s2 -->
-Kubernetes checks your app's health with **probes**: a **liveness** probe ("is it stuck? restart it") and a **readiness** probe ("is it ready for traffic yet?"). Spring Boot's Actuator health endpoints (Day 63) are made for this. Pods also declare **resource requests and limits** (CPU and memory), so the scheduler places them sensibly and one greedy app can't starve the others.
+Running your own servers means buying machines, a room with power and cooling, network connections, and people to replace failed disks at 3 am. The **cloud** means **renting** computing from a provider like **AWS** (Amazon Web Services) by the hour or second, over the internet: servers, databases, storage, queues. You start in minutes, grow when traffic grows, and pay for what you use, like electricity from the grid instead of running your own generator.
 
-<!-- intro: d31_t1_s3 -->
-Real apps need many YAML files per environment. **Helm** packages them as a **chart** with templates and a `values.yaml` file, so the same chart deploys to dev and production with different values, like a recipe with adjustable quantities.
+Three levels of "how much do you manage yourself":
 
-<!-- intro: d31_t1_s4 -->
-**CI/CD**: **Continuous Integration** means every push automatically builds the code and runs all tests (Day 57), so broken code is caught in minutes. **Continuous Delivery/Deployment** then builds the Docker image, scans it and deploys it. Tools: **GitHub Actions** (a YAML file in your repo, the easiest place to start), Jenkins, GitLab CI. Add a GitHub Actions workflow that runs `./mvnw test` on every push to your Task Manager: it's a small step that looks great on a CV.
+| Model | You manage | Example |
+|---|---|---|
+| **IaaS** (infrastructure) | the OS and everything above it | an EC2 virtual server (Day 85) |
+| **PaaS** / managed services | just your app or data | RDS managed PostgreSQL (Day 87), ECS Fargate |
+| **Serverless** | only your code, run on demand | AWS Lambda |
 
-<!-- intro: d31_t1_s5 -->
-Releasing without downtime: a **rolling update** replaces pods a few at a time (Kubernetes' default); **blue-green** runs the new version beside the old and switches all traffic at once (easy rollback); **canary** sends a small share of users (say 5%) to the new version first and watches the metrics before going further.
+**Where it runs:** AWS is split into **regions**, separate geographic areas like Mumbai (`ap-south-1`) or Ireland (`eu-west-1`). Pick one near your users (lower latency) and where the law allows your data to live. Each region has several **availability zones (AZs)**: separate data centres a few kilometres apart, with their own power and network. Spreading your app across two or three AZs means one data centre's fire or power cut doesn't take you down.
 
-<!-- intro: d31_t1_s6 -->
-Container security in production: run as non-root with a read-only filesystem (Day 74), keep images minimal, and **scan** images for known vulnerabilities in the pipeline with a tool like Trivy, failing the build on serious ones.
+<details>
+<summary>Region vs availability zone?</summary>
 
-<!-- topic: b84_t2 -->
-## 🗄️ Tools — Git in a Team
+A region is a geographic area (e.g. Mumbai); an availability zone is one of several separate data centres inside a region. Running in multiple AZs survives a single data centre failing.
+</details>
 
-<!-- intro: d54_t1_s5 -->
-Teams agree on a **branching strategy**: **trunk-based** development (short-lived branches merged into `main` daily, used with CI) or **Git Flow** (long-lived develop/release branches, slower). Useful commands beyond Day 12: `rebase` (replay your commits on top of the latest main for a clean history), `cherry-pick` (copy one commit to another branch), `stash` (put unfinished changes aside) and `bisect` (binary search through history for the commit that introduced a bug: Day 15 in Git form).
+<!-- subtopic: b85_t1_s2 -->
+### Create an AWS account safely
 
-<!-- intro: d54_t1_s6 -->
-Good **code reviews**: small pull requests that are easy to read, comments about the code and not the person, explaining *why* rather than just "change this", and approving when it's good enough rather than perfect. **Conventional commit** messages (`feat: add task paging`, `fix: handle empty title`) make history easy to scan.
+Cloud mistakes cost real money, and leaked keys get abused within minutes. Do these steps on day one:
+
+1. **Sign up** at aws.amazon.com. New accounts get a **free tier** (small servers, some storage and database time free for 12 months, plus always-free allowances). Read what's included before creating anything.
+2. **Protect the root user** (the email you signed up with): turn on **MFA** (multi-factor authentication, an authenticator app), and then **stop using it** for daily work.
+3. **Create an IAM user (or IAM Identity Center user) for yourself** with admin rights, with MFA, and log in as that from now on.
+4. **Set a budget alarm**: Billing → Budgets → a monthly budget of, say, $5 with an email alert. This single step saves beginners from surprise bills.
+5. **Never put access keys in code or in Git** (Day 1). Use `aws configure` locally, and IAM roles for anything running inside AWS (next section).
+6. **Delete what you create** after practising: a forgotten database or load balancer keeps charging.
+
+<details>
+<summary>Two things to do immediately after creating an AWS account?</summary>
+
+Turn on MFA for the root user (and stop using it day to day), and set a budget alarm. Also create a separate admin user for daily work.
+</details>
+
+<!-- intro: d45_t1_s5 -->
+**IAM** (Identity and Access Management) decides **who can do what** in your account. **Users** are people; **groups** collect users; **roles** are identities that services or apps *assume* temporarily (your server's code gets a role instead of stored keys); **policies** are JSON documents listing allowed actions ("may read objects in bucket X"). The golden rule is **least privilege**: give each identity only the permissions it actually needs.
+
+<!-- intro: d45_t1_s6 -->
+IAM habits: no daily use of the root user, MFA everywhere, roles instead of long-lived keys, rotating any keys that must exist, and **STS** temporary credentials for access between accounts. Most cloud security incidents start with a leaked key or an over-powerful role.
+
+<!-- intro: d45_t1_s8 -->
+A **VPC** (virtual private cloud) is your own private network inside AWS. You divide it into **subnets**: **public** ones (reachable from the internet, for load balancers) and **private** ones (not reachable directly, for your app servers and databases). **Security groups** are firewalls around each server ("allow port 8080 only from the load balancer"); **NACLs** are coarser firewalls on whole subnets. Rule of thumb: databases always live in private subnets.
 
 ## 📝 Day 84 Recap
 
-1. What does Kubernetes do? → **runs and manages containers across a cluster, keeping the desired state**
-2. What is a Pod? → **the smallest unit: one or more containers running together**
-3. What does a Deployment do? → **keeps a set number of pod copies running with a given image**
-4. What does a Service give pods? → **a stable name and address**
-5. Liveness vs readiness probe? → **liveness: restart if stuck; readiness: send traffic only when ready**
-6. What is Helm? → **a package manager for Kubernetes: templated charts with values files**
-7. Continuous integration? → **build and test automatically on every push**
-8. Rolling vs blue-green vs canary? → **replace gradually / switch all at once / try on a small share first**
-9. What does git bisect do? → **binary-searches history for the commit that introduced a bug**
-10. Trunk-based development? → **short-lived branches merged into main frequently, with CI**
+1. What is the cloud? → **renting computing resources over the internet, paying for what you use**
+2. IaaS vs managed vs serverless? → **you manage the OS / just the app or data / only your code**
+3. What is a region? → **a geographic area containing several AWS data centres**
+4. Why use several availability zones? → **so one data centre failing doesn't take the app down**
+5. First security step for a new account? → **MFA on the root user, then stop using root**
+6. What stops surprise bills? → **a budget alarm**
+7. IAM role vs user? → **a role is assumed temporarily by services or apps; a user is a person's identity**
+8. What is least privilege? → **giving each identity only the permissions it needs**
+9. Public vs private subnet? → **reachable from the internet vs not; databases go in private subnets**
+10. What is a security group? → **a firewall controlling traffic to a resource**

@@ -178,4 +178,4 @@ public class ParkingLot {
 }
 ```
 
-In an interview, the follow-ups are where you score: a smarter allocation strategy (fill car spots before truck spots, so trucks aren't blocked: a second strategy interface), multiple floors, and two cars racing for the last spot at the same moment (`synchronized park`, Day 39). The design already has the hooks: allocation lives in one method, and fees are a swappable strategy.
+In an interview, the follow-ups are where you score: a smarter allocation strategy (fill car spots before truck spots, so trucks aren't blocked: a second strategy interface), multiple floors, and two cars racing for the last spot at the same moment (`synchronized park`, Day 46). The design already has the hooks: allocation lives in one method, and fees are a swappable strategy.

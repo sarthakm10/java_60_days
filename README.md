@@ -13,31 +13,42 @@ Each track keeps its own progress. Your streak, focus timer, daily goal and them
 
 ## What's covered
 
-**Beginner track (100 days, 10 phases)**
+**Beginner track (100 days)**
 
-1. Programming basics: setup, variables, operators, conditions, loops, methods, arrays, strings, debugging, Big-O, Git
-2. Object-oriented Java: classes, encapsulation, inheritance, polymorphism, abstraction, exceptions, a library project
-3. Generics and collections: ArrayList, LinkedList, HashMap (usage and internals), sets, queues, TreeMap, LRU cache
-4. Modern Java: lambdas, streams, Optional, the Date/Time API, Java 10–21 features
-5. Concurrency and the JVM: threads, synchronization, executors, concurrent collections, virtual threads, memory and GC
-6. Backend foundations: HTTP/REST/JSON, Maven and unit testing, SQL (joins, window functions, indexes, transactions), JDBC, NoSQL
-7. Spring Boot: dependency injection, REST APIs, validation, testing, Spring Data JPA, transactions, security with JWT, Actuator, and a guided Task Manager API project: one step on each Spring day (54–64), finished on Days 65–67
-8. Design: SOLID, design patterns, low-level design (machine coding)
-9. Deploy and scale: Docker, microservices, Kafka, Kubernetes and CI/CD, AWS, Terraform
-10. System design and interview prep: system design fundamentals and practice, revision, behavioral interviews, resume, a final mock interview
+Days 1–83 follow the [Java + DSA study roadmap](notes/kunal/java_dsa_study_roadmap.md) of the Kunal Kushwaha playlist notes, and each day's study notes are those notes, shown unchanged (see [Kunal notes](#kunal-notes)):
 
-DSA practice runs alongside, introduced after the Java concept each pattern needs.
+One change from the roadmap: OOP and Java 8+ come straight after the array patterns, and recursion and backtracking follow them (the roadmap has recursion first). Topic numbers inside the notes, like 5.3, are still the roadmap's.
+
+| Days | Roadmap part |
+|---|---|
+| 1–4 | Phase 1: Java foundations (Git, how programs run, JDK/JVM, first program, conditionals and loops, methods) |
+| 5–11 | Phase 2: arrays, strings, linear and binary search, bits, maths (after Big-O basics) |
+| 12–14 | Phase 3: sorting and complexity |
+| 15–19 | Phase 4: array and string patterns (HashMap usage, two pointers, prefix sum, Kadane, sliding window, matrix) |
+| 20–26 | Phase 5: OOP and core Java, ending with a Tic-Tac-Toe project |
+| 27–32 | Phase 6: Java 8+ (generics, comparators, functional interfaces, streams, modern Java) and merge intervals |
+| 33–40 | Phase 7: recursion and backtracking |
+| 41–46 | Phase 8: linked lists, stacks, queues, hashing; alongside it SOLID, design patterns and multithreading |
+| 47–54 | Phase 9: trees, heaps and tries; alongside it JVM internals and LLD practice |
+| 55–56 | Phase 10: greedy and maths extras; JUnit, Maven and JDBC |
+| 57–62 | Phase 11: graphs and union-find; Spring Boot parts 1–3 alongside |
+| 63–68 | Phase 12: dynamic programming; Spring Boot parts 4–6 alongside |
+| 69–80 | Spring Boot parts 7–18: SQL, data access, testing, security, production, deployment, a capstone, messaging, microservices, MongoDB |
+| 81–83 | Phase 13: string algorithms, range queries, serialization/reflection/regex/`java.time` |
+| 84–100 | Beyond the roadmap: AWS and Terraform, system design, revision, behavioral interviews, resume, a DSA mock and a final mock interview |
+
+Its DSA question sets come from the roadmap's practice sheet: 431 problems in 49 pattern sets, each on the day that teaches its pattern. Frontend runs alongside from Day 13.
 
 **Interview track (60 days, 8 phases):** Core Java, collections, Spring Boot, microservices/DevOps/LLD, Kafka, AWS, SQL and system design, and a final sprint, with daily DSA.
 
 ## Features
 
 - **Daily checklist** for every day, with a "What I covered" / "What I missed" note box
-- **Study notes** for every day, with diagrams (Mermaid) and syntax-highlighted code. In the Beginner track, sections shared with the Interview track open with an "🌱 In simple words" box, and advanced parts are folded into "🚀 Go deeper" panels
+- **Study notes** for every day, with diagrams (Mermaid) and syntax-highlighted code. In the Beginner track, Days 1–83 show the Kunal notes as they are (GitHub-style note boxes, working links between notes, which open in a reader); on the later days, sections shared with the Interview track open with an "🌱 In simple words" box, and advanced parts are folded into "🚀 Go deeper" panels
 - **Code practice:** 170 exercises in the Beginner track and 110 in the Interview track (Java, SQL, Spring Boot, JavaScript and React; 32 of them are frontend exercises shared by both), each with starter code, step-by-step hints, a reference solution and the expected output or test result. An exercise solved in one track shows as solved in the other too, since the tracks share many exercises
 - **Spaced revision:** ticked topics come back after 1, 3, 7, 21 and 45 days, plus flashcard decks built automatically from the notes
 - **Frontend:** HTML and CSS essentials, JavaScript, TypeScript and React, up to frontend system design, machine coding and interview questions (29 modules plus a guided React project). In the Beginner track it runs alongside Java from Day 13; in the Interview track it's a separate section, by topic. Both tracks also have a **Frontend** page with every module, its checklist and its notes
-- **DSA question sets:** curated LeetCode problems by topic, with a per-problem log (approach, complexity, attempts, "solve again")
+- **DSA question sets:** each track has its own. Interview: curated LeetCode problems by topic. Beginner: the practice sheet's 431 problems by pattern, grouped by roadmap phase (260 on LeetCode, the rest linked to takeuforward). Every problem has a log (approach, complexity, attempts, "solve again")
 - Dashboard with streaks, XP, levels and badges, a focus timer, global search (press `/`), light and dark themes, and a mobile layout
 - **Export / import** of all progress as a JSON file
 - **Works offline, and installs as an app** on a phone or computer (see below)
@@ -48,7 +59,7 @@ Progress is stored in your browser's `localStorage`. Clearing site data erases i
 
 The site is a Progressive Web App: a service worker (`sw.js`) keeps a copy of every file it loads, and `manifest.webmanifest` lets the browser install it like an app.
 
-- **Offline:** the ☁ **Save for offline** button (sidebar, next to Export) saves everything at once: every day's notes and exercises in both tracks, the visualizer recordings and the code-highlighting libraries (about 330 files, around 10 MB). After that the whole site works with no connection. Online, it always loads the newest version and refreshes the saved copy as you go; click the button again now and then to refresh everything.
+- **Offline:** the ☁ **Save for offline** button (sidebar, next to Export) saves everything at once: every day's notes and exercises in both tracks, the visualizer recordings and the code-highlighting libraries (about 360 files, around 11 MB). After that the whole site works with no connection. Online, it always loads the newest version and refreshes the saved copy as you go; click the button again now and then to refresh everything.
 - **Android:** open the site in Chrome, tap ⋮ → **Add to Home screen** (or **Install app**). It opens full screen from its own icon, like any app, and saves everything for offline use the first time it starts. Your progress lives in that installed app's storage, so **Export** from the browser and **Import** in the app to move it across.
 - **iPhone:** in Safari, Share → **Add to Home Screen**.
 - **Desktop:** Chrome or Edge show an install icon in the address bar.
@@ -82,11 +93,13 @@ app.html                 the tracker app's page layout
 app.js                   all application logic (tracks, rendering, progress, revision, practice, search)
 styles.css               styles, including light/dark themes and the mobile layout
 data.js                  Interview track: days, topics and subtopics (CURRICULUM_DATA)
-data-beginner.js         Beginner track: days built from new and borrowed subtopics (BEGINNER_DATA)
+data-beginner.js         Beginner track: days built from Kunal notes, new and borrowed subtopics (BEGINNER_DATA)
 data-frontend.js         Frontend modules shared by both tracks (FRONTEND_DATA), and the Beginner days each one is on
-question-sets.js         DSA question sets (LeetCode problems by topic)
+question-sets.js         Interview DSA question sets (LeetCode problems by topic)
+question-sets-beginner.js  Beginner DSA question sets, from the Kunal practice sheet (generated)
 notes/day-NN.md          Interview study notes, one file per day
-notes/beginner/day-NN.md Beginner study notes, one file per day
+notes/kunal/             the Kunal Java, DSA and Spring Boot notes, copied unchanged (Beginner Days 1–83)
+notes/beginner/day-NN.md Beginner study notes for Days 84–100
 notes/frontend/module-NN.md  Frontend notes, one file per module
 practice/day-NN.md       Interview exercises (Days 1–26)
 practice/beginner/day-NN.md  Beginner exercises
@@ -111,15 +124,28 @@ Everything the learner reads is Markdown, so content can be edited without touch
 
 Subtopic ids (`d12_t1_s3`, `b45_t1_s2`) and exercise ids (`d20_e1`, `b47_e1`) are the keys for saved progress. Never rename or reuse them. If a subtopic moves to another day, it keeps its id, so the `dN` in an id is where it was first added, not necessarily the day it's on now.
 
-### The Beginner track reuses Interview content
+### Kunal notes
 
-A Beginner day in `data-beginner.js` lists its subtopics as either a new one (`["b3_t1_s2", "label"]`), a borrowed Interview subtopic (`"d1_t1_s1"`), or a borrowed one with a simpler label (`["d1_t1_s1", "label"]`). `dsa(N)` borrows Interview day N's whole DSA topic, together with its question sets.
+`notes/kunal/` is a byte-for-byte copy of the Markdown notes in the Java_Notes_Kunal_DSA_PlayList folder (the playlist video notes, the Java and DSA "not covered" notes, the Spring Boot notes, the roadmap, the gap list and the practice sheet), with the same folder names so their links keep working. `.gitattributes` keeps git from changing their line endings. Don't edit them here: change them there, then copy them again and rebuild the question sets:
 
-A Beginner day's notes are put together per subtopic: from `notes/beginner/day-NN.md` when that file has the subtopic, otherwise from the Interview notes that cover it.
+```bash
+node scripts/sync-kunal-notes.js ../Java_Notes_Kunal_DSA_PlayList
+node scripts/build-beginner-sets.js ../Java_Notes_Kunal_DSA_PlayList
+```
+
+A Beginner subtopic shows one of them with `k(key, label, part)` in `data-beginner.js`: `KUNAL_FILES` maps the roadmap's keys (`v24`, `g05`, `d02`, `t01`, `s07`…) to files, and the optional `part` (`[13, 26]`) shows only a note's `## 13.` to `## 26.` sections, for the notes the roadmap splits across phases. Its id is `k_<key>` (`k_<key>_<from>` for a part). The page renders the file as it is; the only additions are GitHub-style anchors on its headings, the `> [!NOTE]` / `[!TIP]` / … boxes, and links: one to a heading in the same note scrolls there, one to another note (or to a section a day doesn't show) opens it in a reader with Back. `check-notes.js` checks that every Kunal file, and every numbered section of a split one, is on some day.
+
+`build-beginner-sets.js` reads the practice sheet's data (`web/practice-data.json` in that folder) and writes `question-sets-beginner.js`: one set per sheet section, each problem on the Beginner day whose subtopic label starts with its roadmap topic number (`2.5`, `11.9`…).
+
+### The Beginner track's other days reuse Interview content
+
+Days 84–100 list their subtopics as either a new one (`["b3_t1_s2", "label"]`), a borrowed Interview subtopic (`"d1_t1_s1"`), or a borrowed one with a simpler label (`["d1_t1_s1", "label"]`); `fromDay(N, i)` borrows a whole topic of Interview day N.
+
+Their notes are put together per subtopic: from `notes/beginner/day-NN.md` when that file has the subtopic, otherwise from the Interview notes that cover it.
 
 ### Frontend modules
 
-`data-frontend.js` lists 30 modules in six levels (HTML & CSS, JavaScript, TypeScript, React, Frontend engineering, Interview prep). Module 29 is a guided project, the Task Manager front end, with one step per React day. Each module has subtopic ids `fN_sM` and the Beginner days it's spread over (`days`):
+`data-frontend.js` lists 30 modules in six levels (HTML & CSS, JavaScript, TypeScript, React, Frontend engineering, Interview prep). Module 29 is a guided project, the Task Manager front end, with one step per React day; it's on the Frontend page but not on Beginner days, since the Spring project it builds on is no longer part of that track. Each module has subtopic ids `fN_sM` and the Beginner days it's spread over (`days`):
 
 - **Beginner track:** `data-beginner.js` adds a "Frontend — module title" topic to each of those days, splitting the module's subtopics between them. The day's notes take those sections from the module's file, so frontend sections are never written in `notes/beginner/`.
 - **Interview track:** the modules stay out of the 60 days. They live on the **Frontend** page, where ticked subtopics still count toward the Frontend subject, come back in Revise, and get their own flashcard decks.
@@ -169,7 +195,7 @@ A frontend module lists its exercises in `practice` in `data-frontend.js`. They 
 
 - **A new Interview practice file:** `PRACTICE_FILES` in `app.js` lists Interview days 1–26; extend it to include the new day.
 - **A new Beginner exercise:** add its id to the day's `practice` list in `data-beginner.js`.
-- **Beginner notes:** `BEGINNER_NOTE_FILES` in `app.js` lists which days have their own notes file (currently all 100).
+- **Beginner notes:** `BEGINNER_NOTE_FILES` in `app.js` lists which days have their own notes file (Days 84–100; the others show Kunal notes).
 
 ### Checking content
 
@@ -181,7 +207,7 @@ node scripts/check-all.js
 
 | Script | Checks | Needs |
 | --- | --- | --- |
-| `check-notes.js` | every subtopic has its section (frontend modules too, once their file exists), markers are valid, code fences are balanced, no text is lost to stray `<Tags>` | Node |
+| `check-notes.js` | every subtopic has its section (frontend modules too, once their file exists), markers are valid, code fences are balanced, no text is lost to stray `<Tags>`; every Kunal note exists and is on a day | Node |
 | `check-practice.js` | exercise format; Java and JavaScript solutions print exactly the expected output (DOM scripts must parse; React pages must have their import map, Babel and a render); Beginner and frontend `practice` lists match the files | Node, a JDK |
 | `check-sql.py` | SQL solutions give exactly the expected result in SQLite | Python 3 |
 | `check-spring.js` | Spring starters compile, their tests fail until solved, and the solutions pass them | Node, Maven (downloads Spring Boot the first time) |

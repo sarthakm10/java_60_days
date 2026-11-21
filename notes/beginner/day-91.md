@@ -1,48 +1,36 @@
-# Day 91 — Terraform Practice and Cloud Review
+# Day 91 — System Design Fundamentals, Part 1
 
-> Hands-on Terraform, then a review of Days 85–90. If you practise in a real AWS account, keep your budget alarm on (Day 85) and run `terraform destroy` when you finish. Read each 🌱 **In simple words** box first.
+> **Phase 10: System Design & Interview Prep.** System design interviews ask "how would you build Twitter / a URL shortener / a chat app?" at the level of boxes and arrows, not code. Everything from Phases 6–9 is your vocabulary. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** write Terraform for a server and a bucket, and explain the AWS services you've met in one or two sentences each.
+**Today's goal:** understand the CAP theorem, how databases scale, caching strategies, load balancing, and queues vs streams.
 
 <!-- topic: b91_t1 -->
-## 🗄️ DevOps — Terraform Practice & AWS Review
+## 🏗️ HLD — Core Concepts
 
-<!-- intro: d47_t1_s1 -->
-Write Terraform for a small EC2 instance (Day 86), a **security group** that only allows SSH from your IP and HTTP on port 8080 (Day 85), and an **IAM role** the instance assumes (no keys on the server). Run `plan`, read it, `apply`, check it in the console, then `destroy`.
+<!-- intro: d55_t1_s1 -->
+When data is copied across several machines and the network between them breaks (a **partition**), a system must choose: keep answering with possibly stale data (**availability**), or refuse until the copies agree (**consistency**). That's the **CAP theorem**: during a partition you can't have both. A bank balance chooses consistency; a social media like-counter chooses availability. **PACELC** adds: even without a partition, you trade latency against consistency.
 
-<!-- intro: d47_t1_s2 -->
-Write Terraform for an S3 bucket with versioning, encryption and a lifecycle rule moving old objects to cheaper storage (Day 87), and block all public access. This is a realistic, safe exercise that costs almost nothing.
+<!-- intro: d55_t1_s2 -->
+When one database can't keep up: **scale up** (vertical: a bigger machine; simple but there's a ceiling) or **scale out** (horizontal: more machines). For reads, add **read replicas** (Day 87); for writes and huge data, split the data across machines with **sharding** (Day 92). Most systems go a long way with a bigger machine, replicas and a cache before needing sharding.
 
-<!-- intro: d47_t1_s3 -->
-Review: when would you pick EC2, ECS Fargate or Lambda for a new service (Day 86)? Explain the S3 storage classes and when each is worth it (Day 87).
+<!-- intro: d55_t1_s4 -->
+A **cache** keeps hot data in fast memory (Redis, Day 87) to spare the database: **cache-aside** (the app checks the cache, fills it on a miss), **write-through** (writes go to the cache and database together) and **write-behind** (writes go to the cache and reach the database later, fast but riskier). A **CDN** caches images and files in data centres near users worldwide. The famous hard part is **invalidation**: when the data changes, stale cached copies must be updated or expire (TTL).
 
-<!-- intro: d47_t1_s4 -->
-Review: a VPC's public and private subnets, security groups vs NACLs, and the IAM habits that prevent most incidents (Day 85).
+<!-- intro: d55_t1_s6 -->
+A **load balancer** (Day 85) spreads requests across servers: **round-robin** (each in turn), **least connections** (whoever is least busy), or **consistent hashing** (the same user always goes to the same server, Day 92). It also removes unhealthy servers from rotation, which is how a system survives a server dying.
 
-<!-- intro: d47_t1_s5 -->
-Review: how you'd monitor a Spring Boot service on AWS (Day 89): logs to CloudWatch Logs, metrics with alarms on errors and latency, X-Ray traces, and health checks on the load balancer.
-
-<!-- intro: d49_t1_s5 -->
-Draw a production setup for your Task Manager: users → ALB in public subnets → ECS Fargate tasks in private subnets → RDS PostgreSQL (Multi-AZ) and ElastiCache, files in S3, secrets in Secrets Manager, everything reporting to CloudWatch. If you can draw and explain this, you can hold a cloud conversation in an interview.
-
-<!-- intro: d49_t1_s1 -->
-Rapid-fire on S3: storage classes, presigned URLs, and the three encryption options.
-
-<!-- intro: d49_t1_s3 -->
-Rapid-fire on IAM and secrets: a role vs a policy, and KMS vs Secrets Manager.
-
-<!-- intro: d49_t1_s4 -->
-Rapid-fire on Terraform: the workflow, why state is remote and locked, and what a module is.
+<!-- intro: d55_t1_s7 -->
+**Queues** (SQS, RabbitMQ) hand each message to one worker and then delete it: perfect for background jobs like sending emails. **Event streams** (Kafka, Day 78) keep events in an ordered log that many independent consumers can read and replay: perfect for "something happened, and several systems care". Pick a queue for jobs, a stream for events.
 
 ## 📝 Day 91 Recap
 
-1. Always run before terraform apply? → **terraform plan, and read it**
-2. How does an EC2 instance get AWS permissions safely? → **through an IAM role, not stored keys**
-3. Security group for a Spring Boot server? → **port 8080 from the load balancer (and SSH only from your IP)**
-4. Make an S3 bucket safe by default? → **block public access, enable encryption and versioning**
-5. Where do app containers and databases run in a VPC? → **in private subnets**
-6. EC2 vs Fargate vs Lambda? → **manage servers / managed containers / functions on demand**
-7. KMS vs Secrets Manager? → **encryption keys vs stored secrets like passwords**
-8. Production picture for a Spring Boot app? → **ALB → ECS Fargate → RDS + ElastiCache + S3, monitored by CloudWatch**
-9. Last step after practising in AWS? → **terraform destroy (and check the bill)**
-10. What does a presigned URL allow? → **temporary access to one S3 object without AWS credentials**
+1. CAP theorem in one line? → **during a network partition, choose consistency or availability**
+2. Bank balance: C or A? → **consistency**
+3. Vertical vs horizontal scaling? → **a bigger machine vs more machines**
+4. First ways to scale reads? → **a cache and read replicas**
+5. Cache-aside? → **check the cache; on a miss read the database and fill the cache**
+6. Write-through vs write-behind? → **write cache and DB together vs write cache now and DB later**
+7. What does a CDN do? → **serves static content from locations near users**
+8. Hardest problem with caches? → **invalidation: keeping cached data from going stale**
+9. Load-balancing strategies? → **round-robin, least connections, consistent hashing**
+10. Queue vs event stream? → **a queue hands each job to one worker; a stream lets many consumers read and replay events**

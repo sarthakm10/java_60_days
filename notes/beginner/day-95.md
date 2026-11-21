@@ -1,31 +1,31 @@
-# Day 95 — Revision: Java and Collections
+# Day 95 — Revision: Spring, Kafka and Cloud
 
-> Three revision days before the interview prep. Today: core Java, the foundation of every Java backend interview.
+> The backend half of your revision: the stack you'll actually be hired to work on.
 
-**Today's goal:** clear your backlog of missed topics, answer rapid-fire Java and collections questions without notes, and plan the last days around your weak spots.
+**Today's goal:** answer the classic Spring, Kafka and AWS questions without notes, and name design patterns from descriptions.
 
 <!-- topic: b95_t1 -->
-## ☕ Revision — Core Java
+## 🌿 Revision — Backend Stack
 
-The checklist items today are **activities**, not new topics. How to work through them:
+Today's checklist items are **self-tests**. Work through them in this order, out loud, without notes first:
 
-1. **"What I Missed" notes:** open **Backlog & Stats** in the sidebar. It lists every unchecked subtopic from days you started and every "What I Missed" note. Clear what you can; each one is usually 15 minutes of re-reading plus a flashcard session.
-2. **Rapid-fire Java:** 20 questions on OOP (Days 13–23), Java 8 streams (Days 34–37) and concurrency (Days 38–42). Answer aloud in under a minute each, then check with the **Revise → Flashcards** decks for those days.
-3. **Rapid-fire collections:** HashMap internals (Day 28), ConcurrentHashMap (Day 41), the LRU cache (Days 31 and 33) and TreeMap (Day 31). These are the most asked Java questions of all.
-4. **Java self-test:** 30 minutes, no notes, all of the above.
-5. **Plan your weak areas:** write down your five weakest topics and give each one a slot in the remaining days.
+1. **Spring rapid-fire** (Days 61–75): `@Transactional` pitfalls (self-invocation, checked exceptions), the N+1 problem and its fixes, the JWT flow end to end, the bean lifecycle, and how auto-configuration decides what to create.
+2. **Spring self-test**: 20 minutes, including dependency injection, JPA and testing (`@WebMvcTest` vs `@SpringBootTest`).
+3. **Kafka rapid-fire and self-test** (Day 78): delivery guarantees, consumer lag, partitions and ordering, the dead letter topic, rebalancing.
+4. **AWS self-test** (Days 84–90): S3, EC2 vs ECS vs Lambda, IAM roles, VPC subnets, Terraform's workflow.
+5. **Design patterns** (Day 43): for ten short descriptions, name the pattern ("wraps an object to add behaviour" → Decorator).
 
-Use the sections below as the question bank; for anything shaky, jump back to the day where you learned it.
+Your capstone project (Day 77) is the best revision tool: explain how each of these topics shows up in it, because interviewers will ask about your project.
 
 ## 📝 Day 95 Recap
 
-1. Where are your unchecked topics and missed notes collected? → **Backlog & Stats**
-2. How should you answer rapid-fire questions? → **out loud, in under a minute each**
-3. Most asked Java collection topic? → **HashMap internals**
-4. What makes an LRU cache with LinkedHashMap? → **access order plus removing the eldest entry**
-5. ConcurrentHashMap vs HashMap? → **thread-safe with fine-grained concurrency vs not thread-safe**
-6. Why isn't count++ thread-safe? → **it's read, add, write, which can interleave between threads**
-7. Stream pipeline parts? → **source, intermediate operations, terminal operation**
-8. Four OOP pillars? → **encapsulation, inheritance, polymorphism, abstraction**
-9. == vs equals()? → **same reference vs same value**
-10. What do you do with your five weakest topics? → **schedule focused revision for each before interviews**
+1. Two @Transactional traps? → **self-invocation skips the proxy; checked exceptions don't roll back by default**
+2. N+1 fixes? → **JOIN FETCH, @EntityGraph, @BatchSize**
+3. JWT flow? → **login issues a signed token; the client sends it as Bearer; a filter verifies it on each request**
+4. @WebMvcTest vs @SpringBootTest? → **web layer only vs the whole application**
+5. Kafka delivery guarantee most systems use? → **at-least-once with idempotent consumers**
+6. What is consumer lag? → **how far a consumer group is behind the latest events**
+7. EC2 vs ECS Fargate vs Lambda? → **servers / managed containers / functions on demand**
+8. IAM role? → **an identity that services or apps assume temporarily, instead of stored keys**
+9. "Wraps an object to add behaviour" is which pattern? → **Decorator**
+10. "Interchangeable algorithms chosen at run time"? → **Strategy**

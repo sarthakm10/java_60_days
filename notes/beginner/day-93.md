@@ -1,38 +1,39 @@
-# Day 93 — System Design Fundamentals, Part 2
+# Day 93 — System Design Practice
 
-> Read each 🌱 **In simple words** box first. The 🚀 **Go deeper** panels are for a second pass.
+> Five classic design questions. For each, set a 45-minute timer, follow Day 92's framework on paper, and only then read the section. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** understand sharding, rate limiting algorithms, consistent hashing and Bloom filters, and learn a step-by-step framework for any system design question.
+**Today's goal:** practise complete designs, and get comfortable drawing clear diagrams and talking through trade-offs.
 
 <!-- topic: b93_t1 -->
-## 🏗️ HLD — Scaling Techniques
+## 🏗️ HLD — Practice Problems
 
-<!-- intro: d55_t1_s3 -->
-**Sharding** splits one huge table across several databases. By **range** (users A–M on shard 1, N–Z on shard 2: simple, but some shards get busier), by **hash** of the key (even spread, but range queries hit every shard) or with a **directory** (a lookup table of where each key lives). The pain: queries and joins across shards become hard, so choose the shard key around your most common queries.
+<!-- intro: d57_t1_s1 -->
+**URL shortener** (like TinyURL): turn a long URL into a short code and redirect when someone visits it. Key questions: how to generate short unique codes (a counter encoded in base 62, or a hash with collision handling), the redirect status (301 permanent and cacheable vs 302 if you want to count every click), and caching, because reads vastly outnumber writes.
 
-<!-- intro: d55_t1_s5 -->
-Rate limiting algorithms (Day 76): **token bucket** (allows short bursts up to the bucket size), **leaky bucket** (processes at a steady rate, smoothing bursts), **fixed window** (count per calendar minute: simple, but a burst at the boundary can double the allowed rate) and **sliding window** (counts over the last 60 seconds: accurate, a bit more work).
+<!-- intro: d57_t1_s2 -->
+**Notification system**: send emails, SMS and push notifications for many events. The shape: events into a queue (Day 91), workers per channel, user preferences and rate limits ("no more than 3 marketing messages a day"), priorities (a password reset beats a newsletter) and retries with a dead-letter queue.
 
-<!-- intro: d55_t1_s8 -->
-With plain hashing (`key % numberOfServers`), adding one server changes the server for almost every key, so a cache cluster suddenly misses everything. **Consistent hashing** places servers and keys on a **ring**: each key goes to the next server clockwise, so adding or removing a server only moves the keys next to it. **Virtual nodes** (each server at many points on the ring) spread the load evenly. Redis Cluster, Cassandra and DynamoDB use the idea.
+<!-- intro: d57_t1_s3 -->
+**Chat application**: messages must arrive instantly, so clients keep an open **WebSocket** connection instead of repeatedly asking. Topics to cover: message ordering per conversation (a partition key, Day 78), delivery and read receipts, online/offline presence, and storing message history.
 
-<!-- intro: d55_t1_s9 -->
-A **Bloom filter** answers "have I seen this before?" using very little memory. It can say "definitely not" or "probably yes" (it never misses a real member, but occasionally says yes wrongly). Use it to skip expensive lookups, like checking whether a username might be taken before querying the database.
+<!-- intro: d57_t1_s4 -->
+**Rate limiter** as a service: Day 92's algorithms, with counters in Redis shared by all servers, limits per user, per API key and globally, and the `429` response with a header telling clients when to retry.
 
-<!-- intro: d57_t1_s6 -->
-Every system design interview, the same steps: (1) **requirements**: what must it do, how many users, which matters more, speed or consistency? (2) **API**: the main endpoints. (3) **High-level design**: boxes and arrows. (4) **Data**: which database, what tables or keys. (5) **Deep dive** into the hardest part. (6) **Bottlenecks and scaling**: what breaks first at 10× the traffic? Saying these steps out loud keeps you organised and shows the interviewer how you think.
+<!-- intro: d57_t1_s5 -->
+**Search autocomplete**: suggestions as the user types. A **trie** (Day 54) of popular queries ranked by frequency, the top suggestions cached for each prefix, and updates from search logs computed in the background rather than on every keystroke.
 
-👉 **Code Practice** builds a consistent-hash ring and a token-bucket rate limiter in plain Java.
+<!-- intro: d57_t1_s7 -->
+Clear diagrams win interviews: boxes for components, arrows labelled with what flows ("POST /orders", "OrderPlaced event"), databases drawn as cylinders, and the read path and write path made obvious. Practise with a free tool like Excalidraw or draw.io, or on paper.
 
 ## 📝 Day 93 Recap
 
-1. What is sharding? → **splitting a large dataset across several databases**
-2. Range vs hash sharding? → **simple but uneven vs even spread but hard range queries**
-3. Biggest pain of sharding? → **queries and joins across shards**
-4. Token bucket vs fixed window? → **allows controlled bursts vs simple per-window counts with boundary bursts**
-5. Problem with key % N hashing? → **changing N moves almost every key**
-6. How does consistent hashing help? → **adding or removing a server only moves keys next to it on the ring**
-7. Why virtual nodes? → **to spread keys evenly across servers**
-8. What can a Bloom filter say? → **"definitely not" or "probably yes"**
-9. First step in a system design interview? → **clarify the requirements and scale**
-10. Last step? → **identify bottlenecks and how to scale them**
+1. How can a URL shortener generate codes? → **a counter encoded in base 62, or a hash with collision checks**
+2. 301 vs 302 for the redirect? → **301 is permanent and cacheable; 302 lets you count every click**
+3. Why cache heavily in a URL shortener? → **reads far outnumber writes**
+4. Core shape of a notification system? → **events into a queue, workers per channel, preferences, priorities and retries**
+5. How do chat clients receive messages instantly? → **an open WebSocket connection**
+6. Keep chat messages in order? → **partition by conversation id**
+7. Where does a distributed rate limiter keep counters? → **a shared store like Redis**
+8. Data structure behind autocomplete? → **a trie of popular queries ranked by frequency**
+9. What makes a good architecture diagram? → **labelled arrows, clear components, obvious read and write paths**
+10. How should you practise system design? → **time-boxed attempts on paper with the framework, then compare**

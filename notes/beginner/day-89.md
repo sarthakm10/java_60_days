@@ -1,36 +1,42 @@
-# Day 89 — AWS: Monitoring and Security
+# Day 89 — Terraform: Infrastructure as Code
 
-> Day 63 and Day 78's ideas (metrics, logs, traces) on AWS, plus how secrets and encryption keys are kept safe. Read each 🌱 **In simple words** box first.
+> Clicking around the AWS console works once, but nobody can review it, repeat it or undo it. **Infrastructure as Code** describes your servers, databases and networks in text files that live in Git, just like your app. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** watch your app with CloudWatch metrics, logs and alarms, trace requests with X-Ray, and keep keys and passwords in the right place.
+**Today's goal:** read and write basic Terraform, use its workflow safely, and understand state, modules and lifecycle rules.
 
 <!-- topic: b89_t1 -->
-## 🗄️ AWS — Monitoring & Keys
+## 🗄️ DevOps — Terraform IaC
 
-<!-- intro: d45_t1_s1 -->
-**CloudWatch Metrics** collects numbers over time from every AWS service (CPU, requests, errors) and from your app (custom metrics, like Day 63's Micrometer counters). Metrics are grouped by **namespace** and labelled with **dimensions** (which instance, which service), and graphed on dashboards.
+<!-- intro: d46_t1_s1 -->
+Terraform files use **HCL**, a simple configuration language. The building blocks: a **resource** is something to create (`resource "aws_s3_bucket" "uploads" { bucket = "taskmanager-uploads" }`), a **data source** reads something that already exists, **variables** are inputs (like method parameters, Day 4), **outputs** are values to print or pass on, and **locals** are named helper values. You describe the **end state** you want; Terraform works out the steps.
 
-<!-- intro: d45_t1_s2 -->
-**CloudWatch Logs** collects your app's log output (Day 78's centralised logging): **log groups** per app, **log streams** per container or instance. **Logs Insights** lets you query them with a SQL-like language ("errors per minute in the last hour"), and **metric filters** turn log patterns into metrics.
+<!-- intro: d46_t1_s2 -->
+The workflow: `terraform init` (download the AWS provider), `terraform validate` (check syntax), **`terraform plan`** (show exactly what would be created, changed or destroyed, without doing it), `terraform apply` (do it, after confirming) and `terraform destroy` (remove everything, ideal after practising so nothing keeps billing). Always read the plan: it's your code review before touching real infrastructure.
 
-<!-- intro: d45_t1_s3 -->
-**CloudWatch Alarms** watch a metric and act when it crosses a threshold: "if 5xx errors exceed 1% for 5 minutes, email the on-call developer" or "add servers". Anomaly detection learns normal patterns, and composite alarms combine several conditions to reduce noisy alerts.
+<!-- intro: d46_t1_s3 -->
+Terraform remembers what it created in a **state** file, mapping your code to the real resources' ids. On a team, state lives in a shared remote place (an S3 bucket, with a DynamoDB table as a **lock** so two people can't apply at once). The state file can contain secrets, so never commit it to Git. **Workspaces** keep separate state for dev and prod.
 
-<!-- intro: d45_t1_s4 -->
-**X-Ray** is AWS's distributed tracing (Day 78): it shows each request's path through your services as a map and a timeline of **segments**, so you can see where the time went. Sampling rules record only a share of requests to keep costs down.
+<!-- intro: d46_t1_s4 -->
+A **module** is a reusable folder of Terraform with inputs and outputs, like a method you call with different arguments: one "service" module used for orders, payments and users. Modules can come from a local path, Git or the public Terraform Registry.
 
-<!-- intro: d45_t1_s7 -->
-Never store passwords or API keys in code or config files in Git. **Secrets Manager** stores secrets (like the database password), can rotate them automatically, and your app reads them at startup through its IAM role. **Parameter Store** is a cheaper option for plain settings and simple secrets. **KMS** manages the **encryption keys** behind it all (S3's SSE-KMS, Day 87), and logs every use of a key.
+<!-- intro: d46_t1_s5 -->
+To create several similar resources, use `count` (a number of copies) or **`for_each`** (one per item in a map or set). Prefer `for_each`: each resource is identified by a stable key, so removing one item from the middle doesn't make Terraform rebuild the others.
+
+<!-- intro: d46_t1_s6 -->
+**Lifecycle rules** change how Terraform replaces things: `create_before_destroy` (build the new one before removing the old, avoiding downtime), `prevent_destroy` (refuse to delete something precious like a production database) and `ignore_changes` (don't fight changes made outside Terraform, such as an auto-scaled count).
+
+<!-- intro: d46_t1_s7 -->
+Already have resources created by hand? `terraform import` brings them under Terraform's management. **Terragrunt** is a wrapper that reduces repetition when many environments share the same modules.
 
 ## 📝 Day 89 Recap
 
-1. What does CloudWatch Metrics store? → **numeric measurements over time from AWS services and your app**
-2. What are metric dimensions? → **labels like instance or service name that identify a metric's source**
-3. Log group vs log stream? → **a group per app; a stream per container or instance**
-4. Query logs in CloudWatch? → **Logs Insights**
-5. What does a CloudWatch Alarm do? → **acts (notify, scale) when a metric crosses a threshold**
-6. AWS distributed tracing? → **X-Ray**
-7. Where should the database password live? → **Secrets Manager (or Parameter Store), read via the app's IAM role**
-8. Advantage of Secrets Manager? → **automatic rotation of secrets**
-9. What is KMS for? → **managing encryption keys, with an audit log of their use**
-10. Why use sampling in tracing? → **to record only a share of requests and keep costs down**
+1. What is infrastructure as code? → **describing infrastructure in versioned text files instead of clicking in a console**
+2. Terraform's configuration language? → **HCL**
+3. What does terraform plan do? → **shows what would be created, changed or destroyed, without doing it**
+4. Order of the main commands? → **init, validate, plan, apply (destroy to clean up)**
+5. What is Terraform state? → **the record mapping your code to the real resources**
+6. Where should team state live? → **remote (e.g. S3) with locking (e.g. DynamoDB)**
+7. Should the state file be committed to Git? → **no, it can contain secrets**
+8. What is a module? → **a reusable folder of Terraform with inputs and outputs**
+9. count or for_each? → **for_each: stable keys avoid rebuilding unrelated resources**
+10. Stop Terraform from ever deleting a resource? → **lifecycle { prevent_destroy = true }**

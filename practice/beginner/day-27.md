@@ -49,7 +49,7 @@ First repeat: the
 <!-- hints -->
 - Counting, the long way: `counts.put(w, counts.getOrDefault(w, 0) + 1);` The short way: `counts.merge(w, 1, Integer::sum);`
 - `new TreeMap<>(counts)` copies the map with its keys sorted; loop over its `entrySet()` and print `getKey() + "=" + getValue()`.
-- Most frequent: loop over the entries, keeping the best key and count so far (the same "running max" as Day 7).
+- Most frequent: loop over the entries, keeping the best key and count so far (the same "running max" as Day 5).
 - First repeat: `Set<String> seen = new HashSet<>();` and `if (!seen.add(w))`: `add` returns `false` when the word was already there.
 
 <!-- solution -->

@@ -54,7 +54,7 @@ Worst case for 1-100: 7 guesses
 - Validate first in `check`: `if (guess < 1 || guess > 100) return "Out of range";`
 - The middle of the range is `(low + high) / 2`. On "Too high" the secret is smaller, so `high = guess - 1`; on "Too low", `low = guess + 1`.
 - Loop with `while (true)` and `return attempts` as soon as `check` says `"Correct"`. Compare strings with `equals`, never `==`.
-- Why 7? Every guess halves the range: 100 → 50 → 25 → 12 → 6 → 3 → 1. That's log₂ 100 ≈ 6.6, rounded up (Day 11).
+- Why 7? Every guess halves the range: 100 → 50 → 25 → 12 → 6 → 3 → 1. That's log₂ 100 ≈ 6.6, rounded up (Day 5).
 
 <!-- solution -->
 ```java
@@ -97,7 +97,7 @@ public class GuessTheNumber {
 }
 ```
 
-The computer's strategy is **binary search**, which you'll study properly on Day 15. Because `check` is a separate method, the same logic serves the computer player and a human player.
+The computer's strategy is **binary search**, which you'll study properly on Day 7. Because `check` is a separate method, the same logic serves the computer player and a human player.
 
 **The full playable game.** Here's the interactive version built on the same `check` method, with attempt counting, input validation, play-again and a best score. Run it, play a few rounds, then push it to GitHub with a README.
 
@@ -152,4 +152,4 @@ public class GuessGame {
 }
 ```
 
-`askPlayAgain` uses `next()` (one word) rather than `nextLine()`, which sidesteps the leftover-newline trap from Day 3.
+`askPlayAgain` uses `next()` (one word) rather than `nextLine()`, which sidesteps the leftover-newline trap from Day 2.

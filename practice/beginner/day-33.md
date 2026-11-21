@@ -1,4 +1,4 @@
-The Phase 3 mini project, then two tree exercises that build on Day 31.
+A mini project that puts collections and streams to work.
 
 <!-- exercise: b33_e1 | Medium | Grade book -->
 **Concepts:** `Map<String, List<Integer>>` · `computeIfAbsent` · averages without integer division · sorting with a comparator · `TreeMap` counts

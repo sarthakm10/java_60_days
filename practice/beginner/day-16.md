@@ -68,7 +68,7 @@ Ravi earns 980000 a year and manages 4 people
 <!-- hints -->
 - Employee constructor: `this.name = name; this.monthlySalary = monthlySalary;` (replace the placeholder lines).
 - `Manager.yearlyPay()`: `super.yearlyPay() + teamSize * 5000`. `Manager` can't read `monthlySalary` directly (it's private), but it doesn't need to.
-- `Employee.describe()` calls `yearlyPay()`. For a manager object, that call runs the **manager's** version, so the bonus appears in the text automatically (that's Day 17's polymorphism, already at work).
+- `Employee.describe()` calls `yearlyPay()`. For a manager object, that call runs the **manager's** version, so the bonus appears in the text automatically (that's polymorphism, from today's notes, already at work).
 - Employee's `describe()` needs the name. You can return `name + " earns " + yearlyPay() + " a year"` from inside `Employee`.
 
 <!-- solution -->

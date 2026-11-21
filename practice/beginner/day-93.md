@@ -93,7 +93,7 @@ requests: YYYnnYnYYn
 <!-- hints -->
 - Modulo: `servers.get(Math.floorMod(hash(key), servers.size()))`.
 - Ring constructor: `for (String s : servers) for (int i = 0; i < vnodes; i++) ring.put(hash(s + "#" + i), s);`
-- Ring lookup: `Map.Entry<Integer, String> e = ring.ceilingEntry(hash(key)); return (e != null ? e : ring.firstEntry()).getValue();` (`ceilingEntry` is Day 31's TreeMap navigation).
+- Ring lookup: `Map.Entry<Integer, String> e = ring.ceilingEntry(hash(key)); return (e != null ? e : ring.firstEntry()).getValue();` (`ceilingEntry` is TreeMap navigation, Day 24).
 - Token bucket: `tokens = Math.min(capacity, tokens + (now - last) * refillPerSecond); last = now; if (tokens >= 1) { tokens -= 1; return true; } return false;`
 - Ideally only about 1 in 5 keys should move when a 5th server joins (they move to the new server). Compare that with the modulo result.
 
@@ -183,4 +183,4 @@ public class Scaling {
 }
 ```
 
-With modulo hashing, adding one server reshuffles most keys: for a cache cluster, that means most of the cache suddenly misses and the database takes the full load. On the ring, roughly only the keys now owned by the new server move. The token bucket lets the first 3 requests through in a burst, then allows about one per second as tokens refill (Day 93's rate limiting).
+With modulo hashing, adding one server reshuffles most keys: for a cache cluster, that means most of the cache suddenly misses and the database takes the full load. On the ring, roughly only the keys now owned by the new server move. The token bucket lets the first 3 requests through in a burst, then allows about one per second as tokens refill (Day 92's rate limiting).

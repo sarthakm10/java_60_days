@@ -185,4 +185,4 @@ public class FasterMaths {
 }
 ```
 
-The formula needs no loop at all: O(1). For the prime 1,000,003, the fast check tries 999 divisors instead of a million: O(√n) instead of O(n). (`rounds` is a `static` variable shared by the whole class; you'll learn exactly what that means on Day 15.)
+The formula needs no loop at all: O(1). For the prime 1,000,003, the fast check tries 999 divisors instead of a million: O(√n) instead of O(n). (`rounds` is a `static` variable shared by the whole class; you'll learn exactly what that means on Day 20.)

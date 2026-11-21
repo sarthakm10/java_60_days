@@ -3,6 +3,9 @@
 // - Interview: every subtopic of the day has a <!-- subtopic: id --> section, with no unknown or repeated ones.
 // - Beginner: sections only for that day's subtopics and one for every new (not borrowed) subtopic,
 //   <!-- intro: id --> only for borrowed subtopics, and <!-- topic: bN_tM --> markers in order.
+//   A subtopic that shows a Kunal note (`note` in data-beginner.js) needs no section: its file must be in notes/kunal
+//   and its part's "## N." sections must exist. A day made only of Kunal notes (and frontend) has no notes file.
+//   Checking all Beginner days also checks that every Kunal note, and every numbered section of a split one, is on a day.
 // - Frontend: notes/frontend/module-NN.md has one section per module subtopic, in order (see the end of this file).
 // - Both: every <!-- visualize: Name --> has its program in visualize/programs, code fences are balanced, no bare <Tag> outside code (Markdown would treat it as HTML and hide it),
 //   and no "|" inside inline code in a table row (it splits the cell).
@@ -31,6 +34,24 @@ function markdownProblems(md) {
   return problems;
 }
 
+// Kunal notes (notes/kunal/): the file exists, and a part's first and last sections are in it
+const KUNAL = path.join(root, "notes", "kunal");
+const kunalSeen = [];
+const numberedSections = (file) => {
+  let inFence = false;
+  return fs.readFileSync(path.join(KUNAL, file), "utf8").split(/\r?\n/).flatMap(line => {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    const m = !inFence && /^## (\d+)\./.exec(line);
+    return m ? [+m[1]] : [];
+  });
+};
+function kunalNoteProblems(s) {
+  if (!fs.existsSync(path.join(KUNAL, s.note))) return [`${s.id}: no Kunal note notes/kunal/${s.note}`];
+  if (!s.part) return [];
+  const nums = numberedSections(s.note);
+  return s.part.filter(n => !nums.includes(n)).map(n => `${s.id}: ${s.note} has no "## ${n}." section`);
+}
+
 for (const track of tracks) {
   const days = data[track];
   let checked = 0;
@@ -38,6 +59,12 @@ for (const track of tracks) {
     const day = days.find(d => d.day === n) || days[n - 1];
     const file = notesFile(track, n);
     const label = `${TRACKS[track].name} Day ${n}`;
+    const kunal = track === "beginner" ? day.topics.flatMap(t => t.subtopics).filter(s => s.note) : [];
+    const kunalIssues = kunal.flatMap(s => kunalNoteProblems(s));
+    if (kunalIssues.length) { problemDays++; console.log(`✗ ${label}:\n  ${kunalIssues.join("\n  ")}`); }
+    kunal.forEach(s => kunalSeen.push(s));
+    const ownTopics = day.topics.filter(t => t.category !== "Frontend" && !t.subtopics.every(s => s.note));
+    if (track === "beginner" && !ownTopics.length && !fs.existsSync(file)) { checked++; continue; }
     if (!fs.existsSync(file)) { problemDays++; console.log(`✗ ${label}: no notes file ${path.relative(root, file)}`); continue; }
     checked++;
     const md = fs.readFileSync(file, "utf8");
@@ -51,7 +78,7 @@ for (const track of tracks) {
       subs.filter(s => !own.includes(s.id)).forEach(s => problems.push(`missing section ${s.id}`));
     } else {
       // Frontend subtopics come from notes/frontend; their topics come last on a day and have no marker here
-      subs.filter(s => !s.borrowed && !s.frontend && !own.includes(s.id)).forEach(s => problems.push(`missing section ${s.id}`));
+      subs.filter(s => !s.borrowed && !s.frontend && !s.note && !own.includes(s.id)).forEach(s => problems.push(`missing section ${s.id}`));
       own.filter(id => subs.some(s => s.id === id && s.frontend)).forEach(id => problems.push(`frontend section ${id} belongs in notes/frontend, not here`));
       markers(md, "intro").filter(id => !subs.some(s => s.id === id && s.borrowed)).forEach(id => problems.push(`intro for a subtopic that isn't borrowed: ${id}`));
       const topics = markers(md, "topic");
@@ -64,6 +91,32 @@ for (const track of tracks) {
     if (problems.length) { problemDays++; console.log(`✗ ${label}:\n  ${problems.join("\n  ")}`); }
   }
   console.log(`${TRACKS[track].name} notes: ${checked} days checked`);
+}
+
+// With every Beginner day checked: each Kunal note is shown somewhere, and a split note's numbered sections all are
+if (tracks.includes("beginner") && daysOf("beginner").length === TRACKS.beginner.days) {
+  const shownWhole = new Set(kunalSeen.filter(s => !s.part).map(s => s.note));
+  const shownParts = {};
+  kunalSeen.filter(s => s.part).forEach(s => {
+    for (let n = s.part[0]; n <= s.part[1]; n++) (shownParts[s.note] = shownParts[s.note] || new Set()).add(n);
+  });
+  const all = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(path.join(KUNAL, dir), { withFileTypes: true })) {
+      const rel = dir ? `${dir}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(rel); else if (rel.endsWith(".md")) all.push(rel);
+    }
+  })("");
+  // Reached through links rather than a day: the practice sheet (the Question Sets page) and folder READMEs
+  const linkedOnly = (f) => f === "dsa_practice_sheet.md" || (f.endsWith("README.md") && f !== "Spring Boot Notes/README.md");
+  const problems = [];
+  all.filter(f => !linkedOnly(f) && !shownWhole.has(f)).forEach(f => {
+    if (!shownParts[f]) return problems.push(`${f} isn't on any day`);
+    const left = numberedSections(f).filter(n => !shownParts[f].has(n));
+    if (left.length) problems.push(`${f}: sections ${left.join(", ")} aren't on any day`);
+  });
+  if (problems.length) { problemDays++; console.log(`✗ Kunal notes:\n  ${problems.join("\n  ")}`); }
+  else console.log(`Kunal notes: all ${all.length} files shown (${all.filter(linkedOnly).length} through links)`);
 }
 
 // Frontend modules (notes/frontend/module-NN.md), checked when no track is named: a module that has a file has

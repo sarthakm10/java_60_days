@@ -105,7 +105,7 @@ Unknown payment type: bitcoin
 - Each builder method sets a field and `return this;`, which is what makes chaining (`.extraCheese().topping(...)`) work.
 - `build()`: `if (toppings.size() > 5) throw new IllegalStateException("too many toppings: " + toppings.size());`
 - Enum Singleton: a field `private int next = 1001;` and `int nextOrderNumber() { return next++; }`. Java guarantees exactly one `INSTANCE`.
-- Factory: a `switch` returning a lambda for each type, e.g. `case "upi" -> amount -> "Paid " + amount + " by UPI";` (Payment has one method, so a lambda can implement it, Day 34).
+- Factory: a `switch` returning a lambda for each type, e.g. `case "upi" -> amount -> "Paid " + amount + " by UPI";` (Payment has one method, so a lambda can implement it, Day 29).
 
 <!-- solution -->
 ```java

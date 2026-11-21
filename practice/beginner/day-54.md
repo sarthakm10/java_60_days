@@ -1,4 +1,4 @@
-Your first endpoints, checked by a test. Use the Spring Boot practice project you set up on Day 52 (or generate a new one at start.spring.io).
+Your first endpoints, checked by a test. Use a Spring Boot practice project (generate one at start.spring.io if you don't have one yet).
 
 **Dependencies to add:** Spring Web (`spring-boot-starter-webmvc` on Boot 4, `spring-boot-starter-web` on Boot 3). For tests on Boot 4 also add `spring-boot-starter-webmvc-test` (test scope). On Boot 3, `@WebMvcTest` is in `org.springframework.boot.test.autoconfigure.web.servlet` instead of `org.springframework.boot.webmvc.test.autoconfigure`.
 

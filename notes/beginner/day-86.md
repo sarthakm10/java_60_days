@@ -1,45 +1,48 @@
-# Day 86 — AWS Compute: EC2, ECS and Lambda
+# Day 86 — AWS Storage with S3
 
-> Three ways to run your code on AWS, from "rent a server" to "just run this function". Read each 🌱 **In simple words** box first.
+> S3 stores files ("objects") for almost every app on AWS: user uploads, images, backups, logs, static websites. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** know when to use EC2, ECS or Lambda, how auto scaling and load balancers work, and how the main pricing options differ.
+**Today's goal:** store and protect files in S3, choose cheaper storage classes for old data, and let users upload and download files securely.
 
 <!-- topic: b86_t1 -->
-## 🗄️ AWS — Compute Services
+## 🗄️ AWS — S3 Deep Dive
 
-<!-- intro: d44_t1_s1 -->
-**EC2** gives you **virtual servers** (instances) by the hour. Instance **types** are tuned for different jobs: general purpose (`t3`, `m6`), compute-heavy (`c6`), memory-heavy (`r6`, good for caches and big JVM heaps) and storage-heavy (`i3`). The `t` family is cheap and "burstable", fine for learning and small apps.
+<!-- intro: d43_t1_s1 -->
+**S3** stores files (called **objects**) in **buckets**, each object found by its **key** (like a path: `invoices/2026/1001.pdf`). Access can be controlled in two places: **IAM policies** (attached to a user or role: "this role may read bucket X") and **bucket policies** (attached to the bucket: "these principals may read me"). ACLs are an older mechanism, now usually turned off. Keep buckets private; "public bucket leaks" are a classic data breach.
 
-<!-- intro: d44_t1_s2 -->
-Paying for EC2: **On-Demand** (by the second, no commitment, most expensive per hour), **Reserved** instances or **Savings Plans** (commit for 1–3 years, much cheaper), and **Spot** (spare capacity at up to 90% off, but AWS can take it back with two minutes' notice: great for batch jobs, bad for your only web server).
+<!-- intro: d43_t1_s2 -->
+S3 has **storage classes** at different prices: **Standard** for data used often, **Standard-IA** (infrequent access) for data read rarely but needed fast, **Glacier** tiers for archives (very cheap, slower or paid retrieval), and **Intelligent-Tiering**, which moves objects between tiers automatically based on use.
 
-<!-- intro: d44_t1_s3 -->
-An **Auto Scaling Group** keeps a fleet of identical instances at the right size: it adds servers when CPU or traffic goes up and removes them when it drops, and replaces any instance that fails its health check (Day 63's health endpoint again).
+<!-- intro: d43_t1_s3 -->
+**Lifecycle policies** move or delete objects automatically by age: "after 30 days move logs to Standard-IA, after 90 days to Glacier, after a year delete them". Set them once and storage costs stop growing forever.
 
-<!-- intro: d44_t1_s4 -->
-A **launch template** is the recipe for new instances in that group: which machine image, instance type, security groups and a **user data** script that runs at first boot (install Java, start your app). Use launch templates; the older launch configurations are legacy.
+<!-- intro: d43_t1_s4 -->
+**Versioning** keeps every version of an object, so an accidental overwrite or delete can be undone. **MFA Delete** demands a second factor for permanent deletes, and **Object Lock** makes objects unchangeable for a period (write-once, required by some regulations).
 
-<!-- intro: d44_t1_s5 -->
-**ECS** runs your **Docker containers** (Day 73) for you. A **task definition** describes the containers (image, CPU, memory, environment), a **service** keeps N copies running, and a **cluster** is where they run. With the **Fargate** launch type you don't manage any servers at all: AWS finds room for your containers. ECS Fargate is often the easiest way to deploy a Spring Boot app.
+<!-- intro: d43_t1_s5 -->
+Encryption at rest: **SSE-S3** (AWS manages the keys, on by default), **SSE-KMS** (keys in AWS KMS, Day 88, with an audit log of every use) and **SSE-C** (you provide the key with each request). SSE-KMS is the common choice when you need to prove who accessed what.
 
-<!-- intro: d44_t1_s6 -->
-An ECS task has two roles, and mixing them up is a classic mistake: the **task role** is what *your app* is allowed to do (read this S3 bucket), and the **execution role** is what *ECS* needs to start it (pull the image, write logs).
+<!-- intro: d43_t1_s6 -->
+Big files (over about 100 MB) should use **multipart upload**: the file is sent in parts, in parallel, and a failed part is simply retried. **Transfer Acceleration** routes uploads through AWS's nearby edge locations for faster long-distance transfers.
 
-<!-- intro: d44_t1_s7 -->
-**Lambda** runs a single function on demand, with no server at all: it runs when an event happens (an HTTP request, a file uploaded to S3, a message in a queue) and you pay per millisecond of use. The catch: a **cold start** delay when a new instance spins up (noticeable for Java), and limits on run time and concurrency. Great for event glue and spiky workloads; less ideal for a busy, always-on API.
+<!-- intro: d43_t1_s7 -->
+S3 can **notify** other services when objects change: "a new image was uploaded" → trigger a Lambda (Day 85) to make a thumbnail, or send a message to SQS (Day 87). This is event-driven design (Day 78) built into storage.
 
-<!-- intro: d44_t1_s8 -->
-A **load balancer** spreads traffic across your instances or containers and skips unhealthy ones. The **ALB** (Application Load Balancer) understands HTTP and can route by path or host (`/api/orders` to one service, `/api/users` to another); the **NLB** (Network Load Balancer) works at the lower TCP level for extreme speed. For Spring Boot APIs, you'll almost always use an ALB.
+<!-- intro: d43_t1_s8 -->
+How do users upload a profile picture without your server handling the bytes, and without giving them AWS keys? Your API creates a **presigned URL**: a temporary link, signed with your app's permissions, that allows one specific upload or download until it expires. The browser talks to S3 directly.
+
+<!-- intro: d43_t1_s9 -->
+Extras to recognise: **Access Points** (named entry points with their own permissions for different apps), **S3 Select** (run a simple SQL filter on a CSV or JSON file inside S3) and **cross-region replication** (copy objects to another region for disaster recovery).
 
 ## 📝 Day 86 Recap
 
-1. What is EC2? → **virtual servers rented by the hour or second**
-2. Instance family for memory-heavy apps? → **r (memory optimised)**
-3. Cheapest EC2 option, and its risk? → **Spot instances; AWS can reclaim them at short notice**
-4. Cheaper option for steady long-term use? → **Reserved instances or Savings Plans**
-5. What does an Auto Scaling Group do? → **adds or removes instances with load and replaces unhealthy ones**
-6. What is ECS Fargate? → **running containers without managing any servers**
-7. ECS task role vs execution role? → **what your app may do vs what ECS needs to start it**
-8. What is Lambda? → **functions run on demand per event, paying only while they run**
-9. Lambda's main drawback for Java? → **cold start delays**
-10. Load balancer for HTTP path routing? → **ALB (Application Load Balancer)**
+1. What is an S3 object key? → **the object's name/path inside a bucket**
+2. Bucket policy vs IAM policy? → **attached to the bucket vs attached to a user or role**
+3. Storage class for rarely read data needed quickly? → **Standard-IA**
+4. Storage class for cheap archives? → **Glacier**
+5. What do lifecycle policies do? → **move or delete objects automatically by age**
+6. What does versioning protect against? → **accidental overwrites and deletes**
+7. Encryption with an audit trail of key use? → **SSE-KMS**
+8. How should big files be uploaded? → **multipart upload**
+9. React automatically to a new upload? → **S3 event notifications (to Lambda, SQS or SNS)**
+10. Let a user upload directly without AWS keys? → **a presigned URL**

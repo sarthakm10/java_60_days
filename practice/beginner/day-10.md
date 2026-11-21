@@ -236,4 +236,4 @@ public class GcdLcm {
 }
 ```
 
-Two numbers with GCD 1 (like 7 and 13) are called *coprime*; their LCM is simply their product. Euclid's algorithm needs very few rounds even for huge numbers, which you'll be able to explain after Day 11.
+Two numbers with GCD 1 (like 7 and 13) are called *coprime*; their LCM is simply their product. Euclid's algorithm needs very few rounds even for huge numbers, which you'll be able to explain after Day 14.

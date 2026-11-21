@@ -1,4 +1,4 @@
-The Phase 2 project. This exercise is the **core** of the library system from today's notes, small enough to check automatically. Once it passes, add a menu with `Scanner` and more features on top.
+A second OOP project, alongside Tic-Tac-Toe. This exercise is the **core** of a library system, small enough to check automatically. Once it passes, add a menu with `Scanner` and more features on top.
 
 <!-- exercise: b23_e1 | Medium | Library core: books, members and lending rules -->
 **Concepts:** designing several cooperating classes · private fields · custom exceptions · catching them in `main`
@@ -137,7 +137,7 @@ On the shelf: Emma
 - `lend` checks in order: not available → `BookNotAvailableException(book.getTitle())`; member can't borrow → `BorrowLimitException(member.getName())`; otherwise `book.setBorrowedBy(member)` and `member.addLoan()`.
 - `giveBack`: `book.getBorrowedBy().endLoan()` then `book.setBorrowedBy(null)`. (What should happen if the book wasn't borrowed? Decide, and handle it.)
 - `available`: a `StringBuilder`, adding `", "` before every title except the first.
-- `() -> lib.lend(...)` in `main` is a *lambda*: a small piece of code passed to `attempt` to run inside its `try`. You'll learn them properly on Day 34.
+- `() -> lib.lend(...)` in `main` is a *lambda*: a small piece of code passed to `attempt` to run inside its `try`. You'll learn them properly on Day 29.
 
 <!-- solution -->
 ```java
@@ -266,4 +266,4 @@ public class LibraryApp {
 }
 ```
 
-Each rule lives where its data is: the limit in `Member`, availability in `Book`, and `Library` only coordinates. Because every field is private and changes go through these methods, there's no way to end up with a book borrowed by two people or a member with four books. **Next steps:** swap the array for an `ArrayList` after Day 25, add a `Scanner` menu (list / lend / return / quit), and give `Book` a `toString()`.
+Each rule lives where its data is: the limit in `Member`, availability in `Book`, and `Library` only coordinates. Because every field is private and changes go through these methods, there's no way to end up with a book borrowed by two people or a member with four books. **Next steps:** swap the array for an `ArrayList` (Day 24), add a `Scanner` menu (list / lend / return / quit), and give `Book` a `toString()`.

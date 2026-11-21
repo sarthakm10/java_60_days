@@ -10,7 +10,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 // Files the site itself serves; folders are listed recursively
 const ROOT_FILES = ["index.html", "app.html", "styles.css", "landing.css", "visualizer.css", "app.js", "landing.js",
-  "data.js", "data-frontend.js", "data-beginner.js", "question-sets.js", "visualizer.js", "favicon.svg",
+  "data.js", "data-frontend.js", "data-beginner.js", "question-sets.js", "question-sets-beginner.js", "visualizer.js", "favicon.svg",
   "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 const FOLDERS = [["notes", ".md"], ["practice", ".md"], ["visualize/traces", ".json"]];
 

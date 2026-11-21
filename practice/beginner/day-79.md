@@ -168,4 +168,4 @@ public class MiniKafka {
 }
 ```
 
-Both groups read all six events independently, because offsets are kept per group. The second poll returns only the new event, and the third returns nothing: the offset remembers where the group stopped. With 4 consumers and 3 partitions, one consumer gets an empty list: exactly why adding consumers beyond the partition count doesn't help (Day 79).
+Both groups read all six events independently, because offsets are kept per group. The second poll returns only the new event, and the third returns nothing: the offset remembers where the group stopped. With 4 consumers and 3 partitions, one consumer gets an empty list: exactly why adding consumers beyond the partition count doesn't help (Day 78).

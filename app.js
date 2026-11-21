@@ -11,7 +11,7 @@
     beginner: {
       name: "Beginner", icon: "🌱", days: BEGINNER_DATA,
       blurb: "Start from zero: programming basics through Spring Boot, cloud and interviews",
-      roadmap: "Ten phases from your very first program to job-ready. Pick up where you left off, or jump anywhere."
+      roadmap: "From your very first program to job-ready, phase by phase. Pick up where you left off, or jump anywhere."
     },
     interview: {
       name: "Interview", icon: "🎯", days: CURRICULUM_DATA,
@@ -162,8 +162,9 @@
   const SUBTOPIC_MARKER = /^<!--\s*subtopic:\s*([\w-]+)\s*-->\s*$/gm;
   // <!-- visualize: TwoSumSorted --> under a code block: a button that steps through visualize/traces/TwoSumSorted.json
   const VISUALIZE_MARKER = /^<!--\s*visualize:\s*(\w+)\s*-->\s*$/gm;
-  // Beginner days that have their own notes file; add the day here when its file is written
-  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 100 }, (_, i) => i + 1));   // every Beginner day
+  // Beginner days with their own notes file (notes/beginner/day-NN.md): the extra lane after the roadmap.
+  // Days 1–83 show the Kunal notes their subtopics name.
+  const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 17 }, (_, i) => i + 84));
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️", Frontend: "🎨" };
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
@@ -271,8 +272,193 @@
     return out.join("\n");
   }
 
+  // ── Kunal notes ──
+  // notes/kunal/ holds the Java, DSA and Spring Boot notes copied unchanged by scripts/sync-kunal-notes.js. A Beginner
+  // subtopic with `note: "<file>"` shows that file as it is; `part: [from, to]` shows only its "## from." to "## to."
+  // sections. Links between the files open them in a reader on top of the page.
+  const KUNAL_DIR = "notes/kunal/";
+  const kunalFiles = {};   // file → Promise of its Markdown
+  const kunalText = {};    // file → its Markdown, once loaded
+  const kunalUrl = (file) => KUNAL_DIR + file.split("/").map(encodeURIComponent).join("/");
+
+  function kunalNote(file) {
+    if (!kunalFiles[file]) {
+      kunalFiles[file] = fetchText(kunalUrl(file))
+        .then(text => {
+          if (text === null) throw new Error(`Missing ${file}`);
+          return (kunalText[file] = text);
+        })
+        .catch(err => { delete kunalFiles[file]; throw err; });
+    }
+    return kunalFiles[file];
+  }
+
+  // The "## N." sections from..to of a note, with its title block. Its table of contents is left out, and the closing
+  // unnumbered sections (worked example, cheat sheet) are kept only when the part reaches the last numbered section.
+  function kunalSlice(md, part) {
+    if (!part) return md;
+    const blocks = [{ lines: [] }];
+    let inFence = false;
+    md.split(/\r?\n/).forEach(line => {
+      if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+      if (!inFence && /^## /.test(line)) blocks.push({ num: (line.match(/^## (\d+)\./) || [])[1], lines: [] });
+      blocks[blocks.length - 1].lines.push(line);
+    });
+    const last = Math.max(...blocks.filter(b => b.num !== undefined).map(b => +b.num));
+    const [from, to] = part;
+    let afterNumbered = false;
+    return blocks.filter((b, i) => {
+      if (i === 0) return true;
+      if (b.num !== undefined) { afterNumbered = true; return +b.num >= from && +b.num <= to; }
+      return afterNumbered && to >= last;
+    }).map(b => b.lines.join("\n")).join("\n");
+  }
+
+  // GitHub's heading anchors: lower case, punctuation and emoji dropped, spaces to hyphens, repeats numbered
+  function githubSlugger() {
+    const seen = {};
+    return (text) => {
+      let slug = text.trim().toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, "").replace(/\s/g, "-");
+      if (seen[slug] !== undefined) slug = `${slug}-${++seen[slug]}`; else seen[slug] = 0;
+      return slug;
+    };
+  }
+
+  const ALERTS = { NOTE: "ℹ️ Note", TIP: "💡 Tip", IMPORTANT: "❗ Important", WARNING: "⚠️ Warning", CAUTION: "🛑 Caution" };
+
+  // Heading anchors, GitHub alert boxes and working links for one rendered Kunal note (root has data-file)
+  function enhanceKunalNote(root) {
+    const file = root.dataset.file;
+    const slug = githubSlugger();
+    root.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach(h => { h.dataset.slug = slug(h.textContent); });
+
+    root.querySelectorAll("blockquote").forEach(q => {
+      const p = q.firstElementChild;
+      const m = p?.tagName === "P" && p.innerHTML.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(<br>)?\s*/);
+      if (!m) return;
+      p.innerHTML = p.innerHTML.slice(m[0].length);
+      if (!p.innerHTML.trim()) p.remove();
+      q.classList.add("md-alert", `md-alert-${m[1].toLowerCase()}`);
+      const title = document.createElement("div");
+      title.className = "md-alert-title";
+      title.textContent = ALERTS[m[1]];
+      q.prepend(title);
+    });
+
+    root.querySelectorAll("a[href]").forEach(a => {
+      const href = a.getAttribute("href");
+      if (/^[a-z]+:/i.test(href)) { a.target = "_blank"; a.rel = "noopener"; return; }
+      const url = new URL(href, `https://notes.invalid/${file.split("/").map(encodeURIComponent).join("/")}`);
+      const target = decodeURIComponent(url.pathname.slice(1));
+      a.dataset.kunalFile = target;
+      a.dataset.kunalSlug = decodeURIComponent(url.hash.slice(1));
+      if (!target.endsWith(".md")) {
+        a.classList.add("kunal-link-missing");
+        a.title = "Code examples aren't copied into this site; they are in the Kunal notes folder";
+      }
+    });
+  }
+
+  // One click handler per container: in-note anchors scroll, links to other files open the reader
+  function handleKunalLinks(container) {
+    container.addEventListener("click", (e) => {
+      const a = e.target.closest("a[data-kunal-file]");
+      if (!a || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const { kunalFile: file, kunalSlug: slug } = a.dataset;
+      if (!file.endsWith(".md")) return;
+      const note = a.closest(".kunal-note");
+      if (note && note.dataset.file === file) {
+        const heading = slug ? note.querySelector(`[data-slug="${CSS.escape(slug)}"]`) : note;
+        if (heading) {   // notes are long: glide over short distances, jump over long ones
+          const far = Math.abs(heading.getBoundingClientRect().top) > 2500;
+          heading.scrollIntoView({ behavior: far ? "auto" : "smooth", block: "start" });
+          return;
+        }
+      }
+      openKunalReader(file, slug);
+    });
+  }
+
+  function kunalNoteHTML(file, part) {
+    const md = kunalText[file];
+    if (md === undefined) return `<div class="study-notes-message">Couldn't load ${escapeHTML(file)}.</div>`;
+    const body = typeof marked !== "undefined" ? marked.parse(kunalSlice(md, part)) : `<pre>${escapeHTML(md)}</pre>`;
+    return `<div class="kunal-note" data-file="${escapeHTML(file)}">${body}</div>`;
+  }
+
+  // A full note on top of the page, with Back through the notes opened from it
+  const readerStack = [];
+  function openKunalReader(file, slug) {
+    let overlay = $("#kunal-reader");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "kunal-reader";
+      overlay.className = "kunal-reader";
+      overlay.innerHTML = `
+        <div class="kunal-reader-panel" role="dialog" aria-modal="true" aria-label="Note">
+          <div class="kunal-reader-head">
+            <button type="button" class="kunal-reader-btn" data-act="back" title="Back">←</button>
+            <div class="kunal-reader-title"></div>
+            <button type="button" class="kunal-reader-btn" data-act="close" title="Close (Esc)">✕</button>
+          </div>
+          <div class="kunal-reader-body"><article class="md-content"></article></div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay || e.target.closest("[data-act=close]")) closeKunalReader();
+        else if (e.target.closest("[data-act=back]")) { readerStack.pop(); showReaderTop(); }
+      });
+      handleKunalLinks(overlay.querySelector("article"));
+      document.addEventListener("keydown", onReaderKey);
+    }
+    readerStack.push({ file, slug });
+    showReaderTop();
+  }
+
+  function onReaderKey(e) {
+    if (e.key === "Escape") { e.stopPropagation(); closeKunalReader(); }
+  }
+
+  function closeKunalReader() {
+    readerStack.length = 0;
+    document.removeEventListener("keydown", onReaderKey);
+    $("#kunal-reader")?.remove();
+  }
+
+  async function showReaderTop() {
+    const overlay = $("#kunal-reader");
+    const top = readerStack[readerStack.length - 1];
+    if (!overlay || !top) return closeKunalReader();
+    const article = overlay.querySelector("article");
+    overlay.querySelector("[data-act=back]").hidden = readerStack.length < 2;
+    overlay.querySelector(".kunal-reader-title").textContent = top.file.split("/").pop();
+    article.innerHTML = `<div class="study-notes-message">Loading…</div>`;
+    try { await kunalNote(top.file); } catch { /* kunalNoteHTML says it couldn't load */ }
+    if (readerStack[readerStack.length - 1] !== top) return;
+    article.innerHTML = kunalNoteHTML(top.file);
+    const note = article.querySelector(".kunal-note");
+    if (note) enhanceKunalNote(note);
+    article.querySelectorAll("pre > code.language-mermaid").forEach(code => {
+      const div = document.createElement("div");
+      div.className = "mermaid-diagram";
+      div.textContent = code.textContent;
+      code.parentElement.replaceWith(div);
+    });
+    if (window.Prism) Prism.highlightAllUnder(article);
+    addCopyButtons(article);
+    const scrollTo = () => {
+      const heading = top.slug && article.querySelector(`[data-slug="${CSS.escape(top.slug)}"]`);
+      overlay.querySelector(".kunal-reader-body").scrollTop = heading ? heading.offsetTop - 12 : 0;
+    };
+    scrollTo();
+    renderDiagrams(article).then(scrollTo);
+  }
+
   async function composeBeginnerNotes(dayNum) {
     const day = TRACKS.beginner.days.find(d => d.day === dayNum);
+    const kunalNeeded = [...new Set(day.topics.flatMap(t => t.subtopics).filter(s => s.note).map(s => s.note))];
+    await Promise.all(kunalNeeded.map(f => kunalNote(f).catch(() => null)));   // a missing file shows a message in place
     const own = BEGINNER_NOTE_FILES.has(dayNum) ? splitNotes(await fetchText(notesPath(dayNum, "beginner"))) : null;
     const sourceDays = [...new Set(day.topics.flatMap(t => t.subtopics)
       .filter(s => s.borrowed && !own?.sections[s.id]).map(s => interviewDayOf.get(s.id)))];
@@ -287,6 +473,10 @@
     day.topics.forEach((t, ti) => {
       let topicIntro = own?.topicIntros[`b${dayNum}_t${ti + 1}`];   // a beginner file marks its topics b<day>_t<n>
       const sections = t.subtopics.map(s => {
+        if (s.note) {
+          const part = s.part ? ` data-part="${s.part.join(",")}"` : "";
+          return `<!-- subtopic: ${s.id} -->\n### ${s.label}\n\n<div class="kunal-slot" data-file="${escapeHTML(s.note)}"${part}></div>`;
+        }
         if (own?.sections[s.id]) return own.sections[s.id];
         if (s.frontend) {
           const text = frontendSources[s.module]?.sections[s.id];
@@ -344,10 +534,19 @@
       ids.add(id);
       return `<div class="notes-anchor" id="note-${id}" data-subtopic="${id}"></div>\n`;
     }).replace(VISUALIZE_MARKER, (_, name) => `<div class="viz-slot" data-viz="${name}"></div>\n`);
-    const html = typeof marked !== "undefined"
+    const html = (typeof marked !== "undefined"
       ? marked.parse(withAnchors)
-      : `<pre>${escapeHTML(md)}</pre>`;
+      : `<pre>${escapeHTML(md)}</pre>`)
+      // Kunal notes are rendered on their own, so their Markdown can't run into the day's
+      .replace(/<div class="kunal-slot" data-file="([^"]+)"(?: data-part="(\d+),(\d+)")?><\/div>/g, (_, file, from, to) =>
+        kunalNoteHTML(unescapeAttr(file), from === undefined ? null : [+from, +to]));
     return { html, ids };
+  }
+
+  function unescapeAttr(text) {
+    const el = document.createElement("textarea");
+    el.innerHTML = text;
+    return el.value;
   }
 
   function ensureMermaid() {
@@ -403,6 +602,8 @@
 
   // Post-process rendered Markdown: diagrams, code highlighting, heading ids, per-subtopic "done" toggles
   function enhanceStudyNotes(article, toc, rerender) {
+    article.querySelectorAll(".kunal-note").forEach(enhanceKunalNote);
+    if (!article.dataset.kunalLinks) { article.dataset.kunalLinks = "1"; handleKunalLinks(article); }
     article.querySelectorAll("pre > code.language-mermaid").forEach(code => {
       const div = document.createElement("div");
       div.className = "mermaid-diagram";
@@ -448,13 +649,16 @@
       heading.appendChild(label);
     });
 
-    const headings = [...article.querySelectorAll("h2, h3")];
+    // Inside a Kunal note only its "##" sections go in the contents, one level down
+    const headings = [...article.querySelectorAll("h2, h3")]
+      .filter(h => !h.closest(".kunal-note") || (h.tagName === "H2" && h.dataset.slug !== "table-of-contents"));
     headings.forEach((h, i) => { if (!h.id) h.id = `notes-sec-${i}`; });
     toc.innerHTML = `<div class="study-toc-title">On this page</div>` + headings.map(h => {
       const copy = h.cloneNode(true);
       copy.querySelector(".notes-done-toggle")?.remove();
       const text = copy.textContent.trim();
-      return `<a href="#${h.id}" class="study-toc-link level-${h.tagName.toLowerCase()}" data-target="${h.id}">${escapeHTML(text)}</a>`;
+      const level = h.closest(".kunal-note") ? "h4" : h.tagName.toLowerCase();
+      return `<a href="#${h.id}" class="study-toc-link level-${level}" data-target="${h.id}">${escapeHTML(text)}</a>`;
     }).join("");
 
     toc.querySelectorAll(".study-toc-link").forEach(link => {
@@ -640,6 +844,32 @@
     return { completed, "in-progress": inProgress, pending, "has-missed": hasMissed };
   }
 
+  // Beginner lanes that run alongside the roadmap's phases. A phase heading names each lane with what it covers
+  // there, and "Starting" where the lane begins: "Sorting and Complexity Basics & Frontend Starting: How the Web Works"
+  const FRONTEND_LANE_TOPICS = {   // frontend module → its topic in a heading (neighbouring modules share one)
+    1: "How the Web Works", 2: "HTML", 3: "CSS", 4: "CSS", 5: "JavaScript", 6: "JavaScript", 7: "JavaScript",
+    8: "JavaScript", 9: "DOM", 10: "Async JS", 11: "Tooling", 12: "JS Interview", 13: "TypeScript", 14: "TypeScript",
+    15: "React", 16: "React", 17: "React", 18: "React", 19: "React", 20: "React with Spring", 21: "Advanced React",
+    22: "Advanced React", 30: "Advanced React", 23: "Frontend Testing", 24: "Web Performance", 25: "Web Security",
+    26: "Frontend System Design", 27: "Machine Coding", 28: "Frontend Interview"
+  };
+  const SPRING_LANE_TOPICS = {     // Spring Boot note "S.N" → its topic in a heading
+    1: "Maven", 2: "HTTP/REST", 3: "Spring Core", 4: "Boot Basics", 5: "REST Controllers", 6: "Validation"
+  };
+  const listJoin = (items) => (items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}` : items[0]);
+
+  function phaseLanes(days) {
+    const topics = { "Spring Boot": [], Frontend: [] };
+    days.forEach(n => getDayData(n).topics.forEach(t => {
+      if (t.module) topics.Frontend.push(FRONTEND_LANE_TOPICS[t.module] || getModule(t.module).title);
+      if (t.name === "Spring Boot Track") t.subtopics.forEach(s => {
+        const m = /^S\.(\d+)\s/.exec(s.label);
+        if (m) topics["Spring Boot"].push(SPRING_LANE_TOPICS[m[1]] || `Spring #${m[1]}`);
+      });
+    }));
+    return Object.entries(topics).filter(([, list]) => list.length).map(([lane, list]) => ({ lane, topics: [...new Set(list)] }));
+  }
+
   function getPhases() {
     const phases = [];
     DAYS.forEach(d => {
@@ -650,15 +880,27 @@
       }
       phase.days.push(d.day);
     });
+    const laneSeen = new Set();
     return phases.map((p, i) => {
       const done = p.days.filter(isDayCompleted).length;
       const subs = p.days.map(getDayCompletionInfo);
       const total = subs.reduce((a, s) => a + s.total, 0);
       const checked = subs.reduce((a, s) => a + s.checked, 0);
+      const shortName = p.name.replace(/^Phase \d+:\s*/, "");
+      // Beginner: the side lanes this phase also has (not the phase's own subject), with what they cover here
+      const lanes = state.track !== "beginner" ? [] : phaseLanes(p.days)
+        .filter(({ lane }) => !shortName.includes(lane))
+        .map(({ lane, topics }) => {
+          const first = !laneSeen.has(lane);
+          laneSeen.add(lane);
+          return `${lane}${first ? " Starting" : ""}: ${listJoin(topics)}`;
+        });
+      if (shortName.includes("Spring Boot")) laneSeen.add("Spring Boot");
       return {
         ...p,
         index: i + 1,
-        shortName: p.name.replace(/^Phase \d+:\s*/, ""),
+        shortName,
+        heading: [shortName, ...lanes].join(" & "),
         doneDays: done,
         percentage: total ? Math.round((checked / total) * 100) : 0,
         started: checked > 0
@@ -1112,7 +1354,7 @@
           <div class="phase-section-head">
             <span class="phase-section-num">${phase.index}</span>
             <div>
-              <div class="phase-section-title">${escapeHTML(phase.shortName)}</div>
+              <div class="phase-section-title">${escapeHTML(phase.heading)}</div>
               <div class="phase-section-meta">${phase.range} · ${phase.doneDays}/${phase.days.length} days done</div>
             </div>
             <div class="bar"><div class="bar-fill" style="width:${phase.percentage}%"></div></div>
@@ -1498,24 +1740,30 @@
     H: { label: "Hard", cls: "hard" }
   };
 
+  // Each track has its own sets: question-sets.js for Interview, question-sets-beginner.js for Beginner (made from
+  // the Kunal practice sheet). Both list their own track's days. A problem ticked once counts wherever its slug appears.
+  const BEGINNER_SET_LIST = typeof BEGINNER_SETS !== "undefined" ? BEGINNER_SETS : [];
+  const beginnerSetIds = new Set(BEGINNER_SET_LIST.map(s => s.id));
+  const activeSets = () => (state.track === "beginner" ? BEGINNER_SET_LIST : QUESTION_SETS);
+
   function getSetById(id) {
-    return QUESTION_SETS.find(s => s.id === id);
+    return activeSets().find(s => s.id === id) || [...QUESTION_SETS, ...BEGINNER_SET_LIST].find(s => s.id === id);
   }
 
-  // Sets name Interview days; the Beginner track teaches each of those DSA topics on a day of its own
-  const beginnerDsaDay = {};   // Interview day → Beginner day with its DSA topic
-  BEGINNER_DATA.forEach(d => d.topics.forEach(t => {
-    if (t.sourceDay && t.category === "DSA" && !beginnerDsaDay[t.sourceDay]) beginnerDsaDay[t.sourceDay] = d.day;
-  }));
-
+  // A set's days in the active track (an Interview set seen from the Beginner track, e.g. in the visualizer, has none)
   function setDays(set) {
-    if (state.track === "interview") return set.days;
-    return [...new Set(set.days.map(d => beginnerDsaDay[d]).filter(Boolean))].sort((a, b) => a - b);
+    return (state.track === "beginner") === beginnerSetIds.has(set.id) ? set.days : [];
   }
 
   function getSetsForDay(dayNum) {
-    return QUESTION_SETS.filter(s => setDays(s).includes(dayNum));
+    return activeSets().filter(s => setDays(s).includes(dayNum));
   }
+
+  // Problem rows: [number, title, slug, difficulty, premium, link, statement]; a problem with no LeetCode page has
+  // number "" and a link to its page on takeuforward
+  const problemUrl = (p) => p[5] || `https://leetcode.com/problems/${p[2]}/`;
+  const problemNum = (p) => (p[0] === "" ? "TUF" : p[0]);
+  const problemSite = (p) => (p[5] ? "takeuforward" : "LeetCode");
 
   function getSetStats(set) {
     const solved = set.problems.filter(p => state.solvedProblems[p[2]]).length;
@@ -1526,7 +1774,7 @@
   // Problems can appear in several sets; dedupe by slug for overall numbers
   function getUniqueProblems() {
     const bySlug = new Map();
-    QUESTION_SETS.forEach(set => set.problems.forEach(p => {
+    activeSets().forEach(set => set.problems.forEach(p => {
       if (!bySlug.has(p[2])) bySlug.set(p[2], { problem: p, sets: [] });
       bySlug.get(p[2]).sets.push(set);
     }));
@@ -1537,7 +1785,8 @@
   const visualizationFor = (slug) => window.CodeVisualizer && typeof VISUALIZATIONS !== "undefined" ? VISUALIZATIONS[slug] : undefined;
 
   function problemRowHTML(p, sets) {
-    const [num, title, slug, diff, premium] = p;
+    const [, title, slug, diff, premium, , statement] = p;
+    const num = problemNum(p);
     const solved = !!state.solvedProblems[slug];
     const log = state.problemLogs[slug];
     const d = DIFFICULTY[diff];
@@ -1548,7 +1797,7 @@
       <div class="problem-row ${solved ? "solved" : ""} ${isSearchHighlight(slug) ? "search-highlight" : ""}" data-slug="${slug}">
         <input type="checkbox" class="subtopic-checkbox problem-checkbox" data-slug="${slug}" ${solved ? "checked" : ""} title="Mark as solved">
         <span class="problem-num">${num}</span>
-        <a class="problem-title" href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
+        <a class="problem-title" href="${problemUrl(p)}" target="_blank" rel="noopener noreferrer"${statement ? ` title="${escapeHTML(statement)}"` : ""}>${escapeHTML(title)}</a>
         ${premium ? `<span class="problem-premium" title="Needs LeetCode Premium">🔒 Premium</span>` : ""}
         ${setLinks}
         ${log?.solveAgain ? `<span class="log-flag" title="Flagged to solve again">🔁</span>` : ""}
@@ -1593,7 +1842,7 @@
 
   function renderVisualizerList() {
     const list = $("#viz-catalog");
-    const problems = new Map(QUESTION_SETS.flatMap(s => s.problems.map(p => [p[2], p])));
+    const problems = new Map([...QUESTION_SETS, ...BEGINNER_SET_LIST].flatMap(s => s.problems.map(p => [p[2], p])));
     const words = vizQuery.toLowerCase().split(/\s+/).filter(Boolean);
     const shown = vizCatalog().filter(c => {
       const set = getSetById(c.set);
@@ -1886,6 +2135,7 @@
     });
     container.querySelector("#sets-back")?.addEventListener("click", () => backTo({ view: "sets", set: null }, () => openSet(null)));
     container.querySelector("#sets-viz")?.addEventListener("click", () => switchView("visualizer"));
+    container.querySelector("#sets-sheet")?.addEventListener("click", () => openKunalReader("dsa_practice_sheet.md"));
     container.querySelectorAll(".problem-log-btn").forEach(btn => {
       btn.addEventListener("click", () => openProblemLog(btn.dataset.slug));
     });
@@ -1923,8 +2173,9 @@
     const solvedCount = unique.filter(u => state.solvedProblems[u.problem[2]]).length;
 
     // Show sets in the order the active track reaches them
-    const byFirstDay = [...QUESTION_SETS].sort((a, b) => Math.min(...setDays(a)) - Math.min(...setDays(b)));
-    const body = `<div class="sets-grid">${byFirstDay.map(s => {
+    const sets = activeSets();
+    const byFirstDay = [...sets].sort((a, b) => Math.min(...setDays(a)) - Math.min(...setDays(b)));
+    const card = (s) => {
       const stats = getSetStats(s);
       return `
         <button class="set-card ${stats.solved === stats.total ? "complete" : ""}" data-set="${s.id}">
@@ -1938,13 +2189,28 @@
           <div class="set-days">Days ${setDays(s).join(" · ")}</div>
         </button>
       `;
-    }).join("")}</div>`;
+    };
+    let body;
+    if (state.track === "beginner") {
+      const groups = [];
+      byFirstDay.forEach(s => {
+        const phase = getDayData(Math.min(...setDays(s)))?.phase || "";
+        if (groups[groups.length - 1]?.phase !== phase) groups.push({ phase, sets: [] });
+        groups[groups.length - 1].sets.push(s);
+      });
+      body = groups.map(g => `<h3 class="sets-phase-title">${escapeHTML(g.phase)}</h3><div class="sets-grid">${g.sets.map(card).join("")}</div>`).join("");
+    } else {
+      body = `<div class="sets-grid">${byFirstDay.map(card).join("")}</div>`;
+    }
 
     return `
       <div class="sets-header">
         <div>
           <h2 class="sets-title">🧩 DSA Question Sets</h2>
-          <p class="sets-subtitle">${QUESTION_SETS.length} topic sets · ${unique.length} LeetCode problems · tick a problem once and it counts in every set it appears in.</p>
+          ${state.track === "beginner"
+            ? `<p class="sets-subtitle">${sets.length} pattern sets from the DSA practice sheet, in roadmap order · ${unique.length} problems (${unique.filter(u => u.problem[0] !== "").length} on LeetCode, the rest on takeuforward) · tick a problem once and it counts in every set it appears in.</p>
+               <button class="link-btn sets-viz-link" id="sets-sheet">📘 Read the practice sheet →</button>`
+            : `<p class="sets-subtitle">${sets.length} topic sets · ${unique.length} LeetCode problems · tick a problem once and it counts in every set it appears in.</p>`}
           ${vizCatalog().length ? `<button class="link-btn sets-viz-link" id="sets-viz">▶ Step through ${vizCatalog().length} worked solutions in the Code Visualizer →</button>` : ""}
         </div>
         <div class="sets-summary">
@@ -2221,6 +2487,7 @@
   // Closes the topmost thing open over the page; false if nothing was open
   function closeOverlay() {
     if (window.CodeVisualizer?.isOpen()) { CodeVisualizer.close(); return true; }
+    if ($("#kunal-reader")) { readerStack.pop(); showReaderTop(); return true; }   // back one note
     if ($("#log-modal")) { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); return true; }
     if ($("#reset-modal").classList.contains("active")) { $("#reset-modal").classList.remove("active"); return true; }
     if (timerPanelOpen) { toggleTimerPanel(false); return true; }
@@ -3054,12 +3321,12 @@
         ${entries.map(([slug, log]) => {
           const u = bySlug.get(slug);
           if (!u) return "";
-          const [num, title, , diff] = u.problem;
+          const [, title, , diff] = u.problem;
           return `
             <div class="problem-row again-row">
-              <span class="problem-num">${num}</span>
+              <span class="problem-num">${problemNum(u.problem)}</span>
               <span class="again-main">
-                <a class="problem-title" href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
+                <a class="problem-title" href="${problemUrl(u.problem)}" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
                 <span class="again-meta">${log.attempts ? `${log.attempts} attempt${log.attempts === 1 ? "" : "s"} · ` : ""}${log.felt ? `felt ${log.felt} · ` : ""}${log.time ? `${escapeHTML(log.time)} time · ` : ""}updated ${log.updated || "—"}</span>
               </span>
               <button class="problem-log-btn has-log" data-slug="${slug}" title="Open log">📝</button>
@@ -3128,6 +3395,7 @@
     const entry = getUniqueProblems().find(u => u.problem[2] === slug);
     if (!entry) return;
     const [num, title, , diff] = entry.problem;
+    const site = problemSite(entry.problem);
     const log = { approach: "", time: "", space: "", attempts: 0, felt: "", solveAgain: false, ...(state.problemLogs[slug] || {}) };
 
     document.querySelector("#log-modal")?.remove();
@@ -3139,9 +3407,9 @@
         <div class="log-head">
           <div>
             <div class="log-kicker">Problem log · <span class="difficulty-pill ${DIFFICULTY[diff].cls}">${DIFFICULTY[diff].label}</span></div>
-            <h2 class="modal-title" id="log-title">${num}. ${escapeHTML(title)}</h2>
+            <h2 class="modal-title" id="log-title">${num === "" ? "" : `${num}. `}${escapeHTML(title)}</h2>
           </div>
-          <a class="btn small" href="https://leetcode.com/problems/${slug}/" target="_blank" rel="noopener noreferrer">LeetCode ↗</a>
+          <a class="btn small" href="${problemUrl(entry.problem)}" target="_blank" rel="noopener noreferrer">${site} ↗</a>
         </div>
         <label class="log-field">
           <span>Approach / key insight</span>
@@ -3877,10 +4145,10 @@
     });
     getUniqueProblems().forEach(({ problem, sets }) => {
       const [num, title, slug, diff] = problem;
-      entries.push({ type: "problem", slug, num: String(num), setId: sets[0].id, diff, title: `${num}. ${title}`,
-        meta: sets.map(s => s.name).join(" · "), text: `${num} ${title} leetcode` });
+      entries.push({ type: "problem", slug, url: problemUrl(problem), num: String(num), setId: sets[0].id, diff, title: num === "" ? title : `${num}. ${title}`,
+        meta: sets.map(s => s.name).join(" · "), text: `${num} ${title} ${problemSite(problem).toLowerCase()}` });
     });
-    QUESTION_SETS.forEach(s => {
+    activeSets().forEach(s => {
       entries.push({ type: "set", setId: s.id, title: `${s.icon} ${s.name}`, meta: `${s.problems.length} problems · Days ${setDays(s).join(", ")}`, text: `${s.name} ${s.description}` });
     });
     entries.forEach(e => { e.lower = e.text.toLowerCase(); e.titleLower = e.title.toLowerCase(); });
@@ -3891,7 +4159,7 @@
     { type: "day", label: "Days", limit: 4 },
     { type: "subtopic", label: "Topics", limit: 7 },
     { type: "module", label: "Frontend modules", limit: 3 },
-    { type: "problem", label: "LeetCode problems", limit: 6 },
+    { type: "problem", label: "Problems", limit: 6 },
     { type: "set", label: "Question sets", limit: 3 }
   ];
 
@@ -3944,7 +4212,7 @@
         </span>
         ${done ? `<span class="search-item-done" title="Done">✓</span>` : ""}
         ${pill}
-        ${item.type === "problem" ? `<a class="search-item-ext" href="https://leetcode.com/problems/${item.slug}/" target="_blank" rel="noopener noreferrer" title="Open on LeetCode">↗</a>` : ""}
+        ${item.type === "problem" ? `<a class="search-item-ext" href="${item.url}" target="_blank" rel="noopener noreferrer" title="Open the problem">↗</a>` : ""}
       </div>
     `;
   }

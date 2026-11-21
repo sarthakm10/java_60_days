@@ -103,7 +103,7 @@ public class Temperature {
 }
 ```
 
-(The loop over an array is a preview of Days 5 and 7; four separate `printf` lines are just as correct.) The last line loses 0.6 degrees because `37 * 9 / 5` is done in whole numbers.
+(The loop over an array is a preview of Days 3 and 5; four separate `printf` lines are just as correct.) The last line loses 0.6 degrees because `37 * 9 / 5` is done in whole numbers.
 
 <!-- exercise: b3_e3 | Easy | Sum, average and remainder from user input -->
 **Concepts:** `Scanner` · the integer-division trap · `%`

@@ -67,4 +67,4 @@ SELECT owner, balance FROM accounts ORDER BY id;
 SELECT SUM(balance) AS total FROM accounts;
 ```
 
-Inside transaction 2, Asha's balance really was −4300 for a moment, but only that transaction could see it, and `ROLLBACK` threw it away. In a real app the check ("is the balance enough?") lives in your service, and Spring's `@Transactional` (Day 60) does the `BEGIN` / `COMMIT` / `ROLLBACK` for you: an exception means rollback. A `CHECK (balance >= 0)` constraint on the column is a good extra safety net in the database itself.
+Inside transaction 2, Asha's balance really was −4300 for a moment, but only that transaction could see it, and `ROLLBACK` threw it away. In a real app the check ("is the balance enough?") lives in your service, and Spring's `@Transactional` (Day 71) does the `BEGIN` / `COMMIT` / `ROLLBACK` for you: an exception means rollback. A `CHECK (balance >= 0)` constraint on the column is a good extra safety net in the database itself.

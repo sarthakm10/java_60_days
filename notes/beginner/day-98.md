@@ -1,54 +1,50 @@
-# Day 98 — Behavioral Interviews and Final Weak Areas
+# Day 98 — Resume, LinkedIn and Your Project Story
 
-> Technical skill gets you shortlisted; how you talk about your work gets you hired. Every interview has behavioral questions, and they're the easiest to prepare for. Read each 🌱 **In simple words** box first.
+> Make sure people can find you, and that what they find makes them want to interview you.
 
-**Today's goal:** learn the STAR method, prepare your "tell me about yourself", write stories for the most common questions, and close your last weak areas.
+**Today's goal:** be ready to walk through your project in depth, and polish your resume, LinkedIn and GitHub.
 
 <!-- topic: b98_t1 -->
-## 🏗️ Behavioral — STAR Method
+## 🗄️ Behavioral — Project Deep-Dive
 
-<!-- intro: d58_t1_s1 -->
-**STAR** gives every story a clear shape: **Situation** (the context, briefly), **Task** (what *you* had to achieve), **Action** (what *you* did: the longest part, using "I", not "we") and **Result** (what happened, with numbers if possible, and what you learned). Two minutes per story. As a fresher, your stories can come from your projects (this course's Task Manager and Library projects count), college work, internships or anything you organised.
+Interviewers will pick **one project and go deep**. Use your capstone project (Day 77) and prepare each checklist item:
 
-<!-- intro: d58_t1_s2 -->
-"Tell me about yourself" is almost always the first question. Prepare a **60-second** answer: who you are now (a Java backend developer), what you've built (your projects, with the stack), what you're good at, and why you want *this* role. Practise it until it sounds natural, not recited.
-
-<!-- intro: d58_t1_s3 -->
-Prepare a story about making something faster, with numbers. From this course: fixing an N+1 problem (Day 59) that took a list endpoint from 101 queries to 2, or adding a cache. Say what you measured before and after.
-
-<!-- intro: d58_t1_s4 -->
-Prepare a debugging story: a bug that was hard to find, how you narrowed it down (logs, the debugger, Day 9; a failing test), the root cause, and how you made sure it can't come back (a test).
-
-<!-- intro: d58_t1_s5 -->
-"How do you handle conflicting priorities?" They want to hear that you clarify what matters most, communicate early when something won't fit, and don't silently drop work.
-
-<!-- intro: d58_t1_s6 -->
-"Tell me about learning something quickly": you have the perfect answer. You went from no Java to a secured, tested Spring Boot API, Kafka and AWS in 100 days. Describe how you learned (a plan, daily practice, building projects), not just that you did.
+- **Architecture on a whiteboard:** client → controller → service → repository → PostgreSQL, plus security, Flyway and tests. Draw it in two minutes.
+- **Three design decisions and their trade-offs:** for example, why ownership checks return 404, why Flyway instead of `ddl-auto`, how paging is capped. Every decision has a downside; name it.
+- **A "production problem" story:** even in a personal project, describe a bug you hit, how you found it and fixed it, as a timeline.
+- **A performance improvement** with before/after numbers (the N+1 fix is ideal).
+- **"How do you ensure code quality?"**: tests (unit and `@WebMvcTest`), code review habits, CI running tests on every push (Day 76).
 
 <!-- topic: b98_t2 -->
-## 🗄️ Review — Final Weak Area Consolidation
+## 🏗️ Career — Resume & Online Presence
 
-<!-- intro: d59_t2_s1 -->
-One last pass over **Backlog & Stats**: every remaining "What I Missed" note and unchecked topic.
+<!-- intro: d59_t1_s1 -->
+Every resume bullet should show **impact**, ideally with a number: not "worked on an API" but "built a Spring Boot REST API with JWT auth and 40 tests; fixed an N+1 issue cutting a list endpoint from 101 queries to 2". Start bullets with a strong verb (built, designed, reduced, automated).
 
-<!-- intro: d59_t2_s2 -->
-Pick the five concepts you find hardest to explain and explain each out loud to a friend, a mirror or a recording. Fluent explanation is what interviews test.
+<!-- intro: d59_t1_s2 -->
+List the technologies you can **actually discuss**: Java 21, Spring Boot, Spring Data JPA, PostgreSQL, JUnit/Mockito, Docker, Kafka, AWS, Terraform. Every word on your resume is a possible interview question, so leave out anything you've only read about.
 
-<!-- intro: d59_t2_s3 -->
-Solve three problems from your weakest DSA categories with no time limit, aiming for full understanding rather than speed.
+<!-- intro: d59_t1_s3 -->
+LinkedIn: a headline like "Java Backend Developer · Spring Boot · SQL · AWS", an about section that's a written version of your 60-second pitch (Day 97), the skills section filled in, and links to your projects.
 
-<!-- intro: d59_t2_s4 -->
-Prepare a one-minute pitch for each project on your CV: what it does, the stack, the hardest problem you solved, and what you'd improve.
+<!-- intro: d59_t1_s4 -->
+GitHub is your portfolio: pin your two or three best repositories (the capstone project first), make sure each has a good README (Day 77), and keep commit history tidy. Recruiters really do look.
+
+<!-- intro: d59_t1_s5 -->
+Prepare three or four questions to ask your interviewers: what the team works on, how code reaches production, how new joiners learn, what success looks like in the first six months. Asking good questions shows real interest.
+
+<!-- intro: d59_t1_s6 -->
+Make a one-page cheat sheet of the 20 topics you'd most like to remember on the day (the HashMap flow, `@Transactional` traps, the JWT flow, Kafka guarantees, CAP…) and read it before each interview.
 
 ## 📝 Day 98 Recap
 
-1. What does STAR stand for? → **Situation, Task, Action, Result**
-2. Which part of a STAR answer is longest? → **Action**
-3. "I" or "we" in behavioral answers? → **"I": say what you personally did**
-4. How long should "tell me about yourself" be? → **about 60 seconds**
-5. What makes a performance story strong? → **numbers measured before and after**
-6. How should a debugging story end? → **with how you prevented it from happening again (e.g. a test)**
-7. Good answer about conflicting priorities? → **clarify what matters most and communicate early**
-8. Where can a fresher's stories come from? → **projects, college work, internships, things you organised**
-9. Best way to check you can explain a concept? → **explain it out loud to someone**
-10. What should a project pitch cover? → **what it does, the stack, the hardest problem, what you'd improve**
+1. What makes a strong resume bullet? → **an action verb, what you built, and a measurable impact**
+2. Which technologies belong on your resume? → **only ones you can discuss confidently**
+3. What should a project deep-dive cover? → **architecture, design decisions with trade-offs, a problem story, results**
+4. What do interviewers check about design decisions? → **that you know their trade-offs**
+5. LinkedIn headline example? → **Java Backend Developer · Spring Boot · SQL · AWS**
+6. What should pinned GitHub repos have? → **good READMEs and tidy history**
+7. Why ask the interviewer questions? → **shows genuine interest and helps you judge the job**
+8. Best project to deep-dive from this course? → **the capstone project (Day 77)**
+9. Quality practices to mention? → **unit and slice tests, code review, CI on every push**
+10. What goes on your final cheat sheet? → **the 20 topics most worth remembering on interview day**

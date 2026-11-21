@@ -1,39 +1,31 @@
-# Day 94 — System Design Practice
+# Day 94 — Revision: Java and Collections
 
-> Five classic design questions. For each, set a 45-minute timer, follow Day 93's framework on paper, and only then read the section. Read each 🌱 **In simple words** box first.
+> Three revision days before the interview prep. Today: core Java, the foundation of every Java backend interview.
 
-**Today's goal:** practise complete designs, and get comfortable drawing clear diagrams and talking through trade-offs.
+**Today's goal:** clear your backlog of missed topics, answer rapid-fire Java and collections questions without notes, and plan the last days around your weak spots.
 
 <!-- topic: b94_t1 -->
-## 🏗️ HLD — Practice Problems
+## ☕ Revision — Core Java
 
-<!-- intro: d57_t1_s1 -->
-**URL shortener** (like TinyURL): turn a long URL into a short code and redirect when someone visits it. Key questions: how to generate short unique codes (a counter encoded in base 62, or a hash with collision handling), the redirect status (301 permanent and cacheable vs 302 if you want to count every click), and caching, because reads vastly outnumber writes.
+The checklist items today are **activities**, not new topics. How to work through them:
 
-<!-- intro: d57_t1_s2 -->
-**Notification system**: send emails, SMS and push notifications for many events. The shape: events into a queue (Day 92), workers per channel, user preferences and rate limits ("no more than 3 marketing messages a day"), priorities (a password reset beats a newsletter) and retries with a dead-letter queue.
+1. **"What I Missed" notes:** open **Backlog & Stats** in the sidebar. It lists every unchecked subtopic from days you started and every "What I Missed" note. Clear what you can; each one is usually 15 minutes of re-reading plus a flashcard session.
+2. **Rapid-fire Java:** 20 questions on OOP (Days 28–34), Java 8 streams (Days 37–38) and concurrency (Day 46). Answer aloud in under a minute each, then check with the **Revise → Flashcards** decks for those days.
+3. **Rapid-fire collections:** HashMap internals (Day 45), ConcurrentHashMap (Day 46), the LRU cache (Day 45) and TreeMap (Day 24). These are the most asked Java questions of all.
+4. **Java self-test:** 30 minutes, no notes, all of the above.
+5. **Plan your weak areas:** write down your five weakest topics and give each one a slot in the remaining days.
 
-<!-- intro: d57_t1_s3 -->
-**Chat application**: messages must arrive instantly, so clients keep an open **WebSocket** connection instead of repeatedly asking. Topics to cover: message ordering per conversation (a partition key, Day 81), delivery and read receipts, online/offline presence, and storing message history.
-
-<!-- intro: d57_t1_s4 -->
-**Rate limiter** as a service: Day 93's algorithms, with counters in Redis shared by all servers, limits per user, per API key and globally, and the `429` response with a header telling clients when to retry.
-
-<!-- intro: d57_t1_s5 -->
-**Search autocomplete**: suggestions as the user types. A **trie** (Day 41) of popular queries ranked by frequency, the top suggestions cached for each prefix, and updates from search logs computed in the background rather than on every keystroke.
-
-<!-- intro: d57_t1_s7 -->
-Clear diagrams win interviews: boxes for components, arrows labelled with what flows ("POST /orders", "OrderPlaced event"), databases drawn as cylinders, and the read path and write path made obvious. Practise with a free tool like Excalidraw or draw.io, or on paper.
+Use the sections below as the question bank; for anything shaky, jump back to the day where you learned it.
 
 ## 📝 Day 94 Recap
 
-1. How can a URL shortener generate codes? → **a counter encoded in base 62, or a hash with collision checks**
-2. 301 vs 302 for the redirect? → **301 is permanent and cacheable; 302 lets you count every click**
-3. Why cache heavily in a URL shortener? → **reads far outnumber writes**
-4. Core shape of a notification system? → **events into a queue, workers per channel, preferences, priorities and retries**
-5. How do chat clients receive messages instantly? → **an open WebSocket connection**
-6. Keep chat messages in order? → **partition by conversation id**
-7. Where does a distributed rate limiter keep counters? → **a shared store like Redis**
-8. Data structure behind autocomplete? → **a trie of popular queries ranked by frequency**
-9. What makes a good architecture diagram? → **labelled arrows, clear components, obvious read and write paths**
-10. How should you practise system design? → **time-boxed attempts on paper with the framework, then compare**
+1. Where are your unchecked topics and missed notes collected? → **Backlog & Stats**
+2. How should you answer rapid-fire questions? → **out loud, in under a minute each**
+3. Most asked Java collection topic? → **HashMap internals**
+4. What makes an LRU cache with LinkedHashMap? → **access order plus removing the eldest entry**
+5. ConcurrentHashMap vs HashMap? → **thread-safe with fine-grained concurrency vs not thread-safe**
+6. Why isn't count++ thread-safe? → **it's read, add, write, which can interleave between threads**
+7. Stream pipeline parts? → **source, intermediate operations, terminal operation**
+8. Four OOP pillars? → **encapsulation, inheritance, polymorphism, abstraction**
+9. == vs equals()? → **same reference vs same value**
+10. What do you do with your five weakest topics? → **schedule focused revision for each before interviews**

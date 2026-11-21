@@ -136,4 +136,4 @@ public class GenericsWarmup {
 }
 ```
 
-One `Box` class served Strings and Integers, and the compiler checked every use: try `word.put(5);` and see the error. `number.get() + 1` works because the `Integer` is unboxed automatically (Day 19).
+One `Box` class served Strings and Integers, and the compiler checked every use: try `word.put(5);` and see the error. `number.get() + 1` works because the `Integer` is unboxed automatically (autoboxing).

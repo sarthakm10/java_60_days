@@ -61,7 +61,7 @@ deep copy:            Tigers B [99, 77, 30]
 <!-- hints -->
 - `shallowCopy()`: `return new Team(name, scores);` creates a new Team, but both point to the same array object.
 - The copy constructor needs a new array: `this.scores = Arrays.copyOf(other.scores, other.scores.length);` (or `other.scores.clone()`).
-- Strings can be shared safely between copies: they're immutable (Day 8), so `this.name = other.name;` is fine.
+- Strings can be shared safely between copies: they're immutable (Day 6), so `this.name = other.name;` is fine.
 
 <!-- solution -->
 ```java

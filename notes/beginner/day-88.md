@@ -1,36 +1,36 @@
-# Day 88 — AWS: Databases, Caching and Messaging
+# Day 88 — AWS: Monitoring and Security
 
-> Managed versions of things you already know: PostgreSQL (Day 47), a cache, queues and pub/sub (Days 79–83). AWS runs them; you use them. Read each 🌱 **In simple words** box first.
+> Day 74's ideas (metrics, logs, traces) on AWS, plus how secrets and encryption keys are kept safe. Read each 🌱 **In simple words** box first.
 
-**Today's goal:** know RDS, ElastiCache, SQS and SNS, and the Well-Architected Framework's checklist.
+**Today's goal:** watch your app with CloudWatch metrics, logs and alarms, trace requests with X-Ray, and keep keys and passwords in the right place.
 
 <!-- topic: b88_t1 -->
-## 🗄️ AWS — Additional Services
+## 🗄️ AWS — Monitoring & Keys
 
-<!-- intro: d48_t1_s1 -->
-**RDS** is managed PostgreSQL/MySQL: AWS handles installation, backups, patching and failover. **Multi-AZ** keeps a standby copy in another availability zone that takes over automatically if the main one fails (for availability), while **read replicas** are extra copies that serve read queries (for scaling reads). **Aurora** is AWS's own faster, PostgreSQL/MySQL-compatible engine. Your Task Manager would point its `DB_URL` at RDS and need no code changes.
+<!-- intro: d45_t1_s1 -->
+**CloudWatch Metrics** collects numbers over time from every AWS service (CPU, requests, errors) and from your app (custom metrics, like Day 74's Micrometer counters). Metrics are grouped by **namespace** and labelled with **dimensions** (which instance, which service), and graphed on dashboards.
 
-<!-- intro: d48_t1_s2 -->
-**ElastiCache** is managed **Redis** (or Memcached): an in-memory key-value store, so reads take a fraction of a millisecond. The common **cache-aside** pattern: check the cache first; on a miss, read the database and store the result in the cache with an expiry (TTL, Day 72). Redis also holds sessions, rate-limit counters (Day 76) and distributed locks.
+<!-- intro: d45_t1_s2 -->
+**CloudWatch Logs** collects your app's log output (Day 74's centralised logging): **log groups** per app, **log streams** per container or instance. **Logs Insights** lets you query them with a SQL-like language ("errors per minute in the last hour"), and **metric filters** turn log patterns into metrics.
 
-<!-- intro: d48_t1_s3 -->
-**SQS** is a fully managed **queue** (Day 83's comparison): producers send messages, consumers poll and delete them. **Standard** queues are almost unlimited in throughput but may deliver a message twice or out of order; **FIFO** queues keep order and remove duplicates. A received message becomes invisible for a **visibility timeout** while it's processed; if the consumer doesn't delete it in time, it reappears for another try, and after too many tries it moves to a **dead-letter queue** (Day 81's DLT idea).
+<!-- intro: d45_t1_s3 -->
+**CloudWatch Alarms** watch a metric and act when it crosses a threshold: "if 5xx errors exceed 1% for 5 minutes, email the on-call developer" or "add servers". Anomaly detection learns normal patterns, and composite alarms combine several conditions to reduce noisy alerts.
 
-<!-- intro: d48_t1_s4 -->
-**SNS** is **pub/sub**: publish one message to a topic, and every subscriber gets a copy (SQS queues, Lambda functions, email, SMS, mobile push). The **fan-out** pattern: SNS topic → several SQS queues, so each service gets its own queue of the same events.
+<!-- intro: d45_t1_s4 -->
+**X-Ray** is AWS's distributed tracing (Day 79): it shows each request's path through your services as a map and a timeline of **segments**, so you can see where the time went. Sampling rules record only a share of requests to keep costs down.
 
-<!-- intro: d48_t1_s5 -->
-The **Well-Architected Framework** is AWS's checklist for good systems, in six pillars: **operational excellence** (run and improve it), **security**, **reliability** (recover from failures), **performance efficiency**, **cost optimisation** and **sustainability**. It's a useful structure for answering "how would you improve this design?" in interviews.
+<!-- intro: d45_t1_s7 -->
+Never store passwords or API keys in code or config files in Git. **Secrets Manager** stores secrets (like the database password), can rotate them automatically, and your app reads them at startup through its IAM role. **Parameter Store** is a cheaper option for plain settings and simple secrets. **KMS** manages the **encryption keys** behind it all (S3's SSE-KMS, Day 86), and logs every use of a key.
 
 ## 📝 Day 88 Recap
 
-1. What is RDS? → **managed relational databases (PostgreSQL, MySQL...) run by AWS**
-2. Multi-AZ vs read replicas? → **a standby for automatic failover vs extra copies for scaling reads**
-3. What is ElastiCache? → **managed Redis or Memcached in-memory caching**
-4. Cache-aside pattern? → **check the cache; on a miss read the database and store the result with a TTL**
-5. SQS Standard vs FIFO? → **huge throughput with possible duplicates/reordering vs ordered, deduplicated**
-6. What is the visibility timeout? → **the time a received message stays hidden while being processed**
-7. Where do repeatedly failing SQS messages go? → **a dead-letter queue**
-8. What is SNS? → **pub/sub: one published message delivered to every subscriber**
-9. Fan-out pattern? → **an SNS topic delivering to several SQS queues**
-10. Six Well-Architected pillars? → **operational excellence, security, reliability, performance efficiency, cost optimisation, sustainability**
+1. What does CloudWatch Metrics store? → **numeric measurements over time from AWS services and your app**
+2. What are metric dimensions? → **labels like instance or service name that identify a metric's source**
+3. Log group vs log stream? → **a group per app; a stream per container or instance**
+4. Query logs in CloudWatch? → **Logs Insights**
+5. What does a CloudWatch Alarm do? → **acts (notify, scale) when a metric crosses a threshold**
+6. AWS distributed tracing? → **X-Ray**
+7. Where should the database password live? → **Secrets Manager (or Parameter Store), read via the app's IAM role**
+8. Advantage of Secrets Manager? → **automatic rotation of secrets**
+9. What is KMS for? → **managing encryption keys, with an audit log of their use**
+10. Why use sampling in tracing? → **to record only a share of requests and keep costs down**

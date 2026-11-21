@@ -118,7 +118,7 @@ public class Patterns {
 }
 ```
 
-A new discount rule or a new listener (an SMS sender, a loyalty-points service) is a new lambda or class, and `Checkout` never changes: Open/Closed (Day 68) through two patterns. At system scale, the Observer becomes Kafka (Day 79): the order service publishes, and any number of services listen.
+A new discount rule or a new listener (an SMS sender, a loyalty-points service) is a new lambda or class, and `Checkout` never changes: Open/Closed (Day 41) through two patterns. At system scale, the Observer becomes Kafka (Day 78): the order service publishes, and any number of services listen.
 
 <!-- exercise: b70_e2 | Easy | Coffee prices with Decorator -->
 **Concepts:** Decorator: wrap an object with the same interface to add behaviour · stacking wrappers

@@ -1,31 +1,32 @@
-# Day 96 — Revision: Spring, Kafka and Cloud
+# Day 96 — Revision: SQL and System Design
 
-> The backend half of your revision: the stack you'll actually be hired to work on.
+> The last technical revision day. SQL queries on paper, and the system design concepts you'll be asked to explain.
 
-**Today's goal:** answer the classic Spring, Kafka and AWS questions without notes, and name design patterns from descriptions.
+**Today's goal:** write the classic SQL queries without notes and explain the core system design ideas clearly.
 
 <!-- topic: b96_t1 -->
-## 🌿 Revision — Backend Stack
+## 🏗️ SQL & System Design — Review
 
-Today's checklist items are **self-tests**. Work through them in this order, out loud, without notes first:
+Work through the checklist as a mock interview:
 
-1. **Spring rapid-fire** (Days 52–64): `@Transactional` pitfalls (self-invocation, checked exceptions), the N+1 problem and its fixes, the JWT flow end to end, the bean lifecycle, and how auto-configuration decides what to create.
-2. **Spring self-test**: 20 minutes, including dependency injection, JPA and testing (`@WebMvcTest` vs `@SpringBootTest`).
-3. **Kafka rapid-fire and self-test** (Days 79–83): delivery guarantees, consumer lag, partitions and ordering, the dead letter topic, rebalancing.
-4. **AWS self-test** (Days 85–91): S3, EC2 vs ECS vs Lambda, IAM roles, VPC subnets, Terraform's workflow.
-5. **Design patterns** (Days 69–70): for ten short descriptions, name the pattern ("wraps an object to add behaviour" → Decorator).
+1. **SQL on paper** (Day 69): the second highest salary, a running total, a day-over-day comparison with `LAG`. Write them without notes, then check against your Day 69 exercises.
+2. **Indexes** (Day 69): how a B-tree index speeds up queries, why the order of columns in a composite index matters, and how to read an `EXPLAIN` plan.
+3. **CAP with examples** (Day 91): which systems choose consistency, which availability, and why.
+4. **Caching strategies** (Day 91): cache-aside vs write-through, with Redis, and how you'd invalidate.
+5. **Consistent hashing** (Day 92): the ring, and why virtual nodes help.
+6. **Transactions** (Days 69 and 71): isolation levels, MVCC, optimistic vs pessimistic locking.
 
-Your own Task Manager (Days 54–67) is the best revision tool: explain how each of these topics shows up in it, because interviewers will ask about your project.
+If any answer takes you more than a minute to start, mark it for one more pass on Day 98.
 
 ## 📝 Day 96 Recap
 
-1. Two @Transactional traps? → **self-invocation skips the proxy; checked exceptions don't roll back by default**
-2. N+1 fixes? → **JOIN FETCH, @EntityGraph, @BatchSize**
-3. JWT flow? → **login issues a signed token; the client sends it as Bearer; a filter verifies it on each request**
-4. @WebMvcTest vs @SpringBootTest? → **web layer only vs the whole application**
-5. Kafka delivery guarantee most systems use? → **at-least-once with idempotent consumers**
-6. What is consumer lag? → **how far a consumer group is behind the latest events**
-7. EC2 vs ECS Fargate vs Lambda? → **servers / managed containers / functions on demand**
-8. IAM role? → **an identity that services or apps assume temporarily, instead of stored keys**
-9. "Wraps an object to add behaviour" is which pattern? → **Decorator**
-10. "Interchangeable algorithms chosen at run time"? → **Strategy**
+1. Second highest salary? → **MAX(salary) WHERE salary < (SELECT MAX(salary) ...), or DENSE_RANK() = 2**
+2. Running total in SQL? → **SUM(amount) OVER (ORDER BY date)**
+3. Compare with the previous row? → **LAG(column) OVER (ORDER BY ...)**
+4. Why does column order matter in a composite index? → **the index can only be used from its leftmost columns**
+5. What does EXPLAIN reveal? → **whether the database uses an index or scans the whole table**
+6. CAP choice for a bank? → **consistency**
+7. Cache-aside? → **check the cache; on a miss read the database and fill the cache**
+8. Consistent hashing benefit? → **adding or removing a server moves only nearby keys**
+9. Optimistic vs pessimistic locking? → **detect conflicts at save time (@Version) vs lock the row while working**
+10. Default isolation level in most databases? → **READ COMMITTED**

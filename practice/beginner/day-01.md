@@ -85,7 +85,7 @@ public class StarBox {
 <!-- hints -->
 - `System.out.println();` with nothing inside prints an empty line.
 - A hollow middle row is a star, 7 spaces, and a star: the spaces replace `" * * * "`.
-- On Day 5 you'll print this with loops instead of typing each line.
+- On Day 3 you'll print this with loops instead of typing each line.
 
 <!-- solution -->
 ```java
@@ -106,7 +106,7 @@ public class StarBox {
 }
 ```
 
-Lining up text by hand is fiddly, which is exactly the motivation for loops on Day 5.
+Lining up text by hand is fiddly, which is exactly the motivation for loops on Day 3.
 
 <!-- exercise: b1_e3 | Easy | Predict the output: print, println and escapes -->
 **Concepts:** `print` vs `println` · escape sequences `\n`, `\t`, `\"`, `\\`

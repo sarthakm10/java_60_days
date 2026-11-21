@@ -248,17 +248,24 @@
   $("#marquee-track").innerHTML = pills + pills;   // two copies, so the loop is seamless
 
   // ── Curriculum timeline ──
+  // One per BEGINNER_PHASES entry, in order (the roadmap's phases, then the Spring Boot track and the extra lane)
   const PHASE_INFO = [
-    ["💻", "Install Java and write your first program, then variables, conditions, loops, methods, arrays, strings, debugging, Big-O and Git."],
-    ["🧱", "Classes and objects, encapsulation, inheritance, polymorphism, interfaces and exceptions, ending with a library management project."],
-    ["🗂️", "Generics, ArrayList, LinkedList, HashMap inside and out, sets, queues, TreeMap and an LRU cache."],
-    ["⚡", "Lambdas, streams, Optional, the Date/Time API and the newest Java features."],
-    ["🧵", "Threads, synchronization, thread pools, concurrent collections, virtual threads, memory and garbage collection."],
-    ["🌐", "How the web works, Maven and unit tests, SQL from scratch to window functions, JDBC and NoSQL."],
-    ["🌿", "Dependency injection, REST APIs, validation, testing, JPA, transactions and JWT security, and a Task Manager API built step by step, one step a day."],
-    ["📐", "SOLID, the classic design patterns and low-level design interview problems."],
-    ["☁️", "Docker, microservices, Kafka, Kubernetes, CI/CD, AWS and Terraform."],
-    ["🎯", "System design, revision, behavioural answers, your resume and a final mock interview."]
+    ["💻", "Git, how programs run, the JDK and JVM, your first program, conditions, loops, switch and methods."],
+    ["🔢", "Big-O basics, then arrays, strings, linear and binary search, bit manipulation and maths for DSA."],
+    ["📊", "Bubble, selection, insertion, cyclic, count and radix sort, and the rest of complexity analysis."],
+    ["🪟", "HashMap counting, two pointers, prefix sums, Kadane, sliding windows and matrix traversal."],
+    ["🧱", "Classes and objects, inheritance, polymorphism, interfaces, generics, exceptions and collections, ending with Tic-Tac-Toe."],
+    ["⚡", "Generics in depth, comparators, functional interfaces, streams, modern Java and merge intervals."],
+    ["🔁", "Recursion, merge and quick sort, subsets, permutations and backtracking up to N-Queens and Sudoku."],
+    ["🔗", "Linked lists, stacks, queues, monotonic stacks, HashMap internals and LRU caches, with SOLID, design patterns and multithreading alongside."],
+    ["🌳", "Binary trees, BSTs, heaps, Top-K, tries and segment trees, with JVM internals and low-level design alongside."],
+    ["💰", "Greedy algorithms and maths extras, then JUnit, Maven and JDBC before Spring."],
+    ["🕸️", "Graph BFS and DFS, grids, topological sort, union-find, shortest paths and spanning trees, with Spring Boot starting alongside."],
+    ["🧠", "Dynamic programming from Fibonacci to knapsack, LIS, strings, stocks and intervals, with Spring Boot alongside."],
+    ["🌿", "SQL, JPA, testing, security, production features, deployment, a capstone, messaging, microservices and MongoDB."],
+    ["🧩", "String algorithms, range-query structures, and serialization, reflection, regex and java.time."],
+    ["☁️", "AWS accounts, compute, storage, databases and monitoring, then Terraform."],
+    ["🎯", "System design, revision, behavioural answers, your resume, a DSA mock and a final mock interview."]
   ];
 
   function buildTimeline() {

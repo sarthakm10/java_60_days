@@ -1,69 +1,45 @@
-# Day 85 — AWS: Accounts, IAM and Networking
+# Day 85 — AWS Compute: EC2, ECS and Lambda
 
-> Seven days of cloud. Most backend jobs ask for AWS experience, and the ideas carry over to Azure and Google Cloud. Read each 🌱 **In simple words** box first.
+> Three ways to run your code on AWS, from "rent a server" to "just run this function". Read each 🌱 **In simple words** box first.
 
-**Today's goal:** understand what "the cloud" is, set up an AWS account safely, and learn the two foundations everything else sits on: IAM (who may do what) and VPC (the private network).
+**Today's goal:** know when to use EC2, ECS or Lambda, how auto scaling and load balancers work, and how the main pricing options differ.
 
 <!-- topic: b85_t1 -->
-## 🗄️ AWS — Getting Started
+## 🗄️ AWS — Compute Services
 
-<!-- subtopic: b85_t1_s1 -->
-### Cloud in simple words
+<!-- intro: d44_t1_s1 -->
+**EC2** gives you **virtual servers** (instances) by the hour. Instance **types** are tuned for different jobs: general purpose (`t3`, `m6`), compute-heavy (`c6`), memory-heavy (`r6`, good for caches and big JVM heaps) and storage-heavy (`i3`). The `t` family is cheap and "burstable", fine for learning and small apps.
 
-Running your own servers means buying machines, a room with power and cooling, network connections, and people to replace failed disks at 3 am. The **cloud** means **renting** computing from a provider like **AWS** (Amazon Web Services) by the hour or second, over the internet: servers, databases, storage, queues. You start in minutes, grow when traffic grows, and pay for what you use, like electricity from the grid instead of running your own generator.
+<!-- intro: d44_t1_s2 -->
+Paying for EC2: **On-Demand** (by the second, no commitment, most expensive per hour), **Reserved** instances or **Savings Plans** (commit for 1–3 years, much cheaper), and **Spot** (spare capacity at up to 90% off, but AWS can take it back with two minutes' notice: great for batch jobs, bad for your only web server).
 
-Three levels of "how much do you manage yourself":
+<!-- intro: d44_t1_s3 -->
+An **Auto Scaling Group** keeps a fleet of identical instances at the right size: it adds servers when CPU or traffic goes up and removes them when it drops, and replaces any instance that fails its health check (Day 74's health endpoint again).
 
-| Model | You manage | Example |
-|---|---|---|
-| **IaaS** (infrastructure) | the OS and everything above it | an EC2 virtual server (Day 86) |
-| **PaaS** / managed services | just your app or data | RDS managed PostgreSQL (Day 88), ECS Fargate |
-| **Serverless** | only your code, run on demand | AWS Lambda |
+<!-- intro: d44_t1_s4 -->
+A **launch template** is the recipe for new instances in that group: which machine image, instance type, security groups and a **user data** script that runs at first boot (install Java, start your app). Use launch templates; the older launch configurations are legacy.
 
-**Where it runs:** AWS is split into **regions**, separate geographic areas like Mumbai (`ap-south-1`) or Ireland (`eu-west-1`). Pick one near your users (lower latency) and where the law allows your data to live. Each region has several **availability zones (AZs)**: separate data centres a few kilometres apart, with their own power and network. Spreading your app across two or three AZs means one data centre's fire or power cut doesn't take you down.
+<!-- intro: d44_t1_s5 -->
+**ECS** runs your **Docker containers** (Day 76) for you. A **task definition** describes the containers (image, CPU, memory, environment), a **service** keeps N copies running, and a **cluster** is where they run. With the **Fargate** launch type you don't manage any servers at all: AWS finds room for your containers. ECS Fargate is often the easiest way to deploy a Spring Boot app.
 
-<details>
-<summary>Region vs availability zone?</summary>
+<!-- intro: d44_t1_s6 -->
+An ECS task has two roles, and mixing them up is a classic mistake: the **task role** is what *your app* is allowed to do (read this S3 bucket), and the **execution role** is what *ECS* needs to start it (pull the image, write logs).
 
-A region is a geographic area (e.g. Mumbai); an availability zone is one of several separate data centres inside a region. Running in multiple AZs survives a single data centre failing.
-</details>
+<!-- intro: d44_t1_s7 -->
+**Lambda** runs a single function on demand, with no server at all: it runs when an event happens (an HTTP request, a file uploaded to S3, a message in a queue) and you pay per millisecond of use. The catch: a **cold start** delay when a new instance spins up (noticeable for Java), and limits on run time and concurrency. Great for event glue and spiky workloads; less ideal for a busy, always-on API.
 
-<!-- subtopic: b85_t1_s2 -->
-### Create an AWS account safely
-
-Cloud mistakes cost real money, and leaked keys get abused within minutes. Do these steps on day one:
-
-1. **Sign up** at aws.amazon.com. New accounts get a **free tier** (small servers, some storage and database time free for 12 months, plus always-free allowances). Read what's included before creating anything.
-2. **Protect the root user** (the email you signed up with): turn on **MFA** (multi-factor authentication, an authenticator app), and then **stop using it** for daily work.
-3. **Create an IAM user (or IAM Identity Center user) for yourself** with admin rights, with MFA, and log in as that from now on.
-4. **Set a budget alarm**: Billing → Budgets → a monthly budget of, say, $5 with an email alert. This single step saves beginners from surprise bills.
-5. **Never put access keys in code or in Git** (Day 12). Use `aws configure` locally, and IAM roles for anything running inside AWS (next section).
-6. **Delete what you create** after practising: a forgotten database or load balancer keeps charging.
-
-<details>
-<summary>Two things to do immediately after creating an AWS account?</summary>
-
-Turn on MFA for the root user (and stop using it day to day), and set a budget alarm. Also create a separate admin user for daily work.
-</details>
-
-<!-- intro: d45_t1_s5 -->
-**IAM** (Identity and Access Management) decides **who can do what** in your account. **Users** are people; **groups** collect users; **roles** are identities that services or apps *assume* temporarily (your server's code gets a role instead of stored keys); **policies** are JSON documents listing allowed actions ("may read objects in bucket X"). The golden rule is **least privilege**: give each identity only the permissions it actually needs.
-
-<!-- intro: d45_t1_s6 -->
-IAM habits: no daily use of the root user, MFA everywhere, roles instead of long-lived keys, rotating any keys that must exist, and **STS** temporary credentials for access between accounts. Most cloud security incidents start with a leaked key or an over-powerful role.
-
-<!-- intro: d45_t1_s8 -->
-A **VPC** (virtual private cloud) is your own private network inside AWS. You divide it into **subnets**: **public** ones (reachable from the internet, for load balancers) and **private** ones (not reachable directly, for your app servers and databases). **Security groups** are firewalls around each server ("allow port 8080 only from the load balancer"); **NACLs** are coarser firewalls on whole subnets. Rule of thumb: databases always live in private subnets.
+<!-- intro: d44_t1_s8 -->
+A **load balancer** spreads traffic across your instances or containers and skips unhealthy ones. The **ALB** (Application Load Balancer) understands HTTP and can route by path or host (`/api/orders` to one service, `/api/users` to another); the **NLB** (Network Load Balancer) works at the lower TCP level for extreme speed. For Spring Boot APIs, you'll almost always use an ALB.
 
 ## 📝 Day 85 Recap
 
-1. What is the cloud? → **renting computing resources over the internet, paying for what you use**
-2. IaaS vs managed vs serverless? → **you manage the OS / just the app or data / only your code**
-3. What is a region? → **a geographic area containing several AWS data centres**
-4. Why use several availability zones? → **so one data centre failing doesn't take the app down**
-5. First security step for a new account? → **MFA on the root user, then stop using root**
-6. What stops surprise bills? → **a budget alarm**
-7. IAM role vs user? → **a role is assumed temporarily by services or apps; a user is a person's identity**
-8. What is least privilege? → **giving each identity only the permissions it needs**
-9. Public vs private subnet? → **reachable from the internet vs not; databases go in private subnets**
-10. What is a security group? → **a firewall controlling traffic to a resource**
+1. What is EC2? → **virtual servers rented by the hour or second**
+2. Instance family for memory-heavy apps? → **r (memory optimised)**
+3. Cheapest EC2 option, and its risk? → **Spot instances; AWS can reclaim them at short notice**
+4. Cheaper option for steady long-term use? → **Reserved instances or Savings Plans**
+5. What does an Auto Scaling Group do? → **adds or removes instances with load and replaces unhealthy ones**
+6. What is ECS Fargate? → **running containers without managing any servers**
+7. ECS task role vs execution role? → **what your app may do vs what ECS needs to start it**
+8. What is Lambda? → **functions run on demand per event, paying only while they run**
+9. Lambda's main drawback for Java? → **cold start delays**
+10. Load balancer for HTTP path routing? → **ALB (Application Load Balancer)**

@@ -111,7 +111,7 @@ public class ArrayMoves {
 - Reverse: `int left = 0, right = arr.length - 1; while (left < right) { swap; left++; right--; }`
 - A swap needs a temporary variable, exactly like Day 2.
 - Rotate: shift from the **end** backwards (`for (int i = arr.length - 1; i > 0; i--) arr[i] = arr[i - 1];`), otherwise you overwrite values before moving them.
-- The methods work on the caller's array because the parameter holds a reference to the same array (Day 7, last section).
+- The methods work on the caller's array because the parameter holds a reference to the same array (Day 5's notes on arrays in functions).
 
 <!-- solution -->
 ```java

@@ -115,7 +115,7 @@ public class Notifier {
 }
 ```
 
-Adding a WhatsApp notification tomorrow means writing one new class; the sending loop never changes. That "add new types without touching existing code" property is what polymorphism buys you (and what Day 68's Open/Closed principle is about).
+Adding a WhatsApp notification tomorrow means writing one new class; the sending loop never changes. That "add new types without touching existing code" property is what polymorphism buys you (and what Day 41's Open/Closed principle is about).
 
 <!-- exercise: b17_e2 | Medium | Predict the output: overloading, overriding and instanceof -->
 **Concepts:** compile-time overload choice · run-time override choice · static hiding · pattern matching

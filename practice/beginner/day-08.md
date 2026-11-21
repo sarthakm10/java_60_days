@@ -157,7 +157,7 @@ public class Words {
 }
 ```
 
-The palindrome check never builds a cleaned-up copy of the string: it skips unwanted characters as it goes, so it uses O(1) extra space. This is the same two-pointer idea as reversing an array on Day 7, and it's the "Valid Palindrome" problem from today's DSA list.
+The palindrome check never builds a cleaned-up copy of the string: it skips unwanted characters as it goes, so it uses O(1) extra space. This is the same two-pointer idea as reversing an array on Day 5, and it's the "Valid Palindrome" problem from today's DSA list.
 
 <!-- exercise: b8_e3 | Medium | String compression -->
 **Concepts:** comparing neighbouring characters · counting runs · `StringBuilder`

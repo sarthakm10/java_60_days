@@ -88,7 +88,7 @@ public class LoopBasics {
 }
 ```
 
-Both even-sum loops give the same answer, but stepping by 2 does half the work. That kind of difference is what Big-O (Day 11) is about.
+Both even-sum loops give the same answer, but stepping by 2 does half the work. That kind of difference is what Big-O (Day 5) is about.
 
 <!-- exercise: b5_e2 | Medium | Star patterns -->
 **Concepts:** nested loops · inner loop limits that depend on the row
@@ -228,7 +228,7 @@ public class Digits {
 <!-- hints -->
 - `while (n > 0) { ...; n = n / 10; }` visits each digit once; `n % 10` is the current last digit.
 - For 0 the loop never runs, so `countDigits` must return 1 for it: check `if (n == 0) return 1;` first.
-- Changing the parameter `n` inside the method is fine: the caller's variable isn't affected (Java passes a copy, Day 6).
+- Changing the parameter `n` inside the method is fine: the caller's variable isn't affected (Java passes a copy, Day 4).
 
 <!-- solution -->
 ```java

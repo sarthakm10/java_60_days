@@ -63,7 +63,7 @@ public class Primes {
 }
 ```
 
-`return` ends the method immediately, so there's no need for a `found` flag or a `break`. `i * i <= n` stops at √n; Day 11 explains why that is enough and why it's so much faster.
+`return` ends the method immediately, so there's no need for a `found` flag or a `break`. `i * i <= n` stops at √n; Day 5 explains why that is enough and why it's so much faster.
 
 <!-- exercise: b6_e2 | Easy | Factorial and overflow -->
 **Concepts:** return values · `long` vs `int` · overflow
@@ -213,4 +213,4 @@ public class Calculator {
 }
 ```
 
-Because the methods **return** values instead of printing them, `main` decides how to show results, and each method is easy to test on its own. (Passing `8` where a `double` is expected works thanks to automatic widening from Day 3.)
+Because the methods **return** values instead of printing them, `main` decides how to show results, and each method is easy to test on its own. (Passing `8` where a `double` is expected works thanks to automatic widening from Day 2.)

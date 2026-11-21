@@ -67,7 +67,7 @@ size 1
 <!-- hints -->
 - `items.get(index)` reads an item and `items.set(index, newText)` replaces it.
 - Check `startsWith("[x] ")` before adding the tick, so completing twice doesn't add two ticks.
-- For `removeDone`, the simplest correct way is `items.removeIf(item -> item.startsWith("[x] "));`. Removing inside a for-each loop over the same list would crash (Day 26). Looping backwards with an index also works.
+- For `removeDone`, the simplest correct way is `items.removeIf(item -> item.startsWith("[x] "));`. Removing inside a for-each loop over the same list would crash (Day 42). Looping backwards with an index also works.
 - `print`: `for (int i = 0; i < items.size(); i++) System.out.println((i + 1) + ". " + items.get(i));`
 
 <!-- solution -->
