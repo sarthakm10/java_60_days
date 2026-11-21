@@ -1759,11 +1759,16 @@
     return activeSets().filter(s => setDays(s).includes(dayNum));
   }
 
-  // Problem rows: [number, title, slug, difficulty, premium, link, statement]; a problem with no LeetCode page has
-  // number "" and a link to its page on takeuforward
+  // Problem rows: [number, title, slug, difficulty, premium, link, statement, examples, constraints, hint]; a problem
+  // with no LeetCode page has number "" and a link to its page on takeuforward, plus its statement,
+  // [input, output, explanation] examples, constraints and a hint
   const problemUrl = (p) => p[5] || `https://leetcode.com/problems/${p[2]}/`;
-  const problemNum = (p) => (p[0] === "" ? "TUF" : p[0]);
   const problemSite = (p) => (p[5] ? "takeuforward" : "LeetCode");
+  // Platform mark + number, so it is clear where a problem opens
+  const LEETCODE_ICON = `<svg class="site-icon site-icon-lc" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 6.226l-3.854 4.126a5.266 5.266 0 0 0-1.209 2.104 5.35 5.35 0 0 0-.125.513 5.527 5.527 0 0 0 .062 2.362 5.83 5.83 0 0 0 .349 1.017 5.938 5.938 0 0 0 1.271 1.818l4.277 4.193.039.038c2.248 2.165 5.852 2.133 8.063-.074l2.396-2.392c.54-.54.54-1.414.003-1.955a1.378 1.378 0 0 0-1.951-.003l-2.396 2.392a3.021 3.021 0 0 1-4.205.038l-.02-.019-4.276-4.193c-.652-.64-.972-1.469-.948-2.263a2.68 2.68 0 0 1 .066-.523 2.545 2.545 0 0 1 .619-1.164L9.13 8.114c1.058-1.134 3.204-1.27 4.43-.278l3.501 2.831c.593.48 1.461.387 1.94-.207a1.384 1.384 0 0 0-.207-1.943l-3.5-2.831c-.8-.647-1.766-1.045-2.774-1.202l2.015-2.158A1.384 1.384 0 0 0 13.483 0zm-2.866 12.815a1.38 1.38 0 0 0-1.38 1.382 1.38 1.38 0 0 0 1.38 1.382H20.79a1.38 1.38 0 0 0 1.38-1.382 1.38 1.38 0 0 0-1.38-1.382z"/></svg>`;
+  const problemNumHTML = (p) => p[0] === ""
+    ? `<span class="problem-num" title="Opens on takeuforward"><span class="site-badge-tuf" aria-hidden="true">tuf</span><span class="sr-only">takeuforward</span></span>`
+    : `<span class="problem-num" title="Opens on LeetCode">${LEETCODE_ICON}<span class="sr-only">LeetCode </span>${p[0]}</span>`;
 
   function getSetStats(set) {
     const solved = set.problems.filter(p => state.solvedProblems[p[2]]).length;
@@ -1784,9 +1789,40 @@
   // The visualizer recording of a LeetCode problem's worked solution, if there is one (visualize/index.js)
   const visualizationFor = (slug) => window.CodeVisualizer && typeof VISUALIZATIONS !== "undefined" ? VISUALIZATIONS[slug] : undefined;
 
+  // A takeuforward problem's statement, examples and constraints, folded under its title
+  function problemBriefHTML(statement, examples = [], constraints = [], hint = "") {
+    const examplesHTML = examples.map(([input, output, explanation], i) => `
+      <div class="pb-example">
+        <h5>Example ${i + 1}:</h5>
+        <div class="pb-io">
+          <p><span>Input:</span> <code>${escapeHTML(input)}</code></p>
+          <p><span>Output:</span> <code>${escapeHTML(output)}</code></p>
+          ${explanation ? `<p class="pb-why"><span>Explanation:</span> ${escapeHTML(explanation)}</p>` : ""}
+        </div>
+      </div>`).join("");
+    const constraintsHTML = constraints.length ? `
+      <div class="pb-constraints">
+        <h5>Constraints:</h5>
+        <ul>${constraints.map(c => `<li><code>${escapeHTML(c).replace(/\^(-?\d+)/g, "<sup>$1</sup>")}</code></li>`).join("")}</ul>
+      </div>` : "";
+    return `
+      <details class="problem-brief">
+        <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>Problem${examples.length ? " · examples" : ""}${constraints.length ? " · constraints" : ""}${hint ? " · hint" : ""}</summary>
+        <div class="pb-panel">
+          <p class="pb-statement">${escapeHTML(statement)}</p>
+          ${examplesHTML}
+          ${constraintsHTML}
+          ${hint ? `
+          <details class="pb-hint">
+            <summary>💡 Show hint</summary>
+            <p>${escapeHTML(hint)}</p>
+          </details>` : ""}
+        </div>
+      </details>`;
+  }
+
   function problemRowHTML(p, sets) {
-    const [, title, slug, diff, premium, , statement] = p;
-    const num = problemNum(p);
+    const [, title, slug, diff, premium, , statement, examples, constraints, hint] = p;
     const solved = !!state.solvedProblems[slug];
     const log = state.problemLogs[slug];
     const d = DIFFICULTY[diff];
@@ -1796,8 +1832,11 @@
     return `
       <div class="problem-row ${solved ? "solved" : ""} ${isSearchHighlight(slug) ? "search-highlight" : ""}" data-slug="${slug}">
         <input type="checkbox" class="subtopic-checkbox problem-checkbox" data-slug="${slug}" ${solved ? "checked" : ""} title="Mark as solved">
-        <span class="problem-num">${num}</span>
-        <a class="problem-title" href="${problemUrl(p)}" target="_blank" rel="noopener noreferrer"${statement ? ` title="${escapeHTML(statement)}"` : ""}>${escapeHTML(title)}</a>
+        ${problemNumHTML(p)}
+        <span class="problem-main">
+          <a class="problem-title" href="${problemUrl(p)}" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
+          ${statement ? problemBriefHTML(statement, examples || [], constraints || [], hint) : ""}
+        </span>
         ${premium ? `<span class="problem-premium" title="Needs LeetCode Premium">🔒 Premium</span>` : ""}
         ${setLinks}
         ${log?.solveAgain ? `<span class="log-flag" title="Flagged to solve again">🔁</span>` : ""}
@@ -3324,7 +3363,7 @@
           const [, title, , diff] = u.problem;
           return `
             <div class="problem-row again-row">
-              <span class="problem-num">${problemNum(u.problem)}</span>
+              ${problemNumHTML(u.problem)}
               <span class="again-main">
                 <a class="problem-title" href="${problemUrl(u.problem)}" target="_blank" rel="noopener noreferrer">${escapeHTML(title)}</a>
                 <span class="again-meta">${log.attempts ? `${log.attempts} attempt${log.attempts === 1 ? "" : "s"} · ` : ""}${log.felt ? `felt ${log.felt} · ` : ""}${log.time ? `${escapeHTML(log.time)} time · ` : ""}updated ${log.updated || "—"}</span>

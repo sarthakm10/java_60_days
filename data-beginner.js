@@ -305,95 +305,95 @@ const BEGINNER_DATA = (() => {
     // ===================== PHASE 5: OOP AND CORE JAVA (Days 20–26) =====================
     { p: 4, title: "OOP 1–2 — Classes, Objects, static and Packages", practice: ["b13_e1", "b13_e2", "d1_e3"], topics: [
       topic("Java", "OOP", [
-        k("v37", "6.1 OOP 1 — classes, objects, constructors (video 37)"),
-        k("v38", "6.2 OOP 2 — packages, static, Singleton (video 38)")
+        k("v37", "5.1 OOP 1 — classes, objects, constructors (video 37)"),
+        k("v38", "5.2 OOP 2 — packages, static, Singleton (video 38)")
       ])
     ] },
     { p: 4, title: "OOP 3 — Inheritance, Polymorphism, Encapsulation and Abstraction", practice: ["b16_e1", "b16_e2", "b17_e1", "b17_e2", "d1_e1"], topics: [
-      topic("Java", "OOP", [k("v39", "6.3 OOP 3 — inheritance, polymorphism, encapsulation, abstraction (video 39)")])
+      topic("Java", "OOP", [k("v39", "5.3 OOP 3 — inheritance, polymorphism, encapsulation, abstraction (video 39)")])
     ] },
     { p: 4, title: "OOP 4–5 — Access Control, the Object Class, Abstract Classes and Interfaces", practice: ["d2_e1", "d2_e3", "d1_e2", "d2_e2"], topics: [
       topic("Java", "OOP", [
-        k("v40", "6.4 OOP 4 — access control, the Object class (video 40)"),
-        k("v41", "6.5 OOP 5 — abstract classes & interfaces (video 41)")
+        k("v40", "5.4 OOP 4 — access control, the Object class (video 40)"),
+        k("v41", "5.5 OOP 5 — abstract classes & interfaces (video 41)")
       ])
     ] },
     { p: 4, title: "OOP 6 — Generics, Lambdas, Exceptions and Cloning", practice: ["b22_e1", "b24_e1", "d4_e1", "d4_e2"], topics: [
-      topic("Java", "OOP", [k("v42", "6.6 OOP 6 — generics, Comparable/Comparator basics, lambdas, exceptions, cloning (video 42)")])
+      topic("Java", "OOP", [k("v42", "5.6 OOP 6 — generics, Comparable/Comparator basics, lambdas, exceptions, cloning (video 42)")])
     ] },
     { p: 4, title: "OOP 7 — Collections Framework, Vector and Enums", practice: ["b25_e1", "d11_e1", "d3_e2", "d14_e1", "d14_e2"], topics: [
-      topic("Java", "OOP", [k("v43", "6.7 OOP 7 — Collections framework, Vector, enums (video 43)")])
+      topic("Java", "OOP", [k("v43", "5.7 OOP 7 — Collections framework, Vector, enums (video 43)")])
     ] },
     { p: 4, title: "StringBuffer, BigInteger, BigDecimal and File Handling", practice: ["d16_e1", "d16_e3"], topics: [
       topic("Java", "Core Java", [
-        k("v52", "6.8 StringBuffer & formatting (video 52)"),
-        k("v53", "6.9 BigInteger & BigDecimal (video 53)"),
-        k("v54", "6.10 File handling (video 54)")
+        k("v52", "5.8 StringBuffer & formatting (video 52)"),
+        k("v53", "5.9 BigInteger & BigDecimal (video 53)"),
+        k("v54", "5.10 File handling (video 54)")
       ])
     ] },
     { p: 4, title: "Project — Tic-Tac-Toe", practice: ["b23_e1"], topics: [
-      topic("Java", "Core Java", [k("v48", "6.11 Tic-Tac-Toe project — OOP in practice, also a common LLD question (video 48)")])
+      topic("Java", "Core Java", [k("v48", "5.11 Tic-Tac-Toe project — OOP in practice, also a common LLD question (video 48)")])
     ] },
 
     // ===================== PHASE 6: JAVA 8+ FEATURES (Days 27–32) =====================
     { p: 5, title: "Generics in Depth", practice: ["d4_e3"], topics: [
-      topic("Java", "Java 8+ Features", [k("g08", "7.1 Generics in depth — bounds, wildcards, PECS, type erasure (Java gap #8)")])
+      topic("Java", "Java 8+ Features", [k("g08", "6.1 Generics in depth — bounds, wildcards, PECS, type erasure (Java gap #8)")])
     ] },
     { p: 5, title: "Comparator and Comparable in Depth", practice: ["d3_e3"], topics: [
-      topic("Java", "Java 8+ Features", [k("g03", "7.2 Comparator & Comparable in depth (Java gap #3)")])
+      topic("Java", "Java 8+ Features", [k("g03", "6.2 Comparator & Comparable in depth (Java gap #3)")])
     ] },
     { p: 5, title: "Functional Interfaces and Optional", practice: ["d5_e1", "d5_e2", "d7_e1"], topics: [
-      topic("Java", "Java 8+ Features", [k("g06", "7.3 Functional interfaces & Optional (Java gap #6)")])
+      topic("Java", "Java 8+ Features", [k("g06", "6.3 Functional interfaces & Optional (Java gap #6)")])
     ] },
     { p: 5, title: "Streams API", practice: ["b33_e1", "d5_e3", "d6_e1", "d6_e2", "d6_e3"], topics: [
-      topic("Java", "Java 8+ Features", [k("g02", "7.4 Streams API (Java gap #2)")])
+      topic("Java", "Java 8+ Features", [k("g02", "6.4 Streams API (Java gap #2)")])
     ] },
     { p: 5, title: "Modern Java (Java 9–21)", practice: ["d3_e1", "d7_e2"], topics: [
-      topic("Java", "Java 8+ Features", [k("g07", "7.5 Modern Java — var, List.of, records, text blocks, switch expressions, sealed types, pattern matching (Java gap #7)")])
+      topic("Java", "Java 8+ Features", [k("g07", "6.5 Modern Java — var, List.of, records, text blocks, switch expressions, sealed types, pattern matching (Java gap #7)")])
     ] },
     { p: 5, title: "Merge Intervals", topics: [
-      topic("DSA", "Patterns", [k("d05", "7.6 Merge intervals (DSA gap #5)")])
+      topic("DSA", "Patterns", [k("d05", "6.6 Merge intervals (DSA gap #5)")])
     ] },
 
     // ===================== PHASE 7: RECURSION AND BACKTRACKING (Days 33–40) =====================
     { p: 6, title: "Recursion and the Complexity of Recursive Programs", topics: [
       topic("DSA", "Recursion", [
-        k("v23", "5.1 Recursion intro (video 23)"),
-        k("v24", "5.2 Complexity of recursive programs, sections 13–26 — recurrences, Akra-Bazzi (video 24, part 3)", [13, 26])
+        k("v23", "7.1 Recursion intro (video 23)"),
+        k("v24", "7.2 Complexity of recursive programs, sections 13–26 — recurrences, Akra-Bazzi (video 24, part 3)", [13, 26])
       ])
     ] },
     { p: 6, title: "Recursion Level 1 and Recursion on Arrays", topics: [
       topic("DSA", "Recursion", [
-        k("v27", "5.3 Recursion level 1 (video 27)"),
-        k("v28", "5.4 Recursion on arrays (video 28)")
+        k("v27", "7.3 Recursion level 1 (video 27)"),
+        k("v28", "7.4 Recursion on arrays (video 28)")
       ])
     ] },
     { p: 6, title: "Recursion Patterns and Recursive Sorting", topics: [
-      topic("DSA", "Recursion", [k("v29", "5.5 Recursion patterns + recursive bubble/selection sort (video 29)")])
+      topic("DSA", "Recursion", [k("v29", "7.5 Recursion patterns + recursive bubble/selection sort (video 29)")])
     ] },
     { p: 6, title: "Merge Sort and Quick Sort", topics: [
       topic("DSA", "Recursion", [
-        k("v30", "5.6 Merge sort (video 30)"),
-        k("v31", "5.7 Quick sort (video 31)")
+        k("v30", "7.6 Merge sort (video 30)"),
+        k("v31", "7.7 Quick sort (video 31)")
       ])
     ] },
     { p: 6, title: "Subsets and Subsequences", topics: [
-      topic("DSA", "Recursion", [k("v32", "5.8 Subsets & subsequences — the take / don't-take choice (video 32)")])
+      topic("DSA", "Recursion", [k("v32", "7.8 Subsets & subsequences — the take / don't-take choice (video 32)")])
     ] },
     { p: 6, title: "Permutations, Dice and Phone Letters", topics: [
       topic("DSA", "Recursion", [
-        k("v33", "5.9 Permutations (video 33)"),
-        k("v34", "5.10 Dice & phone letters — LC 17, 1155 (video 34)")
+        k("v33", "7.9 Permutations (video 33)"),
+        k("v34", "7.10 Dice & phone letters — LC 17, 1155 (video 34)")
       ])
     ] },
     { p: 6, title: "Backtracking — Maze, N-Queens, N-Knights and Sudoku", topics: [
       topic("DSA", "Backtracking", [
-        k("v35", "5.11 Backtracking: maze (video 35)"),
-        k("v36", "5.12 N-Queens, N-Knights, Sudoku (video 36)")
+        k("v35", "7.11 Backtracking: maze (video 35)"),
+        k("v36", "7.12 N-Queens, N-Knights, Sudoku (video 36)")
       ])
     ] },
     { p: 6, title: "Combination-Style Backtracking", topics: [
-      topic("DSA", "Backtracking", [k("d12", "5.13 Combination Sum, Word Search, Palindrome Partitioning (DSA gap #12)")])
+      topic("DSA", "Backtracking", [k("d12", "7.13 Combination Sum, Word Search, Palindrome Partitioning (DSA gap #12)")])
     ] },
 
     // ===================== PHASE 8: LINKED LISTS, STACKS, QUEUES, HASHING (Days 41–46) =====================

@@ -28,9 +28,9 @@
 | 2 | [Phase 2: Arrays, Strings, Searching, Bits and Maths](#phase-2-arrays-strings-searching-bits-and-maths) | DSA + Java |
 | 3 | [Phase 3: Sorting and Complexity Basics](#phase-3-sorting-and-complexity-basics) | DSA |
 | 4 | [Phase 4: Array and String Patterns](#phase-4-array-and-string-patterns) | DSA (gap) |
-| 5 | [Phase 5: Recursion and Backtracking](#phase-5-recursion-and-backtracking) | DSA |
-| 6 | [Phase 6: OOP and Core Java](#phase-6-oop-and-core-java) | Java |
-| 7 | [Phase 7: Java 8+ Features (before the hard DSA)](#phase-7-java-8-features-before-the-hard-dsa) | Java (gap) |
+| 5 | [Phase 5: OOP and Core Java](#phase-5-oop-and-core-java) | Java |
+| 6 | [Phase 6: Java 8+ Features (before the hard DSA)](#phase-6-java-8-features-before-the-hard-dsa) | Java (gap) |
+| 7 | [Phase 7: Recursion and Backtracking](#phase-7-recursion-and-backtracking) | DSA |
 | 8 | [Phase 8: Linked Lists, Stacks, Queues, Hashing](#phase-8-linked-lists-stacks-queues-hashing) | DSA + Java |
 | 9 | [Phase 9: Trees, Heaps and Tries](#phase-9-trees-heaps-and-tries) | DSA |
 | 10 | [Phase 10: Greedy and Maths Extras](#phase-10-greedy-and-maths-extras) | DSA (gap) |
@@ -52,16 +52,16 @@ flowchart TD
     P1["1. Java Foundations<br/>videos 4–11"]:::good --> P2["2. Arrays, Strings, Search,<br/>Bits, Maths · videos 12–16, 21, 25–26"]:::good
     P2 --> P3["3. Sorting + Complexity basics<br/>videos 17–20, 24 part 1, 59–60"]:::good
     P3 --> P4["4. Array/String Patterns<br/>Two Pointers, Prefix Sum, Kadane,<br/>Sliding Window, Matrix"]:::highlight
-    P4 --> P5["5. Recursion + Backtracking<br/>videos 23, 24 part 2, 27–36"]:::good
-    P5 --> P6["6. OOP + Core Java<br/>videos 37–43, 52–54, 48"]:::good
-    P6 --> P7["7. Java 8+ Features<br/>Generics, Comparator, Lambdas,<br/>Optional, Streams, Modern Java"]:::process
+    P4 --> P5["5. OOP + Core Java<br/>videos 37–43, 52–54, 48"]:::good
+    P5 --> P6["6. Java 8+ Features<br/>Generics, Comparator, Lambdas,<br/>Optional, Streams, Modern Java"]:::process
+    P6 --> P7["7. Recursion + Backtracking<br/>videos 23, 24 part 2, 27–36"]:::good
     P7 --> P8["8. Linked List, Stack, Queue,<br/>Hashing · videos 44–47, 57–58"]:::good
     P8 --> P9["9. Trees, Heaps, Tries<br/>videos 49–51, 55–56, 61, 63–69"]:::good
     P9 --> P10["10. Greedy + Maths extras"]:::highlight
     P10 --> P11["11. Graphs + Union-Find"]:::highlight
     P11 --> P12["12. Dynamic Programming"]:::bad
     P12 --> P13["13. Advanced / optional"]:::muted
-    P7 -.->|"start any time after phase 7"| PJ["Parallel: Advanced Java<br/>SOLID, Design Patterns,<br/>Multithreading, JVM"]:::io
+    P6 -.->|"start any time after phase 6"| PJ["Parallel: Advanced Java<br/>SOLID, Design Patterns,<br/>Multithreading, JVM"]:::io
     PJ -.-> P13
     PJ -.->|"after gap #12 + multithreading"| PS["Spring Boot track<br/>Maven, HTTP/REST, Spring Core,<br/>Boot, JPA, Security, Deploy"]:::startend
     classDef startend fill:#ccfbf1,stroke:#0d9488,stroke-width:2px,color:#0f172a
@@ -96,7 +96,7 @@ flowchart TD
 | 1.4 | JDK / JRE / JVM | 🎬 [Video 7][v07] | Know what `javac` and `java` do |
 | 1.5 | First program: I/O, data types, casting | 🎬 [Video 8][v08] | |
 | 1.6 | Conditionals & loops | 🎬 [Video 9][v09] | |
-| 1.7 | Switch (+ the newer arrow syntax) | 🎬 [Video 10][v10] | The full Java 14 switch *expression* comes later in phase 7 |
+| 1.7 | Switch (+ the newer arrow syntax) | 🎬 [Video 10][v10] | The full Java 14 switch *expression* comes later in phase 6 |
 | 1.8 | Functions / methods, scope, pass-by-value | 🎬 [Video 11][v11] | Needed before recursion and every DSA function |
 
 ✅ **Ready to move on when** you can write a method that takes an array, loops over it and returns a result, and explain why changing an array inside a method changes it for the caller.
@@ -134,12 +134,12 @@ flowchart TD
 | 3.2 | Selection sort | 🎬 [Video 18][v18] | |
 | 3.3 | Insertion sort | 🎬 [Video 19][v19] | |
 | 3.4 | Cyclic sort (LC 268, 448, 287, 442, 645, 41) | 🎬 [Video 20][v20] | |
-| 3.5 | Time & space complexity — **sections 6–12** (Ω, Θ, little-o/ω, space, sorting complexity; sections 0–5 were read before phase 2) | 🎬 [Video 24][v24] | You now have loops and sorts to analyse. **Stop before section 13**: the recurrence-relation half needs recursion (phase 5) |
+| 3.5 | Time & space complexity — **sections 6–12** (Ω, Θ, little-o/ω, space, sorting complexity; sections 0–5 were read before phase 2) | 🎬 [Video 24][v24] | You now have loops and sorts to analyse. **Stop before section 13**: the recurrence-relation half needs recursion (phase 7) |
 | 3.6 | Count sort | 🎬 [Video 59][v59] | Only needs arrays; a good contrast to comparison sorts |
 | 3.7 | Radix sort | 🎬 [Video 60][v60] | Built on count sort |
 
 > [!TIP]
-> Merge sort and quick sort are in phase 5, because both are recursive.
+> Merge sort and quick sort are in phase 7, because both are recursive.
 
 ---
 
@@ -172,66 +172,66 @@ flowchart TD
 
 ---
 
-## Phase 5: Recursion and Backtracking
-
-| Order | Topic | Source | Why here |
-|---|---|---|---|
-| 5.1 | Recursion intro | 🎬 [Video 23][v23] | |
-| 5.2 | Complexity of recursive programs — **sections 13–24** (recurrences, Akra-Bazzi, linear recurrences) | 🎬 [Video 24, from section 13][v24rec] | Now you have recursion to analyse |
-| 5.3 | Recursion level 1 | 🎬 [Video 27][v27] | |
-| 5.4 | Recursion on arrays | 🎬 [Video 28][v28] | |
-| 5.5 | Recursion patterns + recursive bubble/selection sort | 🎬 [Video 29][v29] | |
-| 5.6 | Merge sort | 🎬 [Video 30][v30] | Divide and conquer; its recurrence is from 5.2 |
-| 5.7 | Quick sort | 🎬 [Video 31][v31] | |
-| 5.8 | Subsets & subsequences | 🎬 [Video 32][v32] | Foundation for backtracking **and** for DP (the "take / don't take" choice) |
-| 5.9 | Permutations | 🎬 [Video 33][v33] | |
-| 5.10 | Dice & phone letters (LC 17, 1155) | 🎬 [Video 34][v34] | Contains the first memoised solution — remember it for DP |
-| 5.11 | Backtracking: maze | 🎬 [Video 35][v35] | |
-| 5.12 | N-Queens, N-Knights, Sudoku | 🎬 [Video 36][v36] | |
-| 5.13 | **Combination-style backtracking** (Combination Sum, Word Search, Palindrome Partitioning) 🟡 | 📘 [DSA gap #12][d12] | Same skeleton as 5.8–5.12, with a start index to avoid duplicates |
-
-🧪 **Practice:** LC 78, 90, 46, 47, 39, 40, 79, 131, 51, 37.
-
----
-
-## Phase 6: OOP and Core Java
+## Phase 5: OOP and Core Java
 
 > [!TIP]
-> **Phases 6 and 7 have no new DSA.** Keep solving 2–3 problems a week from phases 4 and 5 (re-solve old ones without looking) so the patterns don't fade before linked lists in phase 8. Linked lists need only 6.1 (classes and objects), so you can also start 8.1–8.2 early.
+> **Phases 5 and 6 have no new DSA.** Keep solving 2–3 problems a week from phases 2–4 (re-solve old ones without looking) so the patterns stay fresh until recursion in phase 7. In return, everything from phase 7 on can use classes, lambdas, comparators and records.
 
 | Order | Topic | Source | Why here |
 |---|---|---|---|
-| 6.1 | OOP 1: classes, objects, constructors | 🎬 [Video 37][v37] | Needed for linked lists and trees (`Node` classes) |
-| 6.2 | OOP 2: packages, `static`, Singleton | 🎬 [Video 38][v38] | |
-| 6.3 | OOP 3: inheritance, polymorphism, encapsulation, abstraction | 🎬 [Video 39][v39] | |
-| 6.4 | OOP 4: access control, `Object` class | 🎬 [Video 40][v40] | `equals`/`hashCode` are needed before hashing (phase 8) |
-| 6.5 | OOP 5: abstract classes & interfaces | 🎬 [Video 41][v41] | Interfaces are the basis of lambdas (phase 7) |
-| 6.6 | OOP 6: generics (basics), Comparable/Comparator (basics), lambdas, exceptions, cloning | 🎬 [Video 42][v42] | |
-| 6.7 | OOP 7: Collections framework, Vector, enums | 🎬 [Video 43][v43] | |
-| 6.8 | StringBuffer & formatting | 🎬 [Video 52][v52] | Small, independent topics: do them now while Java is fresh |
-| 6.9 | BigInteger & BigDecimal | 🎬 [Video 53][v53] | |
-| 6.10 | File handling | 🎬 [Video 54][v54] | |
-| 6.11 | Tic-Tac-Toe project | 🎬 [Video 48][v48] | Puts OOP into practice; also a common LLD question |
+| 5.1 | OOP 1: classes, objects, constructors | 🎬 [Video 37][v37] | Needed for linked lists and trees (`Node` classes) |
+| 5.2 | OOP 2: packages, `static`, Singleton | 🎬 [Video 38][v38] | |
+| 5.3 | OOP 3: inheritance, polymorphism, encapsulation, abstraction | 🎬 [Video 39][v39] | |
+| 5.4 | OOP 4: access control, `Object` class | 🎬 [Video 40][v40] | `equals`/`hashCode` are needed before hashing (phase 8) |
+| 5.5 | OOP 5: abstract classes & interfaces | 🎬 [Video 41][v41] | Interfaces are the basis of lambdas (phase 6) |
+| 5.6 | OOP 6: generics (basics), Comparable/Comparator (basics), lambdas, exceptions, cloning | 🎬 [Video 42][v42] | |
+| 5.7 | OOP 7: Collections framework, Vector, enums | 🎬 [Video 43][v43] | |
+| 5.8 | StringBuffer & formatting | 🎬 [Video 52][v52] | Small, independent topics: do them now while Java is fresh |
+| 5.9 | BigInteger & BigDecimal | 🎬 [Video 53][v53] | |
+| 5.10 | File handling | 🎬 [Video 54][v54] | |
+| 5.11 | Tic-Tac-Toe project | 🎬 [Video 48][v48] | Puts OOP into practice; also a common LLD question |
 
 ---
 
-## Phase 7: Java 8+ Features (before the hard DSA)
+## Phase 6: Java 8+ Features (before the hard DSA)
 
 **Why this phase sits here:** these Java topics are **easier than trees, graphs and DP**, they're asked in every Java interview, and the DSA phases after this one *use* them — `PriorityQueue` with a `Comparator` lambda, `Map.merge`, `computeIfAbsent`, records as map keys, generic node classes. Learning them now means the hard DSA phases don't also have new syntax.
 
 | Order | Topic | Source | Why here |
 |---|---|---|---|
-| 7.1 | Generics in depth: bounds, wildcards, PECS, type erasure 🟡 | 📘 [Gap #8][g08] | Follows video 42's basics; needed to write generic data structures |
-| 7.2 | Comparator & Comparable in depth 🔴 | 📘 [Gap #3][g03] | **Required before heaps (Top-K) and merge intervals.** Multi-key sorts, max-heaps, the `a - b` overflow bug |
-| 7.3 | Functional interfaces & `Optional` 🟡 | 📘 [Gap #6][g06] | `Function`, `Predicate`, `Supplier`, method references: what lambdas really are |
-| 7.4 | Streams API 🔴 | 📘 [Gap #2][g02] | Built on 7.3. `groupingBy` frequency counts show up in many string/hash problems |
-| 7.5 | Modern Java (Java 9–21): `var`, `List.of`, records, text blocks, switch expressions, sealed types, pattern matching 🟡 | 📘 [Gap #7][g07] | Records need OOP (phase 6); `record Cell(int r, int c)` is the clean way to store grid coordinates in graph BFS later |
-| 7.6 | **Merge Intervals** pattern 🔴 | 📘 [DSA gap #5][d05] | A DSA pattern that's mostly "sort with a comparator" (7.2), so it fits right here |
+| 6.1 | Generics in depth: bounds, wildcards, PECS, type erasure 🟡 | 📘 [Gap #8][g08] | Follows video 42's basics; needed to write generic data structures |
+| 6.2 | Comparator & Comparable in depth 🔴 | 📘 [Gap #3][g03] | **Required before heaps (Top-K) and merge intervals.** Multi-key sorts, max-heaps, the `a - b` overflow bug |
+| 6.3 | Functional interfaces & `Optional` 🟡 | 📘 [Gap #6][g06] | `Function`, `Predicate`, `Supplier`, method references: what lambdas really are |
+| 6.4 | Streams API 🔴 | 📘 [Gap #2][g02] | Built on 6.3. `groupingBy` frequency counts show up in many string/hash problems |
+| 6.5 | Modern Java (Java 9–21): `var`, `List.of`, records, text blocks, switch expressions, sealed types, pattern matching 🟡 | 📘 [Gap #7][g07] | Records need OOP (phase 5); `record Cell(int r, int c)` is the clean way to store grid coordinates in graph BFS later |
+| 6.6 | **Merge Intervals** pattern 🔴 | 📘 [DSA gap #5][d05] | A DSA pattern that's mostly "sort with a comparator" (6.2), so it fits right here |
 
 🧪 **Practice:** LC 56, 57, 435, 452 (watch the overflow), 179 (custom comparator), 49 (group anagrams with `groupingBy`).
 
 > [!TIP]
 > From here on, try writing DSA solutions with these features: `Map.merge(k, 1, Integer::sum)` for counting, `new PriorityQueue<>((a, b) -> Integer.compare(a[1], b[1]))` for heaps, `List.of(...)` for test inputs.
+
+---
+
+## Phase 7: Recursion and Backtracking
+
+| Order | Topic | Source | Why here |
+|---|---|---|---|
+| 7.1 | Recursion intro | 🎬 [Video 23][v23] | |
+| 7.2 | Complexity of recursive programs — **sections 13–24** (recurrences, Akra-Bazzi, linear recurrences) | 🎬 [Video 24, from section 13][v24rec] | Now you have recursion to analyse |
+| 7.3 | Recursion level 1 | 🎬 [Video 27][v27] | |
+| 7.4 | Recursion on arrays | 🎬 [Video 28][v28] | |
+| 7.5 | Recursion patterns + recursive bubble/selection sort | 🎬 [Video 29][v29] | |
+| 7.6 | Merge sort | 🎬 [Video 30][v30] | Divide and conquer; its recurrence is from 7.2 |
+| 7.7 | Quick sort | 🎬 [Video 31][v31] | |
+| 7.8 | Subsets & subsequences | 🎬 [Video 32][v32] | Foundation for backtracking **and** for DP (the "take / don't take" choice) |
+| 7.9 | Permutations | 🎬 [Video 33][v33] | |
+| 7.10 | Dice & phone letters (LC 17, 1155) | 🎬 [Video 34][v34] | Contains the first memoised solution — remember it for DP |
+| 7.11 | Backtracking: maze | 🎬 [Video 35][v35] | |
+| 7.12 | N-Queens, N-Knights, Sudoku | 🎬 [Video 36][v36] | |
+| 7.13 | **Combination-style backtracking** (Combination Sum, Word Search, Palindrome Partitioning) 🟡 | 📘 [DSA gap #12][d12] | Same skeleton as 7.8–7.12, with a start index to avoid duplicates |
+
+🧪 **Practice:** LC 78, 90, 46, 47, 39, 40, 79, 131, 51, 37.
 
 ---
 
@@ -258,17 +258,17 @@ flowchart TD
 
 | Order | Topic | Source | Why here |
 |---|---|---|---|
-| 9.1 | Binary trees & BST | 🎬 [Video 49][v49] | Recursion (phase 5) + OOP (phase 6) |
+| 9.1 | Binary trees & BST | 🎬 [Video 49][v49] | Recursion (phase 7) + OOP (phase 5) |
 | 9.2 | Binary tree questions: BFS Q1–9, DFS Q10–24 | 🎬 [Video 55][v55] | Moved right after 9.1 (the playlist puts AVL and segment trees in between). Tree BFS/DFS is far more common in interviews and is the base for graphs |
 | 9.3 | Tree from preorder + inorder (LC 105) | 🎬 [Video 63][v63] | |
-| 9.4 | Vertical order traversal (LC 987) | 🎬 [Video 64][v64] | Uses a `TreeMap` + comparator (phase 7) |
+| 9.4 | Vertical order traversal (LC 987) | 🎬 [Video 64][v64] | Uses a `TreeMap` + comparator (phase 6) |
 | 9.5 | Two Sum IV in a BST (LC 653) | 🎬 [Video 66][v66] | |
 | 9.6 | Kth smallest in a BST (LC 230) | 🎬 [Video 67][v67] | |
 | 9.7 | Binary tree to doubly linked list | 🎬 [Video 68][v68] | Trees + linked lists together |
 | 9.8 | Recover BST (LC 99) | 🎬 [Video 69][v69] | |
 | 9.9 | AVL trees | 🎬 [Video 50][v50] | Self-balancing; good to understand, rarely coded in interviews |
 | 9.10 | Heaps & PriorityQueue | 🎬 [Video 56][v56] | |
-| 9.11 | **Top-K, K-way merge** 🔴 · **Two Heaps** 🟡 | 📘 [DSA gap #6][d06] · [#7][d07] | Heaps (9.10) + comparators (7.2) |
+| 9.11 | **Top-K, K-way merge** 🔴 · **Two Heaps** 🟡 | 📘 [DSA gap #6][d06] · [#7][d07] | Heaps (9.10) + comparators (6.2) |
 | 9.12 | Huffman coding | 🎬 [Video 61][v61] | Heap + tree together; also your first greedy algorithm |
 | 9.13 | **Trie** 🔴 | 📘 [DSA topic #4][t04] | A tree with a map/array of children; needs trees + hashing |
 | 9.14 | Segment trees 🟢 | 🎬 [Video 51][v51] | Range queries; recursion on arrays as a tree. Asked less often than everything above it in this phase (LC 307 is the classic one) |
@@ -286,7 +286,7 @@ Placed **right before graphs and DP** on purpose: several graph algorithms *are*
 
 | Order | Topic | Source | Why here |
 |---|---|---|---|
-| 10.1 | **Greedy** in general: exchange argument, activity selection, interval scheduling 🟡 | 📘 [DSA gap #10][d10] | Needs sorting with comparators (7.2) and heaps (9.10). Huffman (9.12) was a first example |
+| 10.1 | **Greedy** in general: exchange argument, activity selection, interval scheduling 🟡 | 📘 [DSA gap #10][d10] | Needs sorting with comparators (6.2) and heaps (9.10). Huffman (9.12) was a first example |
 | 10.2 | **Maths extras**: fast power, modular inverse, nCr / Pascal's triangle 🟢 | 📘 [DSA gap #16][d16] | Builds on video 26's modulo rules and video 25's bits (binary exponentiation). DP counting problems use `% 1_000_000_007` and nCr |
 
 🧪 **Practice:** LC 455, 55, 45, 134, 763, 435 (again, now as greedy), 50 (Pow(x, n)), 118 (Pascal's triangle).
@@ -300,15 +300,15 @@ Placed **right before graphs and DP** on purpose: several graph algorithms *are*
 
 | Order | Topic | Source | Why here |
 |---|---|---|---|
-| 11.1 | Graph representation (adjacency list / matrix) 🔴 | 📘 [DSA topic #2, §1][t02] | Uses `List<List<Integer>>` and generics (7.1) |
+| 11.1 | Graph representation (adjacency list / matrix) 🔴 | 📘 [DSA topic #2, §1][t02] | Uses `List<List<Integer>>` and generics (6.1) |
 | 11.2 | BFS & DFS on graphs, connected components 🔴 | 📘 [DSA topic #2, §2–4][t02] | Same as tree BFS/DFS (9.2) plus a `visited` set |
-| 11.3 | Grid graphs: flood fill, number of islands, rotting oranges | 📘 [DSA topic #2, §5][t02] | Matrix traversal (4.6) + BFS/DFS (11.2); `record Cell(int r, int c)` from 7.5 |
+| 11.3 | Grid graphs: flood fill, number of islands, rotting oranges | 📘 [DSA topic #2, §5][t02] | Matrix traversal (4.6) + BFS/DFS (11.2); `record Cell(int r, int c)` from 6.5 |
 | 11.4 | Word Ladder (LC 127) | 🎬 [Video 65][v65] | The playlist's only graph problem: BFS on an implicit graph |
 | 11.5 | Cycle detection (undirected and directed) | 📘 [DSA topic #2, §6][t02] | DFS with colours / parent tracking |
 | 11.6 | **Topological sort** (Kahn's BFS and DFS) 🔴 | 📘 [DSA topic #2, §7][t02] | Needs directed cycle detection (11.5) |
 | 11.7 | Bipartite check | 📘 [DSA topic #2, §8][t02] | BFS/DFS colouring |
 | 11.8 | **Union-Find (DSU)**: union by rank, path compression 🔴 | 📘 [DSA topic #3][t03] | Needed for Kruskal (11.10) |
-| 11.9 | **Dijkstra** 🔴, Bellman-Ford, Floyd-Warshall | 📘 [DSA topic #2, §9–10][t02] | Dijkstra = BFS + a heap with a comparator (9.10, 7.2) and is greedy (10.1). Bellman-Ford and Floyd-Warshall are DP in disguise, a nice bridge to phase 12 |
+| 11.9 | **Dijkstra** 🔴, Bellman-Ford, Floyd-Warshall | 📘 [DSA topic #2, §9–10][t02] | Dijkstra = BFS + a heap with a comparator (9.10, 6.2) and is greedy (10.1). Bellman-Ford and Floyd-Warshall are DP in disguise, a nice bridge to phase 12 |
 | 11.10 | **MST**: Prim (heap) and Kruskal (DSU) 🔴 | 📘 [DSA topic #2, §11][t02] | Greedy + heap / DSU |
 | 11.11 | SCC (Kosaraju/Tarjan), bridges & articulation points 🟢 | 📘 [DSA topic #2, §13][t02] | Advanced DFS; lower priority |
 
@@ -321,7 +321,7 @@ Placed **right before graphs and DP** on purpose: several graph algorithms *are*
 
 ## Phase 12: Dynamic Programming
 
-**The hardest phase, done last on purpose.** You need recursion (phase 5), memoisation with maps or arrays (phases 4, 8), complexity analysis (video 24), and the "take / don't take" choice from subsets (video 32).
+**The hardest phase, done last on purpose.** You need recursion (phase 7), memoisation with maps or arrays (phases 4, 8), complexity analysis (video 24), and the "take / don't take" choice from subsets (video 32).
 
 ```mermaid
 flowchart LR
@@ -358,17 +358,17 @@ flowchart LR
 | 12.11 | Bitmask DP 🟢 | 📘 [DSA topic #1, §11][t01] | LC 698, 847 |
 
 > [!IMPORTANT]
-> Always solve a DP problem in three steps: **(1)** write the plain recursion (phase 5 style), **(2)** add memoisation, **(3)** convert to a bottom-up table and, if possible, keep only the last row or two. Jumping straight to a table is why DP feels hard.
+> Always solve a DP problem in three steps: **(1)** write the plain recursion (phase 7 style), **(2)** add memoisation, **(3)** convert to a bottom-up table and, if possible, keep only the last row or two. Jumping straight to a table is why DP feels hard.
 
 ---
 
 ## Parallel Track: Advanced Java
 
-These are **Java-round topics**, not prerequisites for any DSA phase. Start them any time after phase 7, one or two sessions a week alongside phases 8–12. They're tough in a different way (concurrency bugs, design thinking), so spreading them out works better than one big block.
+These are **Java-round topics**, not prerequisites for any DSA phase. Start them any time after phase 6, one or two sessions a week alongside phases 8–12. They're tough in a different way (concurrency bugs, design thinking), so spreading them out works better than one big block.
 
 | Order | Topic | Source | Best time to start | Why |
 |---|---|---|---|---|
-| J.1 | SOLID & low-level design 🟡 | 📘 [Gap #5][g05] | After phase 7 | Uses interfaces and lambdas; improves all your later code |
+| J.1 | SOLID & low-level design 🟡 | 📘 [Gap #5][g05] | After phase 6 | Uses interfaces and lambdas; improves all your later code |
 | J.2 | Design patterns 🟡 | 📘 [Gap #4][g04] | After J.1 | SOLID explains *why* patterns work. Strategy = `Comparator`, Iterator = phase 8.3, Observer and Command use lambdas |
 | J.3 | Multithreading & concurrency 🔴 | 📘 [Gap #1][g01] | After phase 8 | Needs collections, lambdas (`Runnable`), and `HashMap` internals to understand `ConcurrentHashMap` |
 | J.4 | JVM internals & garbage collection 🟡 | 📘 [Gap #9][g09] | After J.3 | The Java Memory Model and GC build on threads; deepens videos 5 and 7 |
@@ -382,7 +382,7 @@ flowchart LR
     subgraph JAVA["Java track (one or two sessions a week)"]
         J1["SOLID"]:::io --> J2["Design Patterns"]:::io --> J3["Multithreading"]:::io --> J4["JVM + GC"]:::io --> J5["LLD practice"]:::io
     end
-    P7["Phase 7<br/>Java 8+ features"]:::process --> D8
+    P7["Phase 6<br/>Java 8+ features"]:::process --> D8
     P7 --> J1
     D8 -.->|"HashMap internals help with<br/>ConcurrentHashMap"| J3
     classDef good fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#0f172a
@@ -403,20 +403,20 @@ Do these after the main path, depending on your goals.
 | String algorithms: KMP, Z-algorithm, Manacher | 📘 [DSA gap #14][d14] | 🟢 | Karp-Rabin (8.10), DP-style thinking |
 | Fenwick tree (BIT), lazy segment tree, sparse table | 📘 [DSA gap #15][d15] | 🟢 | Segment trees (9.14), bits (2.7) |
 | Sqrt decomposition & Mo's algorithm | 🎬 [Video 62][v62] | 🟢 | Segment trees (9.14). Competitive-programming technique; rarely asked in interviews |
-| Serialization, Reflection, Regex, `java.time` | 📘 [Gap #11][g11] | 🟢 | OOP, file handling (6.10) |
+| Serialization, Reflection, Regex, `java.time` | 📘 [Gap #11][g11] | 🟢 | OOP, file handling (5.10) |
 | JUnit, Maven/Gradle, JDBC | 📘 [Gap #12][g12] | 🟢 | Real projects rather than interviews |
 
 ---
 
 ## Track: Spring Boot (Backend Development)
 
-For Java backend jobs and internships, after the core path. Start once you've done **phase 7** (lambdas, generics, streams), **gap #12** (JUnit, Maven basics, JDBC) and ideally **J.3 multithreading**. It can run in parallel with phases 11–12, the same way the advanced Java track does. Full plan and status: the [Spring Boot notes README][sbr].
+For Java backend jobs and internships, after the core path. Start once you've done **phase 6** (lambdas, generics, streams), **gap #12** (JUnit, Maven basics, JDBC) and ideally **J.3 multithreading**. It can run in parallel with phases 11–12, the same way the advanced Java track does. Full plan and status: the [Spring Boot notes README][sbr].
 
 | Order | Topic | Source | Priority | Depends on |
 |---|---|---|---|---|
 | S.1 | Maven in depth | 📘 [Spring #1][s01] | 🔴 | Gap #12 |
 | S.2 | HTTP & REST basics | 📘 [Spring #2][s02] | 🔴 | Collections, exceptions |
-| S.3 | Spring Core: IoC, DI, beans, scopes, lifecycle | 📘 [Spring #3][s03] | 🔴 | OOP + interfaces (phase 6), SOLID (J.1) helps |
+| S.3 | Spring Core: IoC, DI, beans, scopes, lifecycle | 📘 [Spring #3][s03] | 🔴 | OOP + interfaces (phase 5), SOLID (J.1) helps |
 | S.4 | Spring Boot fundamentals: starters, auto-configuration, config, profiles | 📘 [Spring #4][s04] | 🔴 | S.1, S.3 |
 | S.5 | REST controllers: mappings, ResponseEntity, DTOs, Jackson, versioning, filters/interceptors, HATEOAS | 📘 [Spring #5][s05] | 🔴 | S.2, S.4 |
 | S.6 | Validation & error handling: Bean Validation, custom constraints, @RestControllerAdvice, ProblemDetail | 📘 [Spring #6][s06] | 🔴 | S.5 |
@@ -443,14 +443,14 @@ For Java backend jobs and internships, after the core path. Start once you've do
 | Arrays & ArrayList (video 12) | 2 | All array problems |
 | Strings & StringBuilder (video 21) | 2 | String problems, sliding window on strings |
 | `HashMap` API (video 57 §4) | 4 | Prefix sum (LC 560), sliding window counts, memoisation |
-| Classes & objects (video 37) | 6 | Linked lists, trees, graph nodes |
-| `equals` / `hashCode` (video 40) | 6 | Custom keys in `HashMap`/`HashSet` |
-| Interfaces (video 41) | 6 | Lambdas, `Comparator`, `Iterable` |
-| Generics (video 42 + gap #8) | 6–7 | Generic data structures, `List<List<Integer>>` adjacency lists |
-| `Comparator` (gap #3) | 7 | Heaps (Top-K), merge intervals, greedy, Dijkstra, Kruskal |
-| Lambdas & functional interfaces (gap #6) | 7 | One-line comparators, `computeIfAbsent`, `merge` |
-| Streams (gap #2) | 7 | Quick frequency maps; **not** for hot loops (plain loops are faster) |
-| Records (gap #7) | 7 | Grid coordinates and pairs as map keys in BFS / DP |
+| Classes & objects (video 37) | 5 | Linked lists, trees, graph nodes |
+| `equals` / `hashCode` (video 40) | 5 | Custom keys in `HashMap`/`HashSet` |
+| Interfaces (video 41) | 5 | Lambdas, `Comparator`, `Iterable` |
+| Generics (video 42 + gap #8) | 5–6 | Generic data structures, `List<List<Integer>>` adjacency lists |
+| `Comparator` (gap #3) | 6 | Heaps (Top-K), merge intervals, greedy, Dijkstra, Kruskal |
+| Lambdas & functional interfaces (gap #6) | 6 | One-line comparators, `computeIfAbsent`, `merge` |
+| Streams (gap #2) | 6 | Quick frequency maps; **not** for hot loops (plain loops are faster) |
+| Records (gap #7) | 6 | Grid coordinates and pairs as map keys in BFS / DP |
 | `Iterator` (gap #10) | 8 | BST Iterator (LC 173), Flatten Nested List (LC 341), safe removal |
 | `HashMap` internals (video 57) | 8 | LRU cache, Karp-Rabin, Trie with maps |
 | Recursion depth / stack size (gap #9) | Parallel | Deep DFS on 10⁵+ nodes (big-stack `Thread` trick) |
@@ -465,7 +465,7 @@ For Java backend jobs and internships, after the core path. Start once you've do
 | Bitwise (25) and maths (26) moved up to phase 2 | Only need loops (and binary search for sqrt); bit tricks are used much later in bitmask DP |
 | Video 24 split in two | Sections 0–12 analyse loops and sorts; sections 13+ analyse recursion, which you haven't learned yet in phase 3 |
 | Array patterns (phase 4) before recursion | They're the most-asked interview topics and need nothing beyond arrays and a map |
-| Java 8+ features (phase 7) **before** linked lists, trees, graphs and DP | Easier than the remaining DSA, needed for Java interviews anyway, and the later DSA code uses comparators, lambdas, generics and records |
+| OOP (phase 5) and Java 8+ (phase 6) **before** recursion | Neither depends on recursion, and both are needed for Java interviews anyway. Done first, recursion and backtracking lead straight into linked lists, trees and graphs (all recursive) with no Java-only break in between, and every later DSA solution can use classes, comparators, lambdas, generics and records |
 | Tree questions (55) right after trees (49) | The playlist puts AVL (50) and segment trees (51) in between, but tree BFS/DFS is more important and leads straight to graphs |
 | Big-O basics (video 24 §0–5) before phase 2 | Searching is the first place where the complexity of a solution matters |
 | Monotonic stack (gap #8) before video 47 | Video 47 ends with LC 84, the hardest monotonic-stack problem; the easier ones build up to it |
@@ -494,17 +494,17 @@ For Java backend jobs and internships, after the core path. Start once you've do
 - [ ] HashMap/HashSet API (video 57 §4)
 - [ ] DSA gap #2 Two pointers · #3 Prefix sum · #4 Kadane · #1 Sliding window (fixed, variable) · Matrix traversal
 
-**Phase 5 — Recursion and backtracking**
+**Phase 5 — OOP and core Java**
+- [ ] Videos 37, 38, 39, 40, 41, 42, 43, 52, 53, 54, 48
+
+**Phase 6 — Java 8+ features**
+- [ ] Gap #8 Generics · Gap #3 Comparator · Gap #6 Functional & Optional · Gap #2 Streams · Gap #7 Modern Java
+- [ ] Merge intervals
+
+**Phase 7 — Recursion and backtracking**
 - [ ] Video 23 · Video 24 sections 13–24
 - [ ] Videos 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
 - [ ] Combination-style backtracking
-
-**Phase 6 — OOP and core Java**
-- [ ] Videos 37, 38, 39, 40, 41, 42, 43, 52, 53, 54, 48
-
-**Phase 7 — Java 8+ features**
-- [ ] Gap #8 Generics · Gap #3 Comparator · Gap #6 Functional & Optional · Gap #2 Streams · Gap #7 Modern Java
-- [ ] Merge intervals
 
 **Phase 8 — Linked lists, stacks, queues, hashing**
 - [ ] Videos 44, 45 · Gap #10 Iterator · Video 46

@@ -3266,10 +3266,38 @@ button { font-family: inherit; }
 .problem-row .subtopic-checkbox { margin-top: 0; }
 
 .problem-num {
-  min-width: 44px;
+  min-width: 58px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
   font-size: 0.76rem;
   color: var(--text-tertiary);
+}
+
+/* Where a problem opens: the LeetCode mark, or a small takeuforward badge */
+.site-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.site-icon-lc { fill: #ffa116; }
+.site-badge-tuf {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #d9480f;
+  color: #fff;
+  font-family: var(--font-sans, inherit);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .problem-title {
@@ -3282,6 +3310,127 @@ button { font-family: inherit; }
 }
 
 .problem-title:hover { color: var(--accent); text-decoration: underline; }
+
+/* Title + the folded problem panel of a takeuforward problem */
+.problem-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.problem-brief > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 2px 9px 2px 5px;
+  border: 1px solid var(--border-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  list-style: none;
+  user-select: none;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.problem-brief > summary::-webkit-details-marker { display: none; }
+.problem-brief > summary svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--transition-fast);
+}
+.problem-brief[open] > summary svg { transform: rotate(90deg); }
+.problem-brief > summary:hover,
+.problem-brief[open] > summary { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+.pb-panel {
+  margin-top: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  cursor: auto;
+}
+
+.pb-statement { margin: 0 0 14px; color: var(--text-primary); }
+
+.pb-panel h5 {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pb-example { margin-bottom: 14px; }
+
+.pb-io {
+  padding: 4px 0 4px 14px;
+  border-left: 2px solid var(--border-primary);
+}
+
+.pb-io p { margin: 4px 0; }
+.pb-io span { color: var(--text-tertiary); }
+.pb-io code { margin-left: 4px; }
+.pb-io .pb-why { color: var(--text-secondary); }
+
+/* The hint stays hidden until asked for */
+.pb-hint {
+  margin-top: 14px;
+  border: 1px dashed color-mix(in srgb, var(--accent-amber) 55%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-amber) 7%, transparent);
+}
+
+.pb-hint summary {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-amber);
+  list-style: none;
+  user-select: none;
+}
+
+.pb-hint summary::-webkit-details-marker { display: none; }
+.pb-hint[open] summary { padding-bottom: 2px; }
+.pb-hint p { margin: 0; padding: 4px 12px 10px; color: var(--text-primary); }
+
+/* Keep the checkbox and badges at the top while a problem panel is open */
+.problem-row:has(.problem-brief[open]) { align-items: flex-start; }
+
+.pb-panel code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+  font-variant-ligatures: none;
+}
+
+.pb-constraints {
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-primary);
+}
+
+.pb-constraints ul { margin: 0; padding-left: 18px; }
+.pb-constraints li { margin: 3px 0; }
+.pb-constraints li::marker { color: var(--text-tertiary); }
+.pb-constraints sup { font-size: 0.7em; }
+
+@media (max-width: 600px) {
+  .pb-panel { padding: 12px 13px; font-size: 0.82rem; }
+}
 
 .problem-row.solved .problem-title {
   color: var(--text-tertiary);
@@ -4491,7 +4640,7 @@ button { font-family: inherit; }
   .set-filters::-webkit-scrollbar { display: none; }
   .set-filter-btn { flex-shrink: 0; }
   .problem-row { gap: 8px 10px; padding: 12px 14px; }
-  .problem-num { min-width: 34px; font-size: 0.7rem; }
+  .problem-num { min-width: 46px; font-size: 0.7rem; gap: 4px; }
   .difficulty-pill { min-width: 0; flex-shrink: 0; }
   .problem-premium,
   .problem-sets { order: 5; flex-basis: 100%; padding-left: 76px; justify-content: flex-start; }

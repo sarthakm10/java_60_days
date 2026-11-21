@@ -17,8 +17,6 @@ Each track keeps its own progress. Your streak, focus timer, daily goal and them
 
 Days 1–83 follow the [Java + DSA study roadmap](notes/kunal/java_dsa_study_roadmap.md) of the Kunal Kushwaha playlist notes, and each day's study notes are those notes, shown unchanged (see [Kunal notes](#kunal-notes)):
 
-One change from the roadmap: OOP and Java 8+ come straight after the array patterns, and recursion and backtracking follow them (the roadmap has recursion first). Topic numbers inside the notes, like 5.3, are still the roadmap's.
-
 | Days | Roadmap part |
 |---|---|
 | 1–4 | Phase 1: Java foundations (Git, how programs run, JDK/JVM, first program, conditionals and loops, methods) |
@@ -135,7 +133,7 @@ node scripts/build-beginner-sets.js ../Java_Notes_Kunal_DSA_PlayList
 
 A Beginner subtopic shows one of them with `k(key, label, part)` in `data-beginner.js`: `KUNAL_FILES` maps the roadmap's keys (`v24`, `g05`, `d02`, `t01`, `s07`…) to files, and the optional `part` (`[13, 26]`) shows only a note's `## 13.` to `## 26.` sections, for the notes the roadmap splits across phases. Its id is `k_<key>` (`k_<key>_<from>` for a part). The page renders the file as it is; the only additions are GitHub-style anchors on its headings, the `> [!NOTE]` / `[!TIP]` / … boxes, and links: one to a heading in the same note scrolls there, one to another note (or to a section a day doesn't show) opens it in a reader with Back. `check-notes.js` checks that every Kunal file, and every numbered section of a split one, is on some day.
 
-`build-beginner-sets.js` reads the practice sheet's data (`web/practice-data.json` in that folder) and writes `question-sets-beginner.js`: one set per sheet section, each problem on the Beginner day whose subtopic label starts with its roadmap topic number (`2.5`, `11.9`…).
+`build-beginner-sets.js` reads the practice sheet's data (`web/practice-data.json` in that folder) and writes `question-sets-beginner.js`: one set per sheet section, each problem on the Beginner day whose subtopic label starts with its roadmap topic number (`2.5`, `11.9`…). Problems that are only on takeuforward also get their description and examples from the sheet, and their constraints from `scripts/tuf-constraints.json` (read from each problem page on takeuforward).
 
 ### The Beginner track's other days reuse Interview content
 
