@@ -5261,3 +5261,108 @@ button { font-family: inherit; }
   .resolve-grades { width: 100%; margin-left: 0; }
   .resolve-grades .grade { flex: 1; }
 }
+
+/* ══════════════ EXPLAINER VIDEOS (day page) ══════════════ */
+.day-video {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border-radius: var(--radius-xl);
+  background: var(--glass);
+  border: 1px solid var(--border-primary);
+  overflow: hidden;
+}
+
+.dv-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.dv-icon { font-size: 1.5rem; line-height: 1; }
+.dv-heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.dv-heading strong { font-size: 0.95rem; font-weight: 800; }
+.dv-heading small { color: var(--text-secondary); font-size: 0.78rem; }
+
+.dv-count {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.dv-parts {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.dv-part {
+  flex: 0 0 auto;
+  max-width: 280px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-primary);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.dv-part b { color: var(--text-primary); margin-right: 4px; }
+.dv-part:hover { border-color: var(--accent-line); }
+.dv-part.active { border-color: var(--accent); background: var(--accent-soft); color: var(--text-primary); }
+
+.dv-frame { padding: 12px 20px 0; }
+
+.dv-player {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: #000;
+}
+
+.dv-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 10px 20px 16px;
+  font-size: 0.8rem;
+}
+
+.dv-title { font-weight: 700; }
+.dv-size { color: var(--text-secondary); }
+.dv-error { margin: 0 20px 16px; color: var(--accent-red); font-size: 0.82rem; }
+.day-video-badge { font-size: 0.85rem; line-height: 1; }
+.dv-tab-icon { font-size: 0.95rem; line-height: 1; }
+
+@media (max-width: 600px) {
+  .dv-head { padding: 12px 14px; gap: 10px; }
+  .dv-heading small { display: none; }
+  .dv-parts, .dv-frame { padding-left: 12px; padding-right: 12px; }
+  .dv-foot { padding: 8px 12px 12px; }
+  .dv-player { border-radius: 8px; }
+}
+
+/* Big notes (a day can hold 15,000+ elements): the browser skips laying out and painting the parts that are off screen,
+   so the Study Notes tab opens fast. Each block remembers its real height once it has been shown. */
+.md-content .kunal-note > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}

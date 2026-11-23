@@ -57,7 +57,7 @@
     categoryFilter: "all",    // "all" | category name
     highlight: null,          // subtopic id or problem slug picked from search, highlighted on its page
     theme: "dark",
-    detailTab: "checklist",   // "checklist" | "study" | "practice"
+    detailTab: "checklist",   // "checklist" | "study" | "video" | "practice"
     pendingNoteScroll: null,  // subtopic id to scroll to after the study tab renders
     pendingExerciseScroll: null   // exercise id to scroll to after the practice tab renders
   };
@@ -172,6 +172,7 @@
   // Days 1–83 show the Kunal notes their subtopics name.
   const BEGINNER_NOTE_FILES = new Set(Array.from({ length: 17 }, (_, i) => i + 84));
   const TOPIC_ICONS = { Java: "☕", "Spring Boot": "🌿", DSA: "🧮", "System Design": "🏗️", "DB/DevOps": "🗄️", Frontend: "🎨" };
+  let studyNotesKeep = {};   // the open day's study notes, already built: { day, track, html, theme, el }
   let notesCache = {};        // active track: dayNum → { status: "loading" | "ready" | "missing" | "error", html, ids }
   let markdownCache = {};     // active track: dayNum → Promise of the day's Markdown (null when it has none)
   const interviewFiles = {};  // Interview day → Promise of notes/day-NN.md (shared by both tracks)
@@ -1339,6 +1340,7 @@
           ${hasMissed ? `<div class="missed-badge">${ICONS.alertCircle} Missed items</div>` : ""}
           <div class="day-meta">
             <span class="day-time">${ICONS.clock} ${day.estimatedTime}</span>
+            ${dayVideos(day.day).length ? `<span class="day-video-badge" title="Has an explainer video">🎬</span>` : ""}
             <div class="day-categories">${categoryTagsHTML(day.categories)}</div>
           </div>
           <div class="day-progress-row">
@@ -1376,9 +1378,68 @@
   }
 
   // ── Render: Day Detail ──
+  // ── Explainer videos (Beginner track; videos.js, streamed from the GitHub release) ──
+  const dayVideos = (dayNum) => (state.track === "beginner" && typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || [];
+  const videoLabel = (dayNum, v) => `Day ${dayNum}${v.part}`;
+
+  function dayVideoHTML(dayNum) {
+    const videos = dayVideos(dayNum);
+    if (!videos.length) return "";
+    const first = videos[0];
+    return `
+      <div class="day-video" data-day="${dayNum}">
+        <div class="dv-head">
+          <span class="dv-icon">🎬</span>
+          <span class="dv-heading">
+            <strong>Explainer video${videos.length > 1 ? `s <span class="dv-count">${videos.length} parts</span>` : ""}</strong>
+            <small>A walkthrough of today's notes. Watch it first, then read and practise.</small>
+          </span>
+        </div>
+        ${videos.length > 1 ? `
+          <div class="dv-parts" role="tablist">
+            ${videos.map((v, i) => `
+              <button class="dv-part ${i === 0 ? "active" : ""}" data-index="${i}" role="tab" aria-selected="${i === 0}">
+                <b>${videoLabel(dayNum, v)}</b> ${escapeHTML(v.title)}
+              </button>`).join("")}
+          </div>` : ""}
+        <div class="dv-frame">
+          <video class="dv-player" controls preload="none" playsinline src="${VIDEO_BASE}${encodeURIComponent(first.file)}"></video>
+        </div>
+        <div class="dv-foot">
+          <span class="dv-title">${escapeHTML(videoLabel(dayNum, first))}: ${escapeHTML(first.title)}</span>
+          <span class="dv-size">${first.mb} MB · streams from GitHub, needs internet</span>
+        </div>
+        <p class="dv-error" hidden>The video couldn't load. It streams from GitHub, so check your connection and try again.</p>
+      </div>`;
+  }
+
+  function bindDayVideo(card, dayNum) {
+    const videos = dayVideos(dayNum);
+    const player = card.querySelector(".dv-player");
+    const error = card.querySelector(".dv-error");
+    player.addEventListener("error", () => { error.hidden = false; });
+    player.addEventListener("loadeddata", () => { error.hidden = true; });
+    card.querySelectorAll(".dv-part").forEach(btn => btn.addEventListener("click", () => {
+      const v = videos[+btn.dataset.index];
+      card.querySelectorAll(".dv-part").forEach(b => {
+        b.classList.toggle("active", b === btn);
+        b.setAttribute("aria-selected", b === btn);
+      });
+      error.hidden = true;
+      player.src = VIDEO_BASE + encodeURIComponent(v.file);
+      player.play().catch(() => {});
+      card.querySelector(".dv-title").textContent = `${videoLabel(dayNum, v)}: ${v.title}`;
+      card.querySelector(".dv-size").textContent = `${v.mb} MB · streams from GitHub, needs internet`;
+    }));
+  }
+
   function renderDayDetail(dayNum) {
     const day = getDayData(dayNum);
     if (!day) return;
+    // A video that is already on screen for this day survives the re-render (ticking a subtopic mid-video doesn't stop it)
+    const oldVideo = document.querySelector("#day-detail .day-video");
+    const keptVideo = oldVideo?.dataset.day === String(dayNum) ? oldVideo : null;
+    const detailTab = state.detailTab === "video" && !dayVideos(dayNum).length ? "checklist" : state.detailTab;
 
     const info = getDayCompletionInfo(dayNum);
     const isComplete = isDayCompleted(dayNum);
@@ -1393,6 +1454,11 @@
     }
     const notes = notesCache[dayNum];
     const noteIds = notes.status === "ready" ? notes.ids : new Set();
+    // The study notes are built once per day and kept, so switching tabs doesn't re-parse and rebuild thousands of
+    // elements, re-highlight every code block and redraw every diagram (that made the Study Notes tab slow)
+    const keep = studyNotesKeep;
+    const reuseNotes = detailTab === "study" && notes.status === "ready" && keep.el && keep.day === dayNum
+      && keep.track === state.track && keep.html === notes.html && keep.theme === state.theme;
 
     const categoryTags = categoryTagsHTML(day.categories);
 
@@ -1432,13 +1498,18 @@
 
     const tabsHTML = `
       <div class="detail-tabs">
-        <button class="detail-tab ${state.detailTab === "checklist" ? "active" : ""}" data-tab="checklist">
+        <button class="detail-tab ${detailTab === "checklist" ? "active" : ""}" data-tab="checklist">
           ${ICONS.clipboardList} <span>Checklist<span class="hide-sm"> &amp; My Notes</span></span>
         </button>
         <button class="detail-tab ${state.detailTab === "study" ? "active" : ""}" data-tab="study">
           ${ICONS.bookOpen} Study Notes
           ${notes.status === "ready" ? `<span class="detail-tab-badge">${noteIds.size}</span>` : ""}
         </button>
+        ${dayVideos(dayNum).length ? `
+          <button class="detail-tab ${detailTab === "video" ? "active" : ""}" data-tab="video">
+            <span class="dv-tab-icon">🎬</span> Video
+            ${dayVideos(dayNum).length > 1 ? `<span class="detail-tab-badge">${dayVideos(dayNum).length}</span>` : ""}
+          </button>` : ""}
         ${hasPractice(dayNum) ? `
           <button class="detail-tab ${state.detailTab === "practice" ? "active" : ""}" data-tab="practice">
             ${ICONS.code} <span><span class="hide-sm">Code </span>Practice</span>
@@ -1449,8 +1520,8 @@
 
     const studyHTML = `
       ${notes.status === "ready" ? `<div class="reading-progress"><span id="reading-progress-fill"></span></div>` : ""}
-      <div class="study-notes">
-        ${notes.status === "ready"
+      <div class="study-notes" data-day="${dayNum}">
+        ${reuseNotes ? "" : notes.status === "ready"
           ? `<nav class="study-toc" id="study-toc"></nav><article class="md-content" id="study-article">${notes.html}</article>`
           : studyNotesMessageHTML(dayNum)}
       </div>
@@ -1521,8 +1592,15 @@
         </div>
       </div>
       ${tabsHTML}
-      ${state.detailTab === "study" ? studyHTML : state.detailTab === "practice" ? practiceTabHTML(dayNum) : checklistHTML}
+      ${detailTab === "study" ? studyHTML : detailTab === "practice" ? practiceTabHTML(dayNum) : detailTab === "video" ? dayVideoHTML(dayNum) : checklistHTML}
     `;
+    const videoCard = detail.querySelector(".day-video");
+    if (videoCard) {
+      if (keptVideo) videoCard.replaceWith(keptVideo);
+      else bindDayVideo(videoCard, dayNum);
+    }
+    // Another tab or another day: the old player is gone from the page, so make sure it stops playing too
+    if (oldVideo && !(keptVideo && videoCard)) oldVideo.querySelector("video").pause();
 
     // Bind events
     detail.querySelector("#back-to-grid").addEventListener("click", closeDayDetail);
@@ -1573,9 +1651,18 @@
     }
 
     if (state.detailTab === "study") {
-      const article = detail.querySelector("#study-article");
+      let article = reuseNotes ? keep.el.querySelector("#study-article") : detail.querySelector("#study-article");
+      if (reuseNotes) detail.querySelector(".study-notes").replaceWith(keep.el);
       if (article) {
-        const diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), () => renderDayDetail(dayNum));
+        let diagramsReady;
+        if (reuseNotes) {
+          // Subtopics may have been ticked on another tab meanwhile
+          article.querySelectorAll(".notes-done-toggle .subtopic-checkbox").forEach(cb => { cb.checked = !!state.checkedSubtopics[cb.dataset.id]; });
+          diagramsReady = Promise.resolve();
+        } else {
+          diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), () => renderDayDetail(dayNum));
+          studyNotesKeep = { day: dayNum, track: state.track, html: notes.html, theme: state.theme, el: article.closest(".study-notes") };
+        }
         if (state.pendingNoteScroll) {
           const target = detail.querySelector(`#note-${state.pendingNoteScroll}`);
           state.pendingNoteScroll = null;
@@ -2650,6 +2737,7 @@
   function showSection(view) {
     Object.entries(VIEW_SECTIONS).forEach(([name, sel]) => $(sel).classList.toggle("active", name === view));
     $("#to-top")?.classList.remove("visible");
+    if (view !== "detail") $("#day-detail video")?.pause();   // leaving the day page stops its video
   }
 
   function openDayDetail(dayNum, tab = "checklist") {
