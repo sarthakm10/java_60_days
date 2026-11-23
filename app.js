@@ -1379,7 +1379,14 @@
 
   // ── Render: Day Detail ──
   // ── Explainer videos (Beginner track; videos.js, streamed from the GitHub release) ──
-  const dayVideos = (dayNum) => (state.track === "beginner" && typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || [];
+  const VIDEO_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
+  const VIDEO_SPEED_KEY = "sde_video_speed";
+  function videoSpeed() {
+    let s = 1;
+    try { s = +localStorage.getItem(VIDEO_SPEED_KEY) || 1; } catch {}
+    return VIDEO_SPEEDS.includes(s) ? s : 1;
+  }
+  const dayVideos =(dayNum) => (state.track === "beginner" && typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || [];
   const videoLabel = (dayNum, v) => `Day ${dayNum}${v.part}`;
 
   function dayVideoHTML(dayNum) {
@@ -1405,6 +1412,15 @@
         <div class="dv-frame">
           <video class="dv-player" controls preload="none" playsinline src="${VIDEO_BASE}${encodeURIComponent(first.file)}"></video>
         </div>
+        <div class="dv-controls">
+          <button class="dv-skip" data-skip="-30" title="Back 30 seconds (Shift+←)">⏪ 30s</button>
+          <button class="dv-skip" data-skip="-10" title="Back 10 seconds (←)">↺ 10s</button>
+          <button class="dv-skip" data-skip="10" title="Forward 10 seconds (→)">10s ↻</button>
+          <button class="dv-skip" data-skip="30" title="Forward 30 seconds (Shift+→)">30s ⏩</button>
+          <span class="dv-speeds" role="group" aria-label="Playback speed">
+            ${VIDEO_SPEEDS.map(s => `<button class="dv-speed ${s === videoSpeed() ? "active" : ""}" data-speed="${s}">${s}×</button>`).join("")}
+          </span>
+        </div>
         <div class="dv-foot">
           <span class="dv-title">${escapeHTML(videoLabel(dayNum, first))}: ${escapeHTML(first.title)}</span>
           <span class="dv-size">${first.mb} MB · streams from GitHub, needs internet</span>
@@ -1417,6 +1433,30 @@
     const videos = dayVideos(dayNum);
     const player = card.querySelector(".dv-player");
     const error = card.querySelector(".dv-error");
+    // Skip buttons and speed (the speed is remembered, and kept when switching parts)
+    player.defaultPlaybackRate = player.playbackRate = videoSpeed();
+    const skip = (secs) => {
+      const end = Number.isFinite(player.duration) ? player.duration : Infinity;
+      player.currentTime = Math.min(Math.max(0, player.currentTime + secs), end);
+    };
+    card.querySelectorAll(".dv-skip").forEach(btn => btn.addEventListener("click", () => skip(+btn.dataset.skip)));
+    card.querySelectorAll(".dv-speed").forEach(btn => btn.addEventListener("click", () => {
+      const s = +btn.dataset.speed;
+      player.defaultPlaybackRate = player.playbackRate = s;
+      try { localStorage.setItem(VIDEO_SPEED_KEY, String(s)); } catch {}
+      card.querySelectorAll(".dv-speed").forEach(b => b.classList.toggle("active", b === btn));
+    }));
+    // Arrow keys skip 10s (Shift: 30s) and Space plays or pauses, while the video area has focus
+    card.addEventListener("keydown", (e) => {
+      if (e.target.closest("button")) return;
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        skip((e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 30 : 10));
+      } else if (e.key === " " && e.target !== player) {
+        e.preventDefault();
+        player.paused ? player.play() : player.pause();
+      }
+    });
     player.addEventListener("error", () => { error.hidden = false; });
     player.addEventListener("loadeddata", () => { error.hidden = true; });
     card.querySelectorAll(".dv-part").forEach(btn => btn.addEventListener("click", () => {
