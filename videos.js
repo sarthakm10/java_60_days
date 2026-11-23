@@ -204,5 +204,71 @@ const DAY_VIDEOS = {
   ],
   62: [
     {"part":"","title":"Minimum Spanning Trees, Implicit Graphs and SCC","file":"Day.62.Minimum.Spanning.Trees.Implicit.Graphs.and.SCC.mp4","mb":34}
+  ],
+  63: [
+    {"part":"A","title":"DP Foundations and 1D DP","file":"Day.63A.DP.Foundations.and.1D.DP.mp4","mb":42},
+    {"part":"B","title":"Spring Boot Fundamentals","file":"Day.63B.Spring.Boot.Fundamentals.mp4","mb":48}
+  ],
+  64: [
+    {"part":"","title":"Knapsack DP","file":"Day.64.Knapsack.DP.mp4","mb":33}
+  ],
+  65: [
+    {"part":"A","title":"Grid DP and LIS","file":"Day.65A.Grid.DP.and.LIS.mp4","mb":28},
+    {"part":"B","title":"REST Controllers","file":"Day.65B.REST.Controllers.mp4","mb":36}
+  ],
+  66: [
+    {"part":"","title":"String DP","file":"Day.66.String.DP.mp4","mb":32}
+  ],
+  67: [
+    {"part":"A","title":"Stock Problems","file":"Day.67A.Stock.Problems.mp4","mb":29},
+    {"part":"B","title":"Validation and Error Handling","file":"Day.67B.Validation.and.Error.Handling.mp4","mb":40}
+  ],
+  68: [
+    {"part":"","title":"Interval, Tree and Bitmask DP","file":"Day.68.Interval.Tree.and.Bitmask.DP.mp4","mb":30}
+  ],
+  69: [
+    {"part":"","title":"SQL Essentials on PostgreSQL","file":"Day.69.SQL.Essentials.on.PostgreSQL.mp4","mb":39}
+  ],
+  70: [
+    {"part":"","title":"Data Access I — JDBC, JPA and Flyway","file":"Day.70.Data.Access.I.JDBC.JPA.and.Flyway.mp4","mb":43}
+  ],
+  71: [
+    {"part":"","title":"Data Access II — Queries and Transactions","file":"Day.71.Data.Access.II.Queries.and.Transactions.mp4","mb":36}
+  ],
+  72: [
+    {"part":"","title":"Testing Spring Boot Apps","file":"Day.72.Testing.Spring.Boot.Apps.mp4","mb":33}
+  ],
+  73: [
+    {"part":"","title":"Spring Security","file":"Day.73.Spring.Security.mp4","mb":36}
+  ],
+  74: [
+    {"part":"","title":"Production Features","file":"Day.74.Production.Features.mp4","mb":44}
+  ],
+  75: [
+    {"part":"","title":"Advanced Spring","file":"Day.75.Advanced.Spring.mp4","mb":46}
+  ],
+  76: [
+    {"part":"","title":"Deployment — Jars, Docker, Kubernetes and CI","file":"Day.76.Deployment.Jars.Docker.Kubernetes.and.CI.mp4","mb":37}
+  ],
+  77: [
+    {"part":"","title":"Capstone Project","file":"Day.77.Capstone.Project.mp4","mb":51}
+  ],
+  78: [
+    {"part":"","title":"Messaging with Kafka and RabbitMQ","file":"Day.78.Messaging.with.Kafka.and.RabbitMQ.mp4","mb":35}
+  ],
+  79: [
+    {"part":"","title":"Microservices","file":"Day.79.Microservices.mp4","mb":46}
+  ],
+  80: [
+    {"part":"","title":"MongoDB with Spring Data","file":"Day.80.MongoDB.with.Spring.Data.mp4","mb":34}
+  ],
+  81: [
+    {"part":"","title":"String Algorithms — KMP, Z and Manacher","file":"Day.81.String.Algorithms.KMP.Z.and.Manacher.mp4","mb":41}
+  ],
+  82: [
+    {"part":"","title":"Range Queries — Fenwick, Lazy Segment Tree, Sparse Table and Mo's","file":"Day.82.Range.Queries.Fenwick.Lazy.Segment.Tree.Sparse.Table.and.Mo.s.mp4","mb":37}
+  ],
+  83: [
+    {"part":"","title":"Serialization, Reflection, Regex and java.time","file":"Day.83.Serialization.Reflection.Regex.and.java.time.mp4","mb":40}
   ]
 };
