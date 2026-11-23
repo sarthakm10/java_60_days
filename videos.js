@@ -183,5 +183,26 @@ const DAY_VIDEOS = {
   56: [
     {"part":"A","title":"Maths Extras","file":"Day.56A.Maths.Extras.mp4","mb":37},
     {"part":"B","title":"JUnit, Maven and JDBC","file":"Day.56B.JUnit.Maven.and.JDBC.mp4","mb":45}
+  ],
+  57: [
+    {"part":"A","title":"Graphs — Representation, BFS, DFS and Components","file":"Day.57A.Graphs.Representation.BFS.DFS.and.Components.mp4","mb":34},
+    {"part":"B","title":"Maven in Depth","file":"Day.57B.Maven.in.Depth.mp4","mb":43}
+  ],
+  58: [
+    {"part":"","title":"Grid Graphs and Word Ladder","file":"Day.58.Grid.Graphs.and.Word.Ladder.mp4","mb":33}
+  ],
+  59: [
+    {"part":"A","title":"Cycles, Topological Sort and Bipartite Graphs","file":"Day.59A.Cycles.Topological.Sort.and.Bipartite.Graphs.mp4","mb":32},
+    {"part":"B","title":"HTTP & REST","file":"Day.59B.HTTP.REST.mp4","mb":36}
+  ],
+  60: [
+    {"part":"","title":"Union-Find (DSU)","file":"Day.60.Union-Find.DSU.mp4","mb":34}
+  ],
+  61: [
+    {"part":"A","title":"Shortest Paths","file":"Day.61A.Shortest.Paths.mp4","mb":40},
+    {"part":"B","title":"Spring Core","file":"Day.61B.Spring.Core.mp4","mb":43}
+  ],
+  62: [
+    {"part":"","title":"Minimum Spanning Trees, Implicit Graphs and SCC","file":"Day.62.Minimum.Spanning.Trees.Implicit.Graphs.and.SCC.mp4","mb":34}
   ]
 };
