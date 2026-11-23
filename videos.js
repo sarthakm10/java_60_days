@@ -159,5 +159,29 @@ const DAY_VIDEOS = {
   ],
   49: [
     {"part":"","title":"Tree from Preorder + Inorder, Vertical Order Traversal","file":"Day.49.Tree.from.Preorder.+.Inorder.Vertical.Order.Traversal.mp4","mb":34}
+  ],
+  50: [
+    {"part":"A","title":"Two Sum IV and Kth Smallest in a BST","file":"Day.50A.Two.Sum.IV.and.Kth.Smallest.in.a.BST.mp4","mb":30},
+    {"part":"B","title":"JVM Internals","file":"Day.50B.JVM.Internals.mp4","mb":41}
+  ],
+  51: [
+    {"part":"","title":"Tree to Doubly Linked List, Recover BST and AVL Trees","file":"Day.51.Tree.to.Doubly.Linked.List.Recover.BST.and.AVL.Trees.mp4","mb":33}
+  ],
+  52: [
+    {"part":"","title":"Heaps, Top-K, K-way Merge and Two Heaps","file":"Day.52.Heaps.Top-K.K-way.Merge.and.Two.Heaps.mp4","mb":43}
+  ],
+  53: [
+    {"part":"A","title":"Huffman Coding","file":"Day.53A.Huffman.Coding.mp4","mb":40},
+    {"part":"B","title":"LLD Practice","file":"Day.53B.LLD.Practice.mp4","mb":42}
+  ],
+  54: [
+    {"part":"","title":"Tries and Segment Trees","file":"Day.54.Tries.and.Segment.Trees.mp4","mb":31}
+  ],
+  55: [
+    {"part":"","title":"Greedy Algorithms","file":"Day.55.Greedy.Algorithms.mp4","mb":37}
+  ],
+  56: [
+    {"part":"A","title":"Maths Extras","file":"Day.56A.Maths.Extras.mp4","mb":37},
+    {"part":"B","title":"JUnit, Maven and JDBC","file":"Day.56B.JUnit.Maven.and.JDBC.mp4","mb":45}
   ]
 };
