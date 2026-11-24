@@ -386,8 +386,17 @@ const CONCEPT_VIDEOS = {
   "DSA Topics Not Covered Notes/dsa_gap_05_merge_intervals.md": [
     {"part":"","title":"DSA Merge Intervals","file":"DSA.Merge.Intervals.mp4","mb":18}
   ],
+  "DSA Topics Not Covered Notes/dsa_gap_06_top_k_k_way_merge.md": [
+    {"part":"","title":"DSA Top K and K Way Merge","file":"DSA.Top.K.and.K.Way.Merge.mp4","mb":20}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_07_two_heaps.md": [
+    {"part":"","title":"DSA Two Heaps","file":"DSA.Two.Heaps.mp4","mb":17}
+  ],
   "DSA Topics Not Covered Notes/dsa_gap_08_monotonic_stack.md": [
     {"part":"","title":"DSA Monotonic Stack","file":"DSA.Monotonic.Stack.mp4","mb":22}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_10_greedy.md": [
+    {"part":"","title":"DSA Greedy","file":"DSA.Greedy.mp4","mb":18}
   ],
   "DSA Topics Not Covered Notes/dsa_gap_12_combination_backtracking.md": [
     {"part":"","title":"DSA Backtracking","file":"DSA.Backtracking.mp4","mb":20}
@@ -400,6 +409,12 @@ const CONCEPT_VIDEOS = {
     {"part":"1","title":"DSA Graphs","file":"DSA.Graphs.Part.1.mp4","mb":23},
     {"part":"2","title":"DSA Graphs","file":"DSA.Graphs.Part.2.mp4","mb":23}
   ],
+  "DSA Topics Not Covered Notes/dsa_topic_03_union_find.md": [
+    {"part":"","title":"DSA Union Find","file":"DSA.Union.Find.mp4","mb":16}
+  ],
+  "DSA Topics Not Covered Notes/dsa_topic_04_trie.md": [
+    {"part":"","title":"DSA Trie","file":"DSA.Trie.mp4","mb":17}
+  ],
   "Java Topics Not Covered Notes/java_gap_01_multithreading_concurrency.md": [
     {"part":"1","title":"Java Multithreading and Concurrency","file":"Java.Multithreading.and.Concurrency.Part.1.mp4","mb":18},
     {"part":"2","title":"Java Multithreading and Concurrency","file":"Java.Multithreading.and.Concurrency.Part.2.mp4","mb":29}
@@ -410,11 +425,20 @@ const CONCEPT_VIDEOS = {
   "Java Topics Not Covered Notes/java_gap_03_comparator_comparable.md": [
     {"part":"","title":"Java Comparator and Comparable","file":"Java.Comparator.and.Comparable.mp4","mb":22}
   ],
+  "Java Topics Not Covered Notes/java_gap_04_design_patterns.md": [
+    {"part":"","title":"Java Design Patterns","file":"Java.Design.Patterns.mp4","mb":19}
+  ],
+  "Java Topics Not Covered Notes/java_gap_05_solid_low_level_design.md": [
+    {"part":"","title":"Java SOLID and Low Level Design","file":"Java.SOLID.and.Low.Level.Design.mp4","mb":21}
+  ],
   "Java Topics Not Covered Notes/java_gap_06_functional_interfaces_optional.md": [
     {"part":"","title":"Java Functional Interfaces and Optional","file":"Java.Functional.Interfaces.and.Optional.mp4","mb":23}
   ],
   "Java Topics Not Covered Notes/java_gap_08_generics_in_depth.md": [
     {"part":"","title":"Java Generics in Depth","file":"Java.Generics.in.Depth.mp4","mb":21}
+  ],
+  "Spring Boot Notes/spring_02_http_rest_basics.md": [
+    {"part":"","title":"Spring HTTP and REST Basics","file":"Spring.HTTP.and.REST.Basics.mp4","mb":22}
   ],
   "Spring Boot Notes/spring_03_spring_core_ioc_di.md": [
     {"part":"","title":"Spring Core IoC, Dependency Injection and Beans","file":"Spring.Core.IoC.Dependency.Injection.and.Beans.mp4","mb":16}
@@ -423,13 +447,15 @@ const CONCEPT_VIDEOS = {
     {"part":"","title":"Spring Boot Fundamentals","file":"Spring.Boot.Fundamentals.mp4","mb":29}
   ],
   "Spring Boot Notes/spring_05_rest_controllers.md": [
-    {"part":"1","title":"Spring REST Controllers","file":"Spring.REST.Controllers.Part.1.mp4","mb":24}
+    {"part":"1","title":"Spring REST Controllers","file":"Spring.REST.Controllers.Part.1.mp4","mb":24},
+    {"part":"2","title":"Spring REST Controllers","file":"Spring.REST.Controllers.Part.2.mp4","mb":18}
   ],
   "Spring Boot Notes/spring_06_validation_error_handling.md": [
     {"part":"","title":"Spring Validation and Error Handling","file":"Spring.Validation.and.Error.Handling.mp4","mb":26}
   ],
   "Spring Boot Notes/spring_08_data_access_jdbc_jpa.md": [
-    {"part":"1","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.1.mp4","mb":26}
+    {"part":"1","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.1.mp4","mb":26},
+    {"part":"2","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.2.mp4","mb":21}
   ],
   "Spring Boot Notes/spring_09_queries_transactions.md": [
     {"part":"","title":"Spring Queries and Transactions","file":"Spring.Queries.and.Transactions.mp4","mb":25}
