@@ -467,6 +467,12 @@ const CONCEPT_VIDEOS = {
   "Java Topics Not Covered Notes/java_gap_11_serialization_reflection_regex_time.md": [
     {"part":"","title":"Java Serialization Reflection Regex and Time","file":"Java.Serialization.Reflection.Regex.and.Time.mp4","mb":24}
   ],
+  "Java Topics Not Covered Notes/java_gap_12_junit_maven_gradle_jdbc.md": [
+    {"part":"","title":"Java JUnit Maven Gradle and JDBC","file":"Java.JUnit.Maven.Gradle.and.JDBC.mp4","mb":26}
+  ],
+  "Spring Boot Notes/spring_01_maven_in_depth.md": [
+    {"part":"","title":"Spring Maven in Depth","file":"Spring.Maven.in.Depth.mp4","mb":21}
+  ],
   "Spring Boot Notes/spring_02_http_rest_basics.md": [
     {"part":"","title":"Spring HTTP and REST Basics","file":"Spring.HTTP.and.REST.Basics.mp4","mb":22}
   ],
@@ -483,6 +489,9 @@ const CONCEPT_VIDEOS = {
   "Spring Boot Notes/spring_06_validation_error_handling.md": [
     {"part":"","title":"Spring Validation and Error Handling","file":"Spring.Validation.and.Error.Handling.mp4","mb":26}
   ],
+  "Spring Boot Notes/spring_07_sql_essentials.md": [
+    {"part":"","title":"Spring SQL Essentials","file":"Spring.SQL.Essentials.mp4","mb":21}
+  ],
   "Spring Boot Notes/spring_08_data_access_jdbc_jpa.md": [
     {"part":"1","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.1.mp4","mb":26},
     {"part":"2","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.2.mp4","mb":21}
@@ -495,5 +504,23 @@ const CONCEPT_VIDEOS = {
   ],
   "Spring Boot Notes/spring_11_security.md": [
     {"part":"","title":"Spring Security","file":"Spring.Security.mp4","mb":27}
+  ],
+  "Spring Boot Notes/spring_13_advanced_spring.md": [
+    {"part":"","title":"Spring Advanced Spring","file":"Spring.Advanced.Spring.mp4","mb":22}
+  ],
+  "Spring Boot Notes/spring_14_deployment.md": [
+    {"part":"","title":"Spring Deployment","file":"Spring.Deployment.mp4","mb":20}
+  ],
+  "Spring Boot Notes/spring_15_capstone.md": [
+    {"part":"","title":"Spring Capstone","file":"Spring.Capstone.mp4","mb":19}
+  ],
+  "Spring Boot Notes/spring_16_messaging.md": [
+    {"part":"","title":"Spring Messaging","file":"Spring.Messaging.mp4","mb":20}
+  ],
+  "Spring Boot Notes/spring_17_microservices.md": [
+    {"part":"","title":"Spring Microservices","file":"Spring.Microservices.mp4","mb":17}
+  ],
+  "Spring Boot Notes/spring_18_mongodb.md": [
+    {"part":"","title":"Spring MongoDB","file":"Spring.MongoDB.mp4","mb":20}
   ]
 };
