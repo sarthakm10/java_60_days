@@ -50,7 +50,7 @@
     returnView: "home",       // where "Back" from a day goes
     selectedSet: null,        // question set id, or null for the sets index
     selectedModule: null,     // frontend module number, or null for the Frontend page's index
-    moduleTab: "checklist",   // "checklist" | "study" on a frontend module
+    moduleTab: "checklist",   // "checklist" | "study" | "practice" | "video" on a frontend module
     setFilter: "all",         // "all" | "E" | "M" | "H" | "unsolved"
     selectedDay: null,         // day number
     statusFilter: "all",      // "all" | "completed" | "in-progress" | "pending" | "has-missed"
@@ -1378,7 +1378,7 @@
   }
 
   // ── Render: Day Detail ──
-  // ── Explainer videos (Beginner track; videos.js, streamed from the GitHub release) ──
+  // ── Explainer videos (videos.js, streamed from the GitHub release): Beginner days, and Frontend modules in both tracks ──
   const VIDEO_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
   const VIDEO_SPEED_KEY = "sde_video_speed";
   function videoSpeed() {
@@ -1387,26 +1387,30 @@
     return VIDEO_SPEEDS.includes(s) ? s : 1;
   }
   const dayVideos =(dayNum) => (state.track === "beginner" && typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || [];
-  const videoLabel = (dayNum, v) => `Day ${dayNum}${v.part}`;
+  const moduleVideos = (n) => (typeof FRONTEND_VIDEOS !== "undefined" && FRONTEND_VIDEOS[n]) || [];
+  // What a video card shows: its videos, how each is labelled ("Day 41A", "Frontend 29B") and a line under the heading
+  const dayVideoSource = (dayNum) => ({ key: `day-${dayNum}`, videos: dayVideos(dayNum), label: v => `Day ${dayNum}${v.part}`,
+    blurb: "A walkthrough of today's notes. Watch it first, then read and practise." });
+  const moduleVideoSource = (n) => ({ key: `fe-${n}`, videos: moduleVideos(n), label: v => `Frontend ${n}${v.part}`,
+    blurb: "A walkthrough of this module's notes. Watch it first, then read and practise." });
 
-  function dayVideoHTML(dayNum) {
-    const videos = dayVideos(dayNum);
+  function videoCardHTML({ key, videos, label, blurb }) {
     if (!videos.length) return "";
     const first = videos[0];
     return `
-      <div class="day-video" data-day="${dayNum}">
+      <div class="day-video" data-key="${key}">
         <div class="dv-head">
           <span class="dv-icon">🎬</span>
           <span class="dv-heading">
             <strong>Explainer video${videos.length > 1 ? `s <span class="dv-count">${videos.length} parts</span>` : ""}</strong>
-            <small>A walkthrough of today's notes. Watch it first, then read and practise.</small>
+            <small>${blurb}</small>
           </span>
         </div>
         ${videos.length > 1 ? `
           <div class="dv-parts" role="tablist">
             ${videos.map((v, i) => `
               <button class="dv-part ${i === 0 ? "active" : ""}" data-index="${i}" role="tab" aria-selected="${i === 0}">
-                <b>${videoLabel(dayNum, v)}</b> ${escapeHTML(v.title)}
+                <b>${label(v)}</b> ${escapeHTML(v.title)}
               </button>`).join("")}
           </div>` : ""}
         <div class="dv-frame">
@@ -1422,15 +1426,14 @@
           </span>
         </div>
         <div class="dv-foot">
-          <span class="dv-title">${escapeHTML(videoLabel(dayNum, first))}: ${escapeHTML(first.title)}</span>
+          <span class="dv-title">${escapeHTML(label(first))}: ${escapeHTML(first.title)}</span>
           <span class="dv-size">${first.mb} MB · streams from GitHub, needs internet</span>
         </div>
         <p class="dv-error" hidden>The video couldn't load. It streams from GitHub, so check your connection and try again.</p>
       </div>`;
   }
 
-  function bindDayVideo(card, dayNum) {
-    const videos = dayVideos(dayNum);
+  function bindVideoCard(card, { videos, label }) {
     const player = card.querySelector(".dv-player");
     const error = card.querySelector(".dv-error");
     // Skip buttons and speed (the speed is remembered, and kept when switching parts)
@@ -1468,7 +1471,7 @@
       error.hidden = true;
       player.src = VIDEO_BASE + encodeURIComponent(v.file);
       player.play().catch(() => {});
-      card.querySelector(".dv-title").textContent = `${videoLabel(dayNum, v)}: ${v.title}`;
+      card.querySelector(".dv-title").textContent = `${label(v)}: ${v.title}`;
       card.querySelector(".dv-size").textContent = `${v.mb} MB · streams from GitHub, needs internet`;
     }));
   }
@@ -1478,7 +1481,7 @@
     if (!day) return;
     // A video that is already on screen for this day survives the re-render (ticking a subtopic mid-video doesn't stop it)
     const oldVideo = document.querySelector("#day-detail .day-video");
-    const keptVideo = oldVideo?.dataset.day === String(dayNum) ? oldVideo : null;
+    const keptVideo = oldVideo?.dataset.key === `day-${dayNum}` ? oldVideo : null;
     const detailTab = state.detailTab === "video" && !dayVideos(dayNum).length ? "checklist" : state.detailTab;
 
     const info = getDayCompletionInfo(dayNum);
@@ -1632,12 +1635,12 @@
         </div>
       </div>
       ${tabsHTML}
-      ${detailTab === "study" ? studyHTML : detailTab === "practice" ? practiceTabHTML(dayNum) : detailTab === "video" ? dayVideoHTML(dayNum) : checklistHTML}
+      ${detailTab === "study" ? studyHTML : detailTab === "practice" ? practiceTabHTML(dayNum) : detailTab === "video" ? videoCardHTML(dayVideoSource(dayNum)) : checklistHTML}
     `;
     const videoCard = detail.querySelector(".day-video");
     if (videoCard) {
       if (keptVideo) videoCard.replaceWith(keptVideo);
-      else bindDayVideo(videoCard, dayNum);
+      else bindVideoCard(videoCard, dayVideoSource(dayNum));
     }
     // Another tab or another day: the old player is gone from the page, so make sure it stops playing too
     if (oldVideo && !(keptVideo && videoCard)) oldVideo.querySelector("video").pause();
@@ -1677,6 +1680,8 @@
       if (allChecked) showToast("Day unmarked", "info");
       else celebrateProgress(before);
     });
+
+    if (detailTab === "video") return;   // the video card is bound above; the rest is for the checklist
 
     if (state.detailTab === "practice") {
       bindPractice(detail, () => {
@@ -2108,6 +2113,7 @@
         <div class="set-card-header">
           <span class="set-icon fe-num">${done ? "✓" : m.module}</span>
           <span class="set-name">${escapeHTML(m.title)}</span>
+          ${moduleVideos(m.module).length ? `<span class="day-video-badge" title="Has an explainer video">🎬</span>` : ""}
           <span class="set-count">${stats.checked}/${stats.total}</span>
         </div>
         <div class="set-progress-bar"><div class="set-progress-fill" style="width:${stats.percentage}%"></div></div>
@@ -2131,7 +2137,12 @@
     const stats = frontendStats([m]);
     const level = FRONTEND_LEVELS[m.level];
     const hasExercises = !!m.practice?.length;
-    const tab = state.moduleTab === "study" || (state.moduleTab === "practice" && hasExercises) ? state.moduleTab : "checklist";
+    const video = moduleVideoSource(m.module);
+    const tab = state.moduleTab === "study" || (state.moduleTab === "practice" && hasExercises)
+      || (state.moduleTab === "video" && video.videos.length) ? state.moduleTab : "checklist";
+    // A video already playing for this module survives the re-render (marking the module complete doesn't stop it)
+    const oldVideo = container.querySelector(".day-video");
+    const keptVideo = oldVideo?.dataset.key === video.key ? oldVideo : null;
     const practiceFile = `f${m.module}`;
     if (hasExercises && !practiceCache[practiceFile]) {
       loadPractice(practiceFile).then(() => { if (state.currentView === "frontend" && state.selectedModule === m.module) renderFrontendView(); });
@@ -2195,8 +2206,13 @@
         ${hasExercises ? `
           <button class="detail-tab ${tab === "practice" ? "active" : ""}" data-tab="practice">${ICONS.code} <span><span class="hide-sm">Code </span>Practice</span>
             ${exercisesHere ? practiceBadgeHTML(null, exercisesHere) : ""}</button>` : ""}
+        ${video.videos.length ? `
+          <button class="detail-tab ${tab === "video" ? "active" : ""}" data-tab="video">
+            <span class="dv-tab-icon">🎬</span> Video
+            ${video.videos.length > 1 ? `<span class="detail-tab-badge">${video.videos.length}</span>` : ""}
+          </button>` : ""}
       </div>
-      ${tab === "study" ? studyHTML : tab === "practice" ? modulePracticeHTML(practiceFile, exercisesHere) : checklistHTML}
+      ${tab === "study" ? studyHTML : tab === "practice" ? modulePracticeHTML(practiceFile, exercisesHere) : tab === "video" ? videoCardHTML(video) : checklistHTML}
       <div class="fe-pager">
         ${prev ? `<button class="btn" data-module="${prev.module}">${ICONS.arrowLeft} ${prev.module}. ${escapeHTML(prev.title)}</button>` : "<span></span>"}
         ${next ? `<button class="btn" data-module="${next.module}">${next.module}. ${escapeHTML(next.title)} ${ICONS.arrowRight}</button>` : ""}
@@ -2236,6 +2252,13 @@
       afterChange(before, !allChecked);
       if (allChecked) showToast("Module unmarked", "info");
     });
+
+    if (tab === "video") {
+      const videoCard = container.querySelector(".day-video");
+      if (keptVideo) videoCard.replaceWith(keptVideo);
+      else bindVideoCard(videoCard, video);
+      return;
+    }
 
     if (tab === "practice") {
       bindPractice(container, () => {
@@ -2778,6 +2801,7 @@
     Object.entries(VIEW_SECTIONS).forEach(([name, sel]) => $(sel).classList.toggle("active", name === view));
     $("#to-top")?.classList.remove("visible");
     if (view !== "detail") $("#day-detail video")?.pause();   // leaving the day page stops its video
+    if (view !== "frontend") $("#frontend-view video")?.pause();
   }
 
   function openDayDetail(dayNum, tab = "checklist") {
