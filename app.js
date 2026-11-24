@@ -1386,10 +1386,22 @@
     try { s = +localStorage.getItem(VIDEO_SPEED_KEY) || 1; } catch {}
     return VIDEO_SPEEDS.includes(s) ? s : 1;
   }
-  const dayVideos =(dayNum) => (state.track === "beginner" && typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || [];
   const moduleVideos = (n) => (typeof FRONTEND_VIDEOS !== "undefined" && FRONTEND_VIDEOS[n]) || [];
+  // A Beginner day's videos: its own, then those of the frontend modules it has. A module's video goes on the module's
+  // first day; a module in parts spreads them over its days (30A on its first day, 30B where its second half starts).
+  function dayVideos(dayNum) {
+    if (state.track !== "beginner") return [];
+    const own = ((typeof DAY_VIDEOS !== "undefined" && DAY_VIDEOS[dayNum]) || []).map(v => ({ ...v, label: `Day ${dayNum}${v.part}` }));
+    const modules = [...new Set((getDayData(dayNum)?.topics || []).map(t => t.module).filter(Boolean))];
+    const frontend = modules.flatMap(n => {
+      const days = getModule(n).days, videos = moduleVideos(n);
+      return videos.filter((v, i) => days[Math.floor(i * days.length / videos.length)] === dayNum)
+        .map(v => ({ ...v, label: `Frontend ${n}${v.part}` }));
+    });
+    return [...own, ...frontend];
+  }
   // What a video card shows: its videos, how each is labelled ("Day 41A", "Frontend 29B") and a line under the heading
-  const dayVideoSource = (dayNum) => ({ key: `day-${dayNum}`, videos: dayVideos(dayNum), label: v => `Day ${dayNum}${v.part}`,
+  const dayVideoSource = (dayNum) => ({ key: `day-${dayNum}`, videos: dayVideos(dayNum), label: v => v.label,
     blurb: "A walkthrough of today's notes. Watch it first, then read and practise." });
   const moduleVideoSource = (n) => ({ key: `fe-${n}`, videos: moduleVideos(n), label: v => `Frontend ${n}${v.part}`,
     blurb: "A walkthrough of this module's notes. Watch it first, then read and practise." });
@@ -1397,12 +1409,14 @@
   function videoCardHTML({ key, videos, label, blurb }) {
     if (!videos.length) return "";
     const first = videos[0];
+    // "3 parts" when they are parts of one video (Day 1A, 1B, 1C); "2 videos" when a day has its own and a module's
+    const oneVideo = new Set(videos.map(v => label(v).replace(/[A-Z]$/, ""))).size === 1;
     return `
       <div class="day-video" data-key="${key}">
         <div class="dv-head">
           <span class="dv-icon">🎬</span>
           <span class="dv-heading">
-            <strong>Explainer video${videos.length > 1 ? `s <span class="dv-count">${videos.length} parts</span>` : ""}</strong>
+            <strong>Explainer video${videos.length > 1 ? `s <span class="dv-count">${videos.length} ${oneVideo ? "parts" : "videos"}</span>` : ""}</strong>
             <small>${blurb}</small>
           </span>
         </div>
