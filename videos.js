@@ -395,11 +395,29 @@ const CONCEPT_VIDEOS = {
   "DSA Topics Not Covered Notes/dsa_gap_08_monotonic_stack.md": [
     {"part":"","title":"DSA Monotonic Stack","file":"DSA.Monotonic.Stack.mp4","mb":22}
   ],
+  "DSA Topics Not Covered Notes/dsa_gap_09_monotonic_deque.md": [
+    {"part":"","title":"DSA Monotonic Deque","file":"DSA.Monotonic.Deque.mp4","mb":19}
+  ],
   "DSA Topics Not Covered Notes/dsa_gap_10_greedy.md": [
     {"part":"","title":"DSA Greedy","file":"DSA.Greedy.mp4","mb":18}
   ],
+  "DSA Topics Not Covered Notes/dsa_gap_11_matrix_traversal.md": [
+    {"part":"","title":"DSA Matrix Traversal","file":"DSA.Matrix.Traversal.mp4","mb":18}
+  ],
   "DSA Topics Not Covered Notes/dsa_gap_12_combination_backtracking.md": [
     {"part":"","title":"DSA Backtracking","file":"DSA.Backtracking.mp4","mb":20}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_13_lru_lfu_cache.md": [
+    {"part":"","title":"DSA LRU and LFU Cache","file":"DSA.LRU.and.LFU.Cache.mp4","mb":18}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_14_string_algorithms.md": [
+    {"part":"","title":"DSA String Algorithms","file":"DSA.String.Algorithms.mp4","mb":16}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_15_range_query_structures.md": [
+    {"part":"","title":"DSA Range Query Structures","file":"DSA.Range.Query.Structures.mp4","mb":17}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_16_maths_extras.md": [
+    {"part":"","title":"DSA Maths Extras","file":"DSA.Maths.Extras.mp4","mb":17}
   ],
   "DSA Topics Not Covered Notes/dsa_topic_01_dynamic_programming.md": [
     {"part":"1","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.1.mp4","mb":16},
@@ -434,8 +452,20 @@ const CONCEPT_VIDEOS = {
   "Java Topics Not Covered Notes/java_gap_06_functional_interfaces_optional.md": [
     {"part":"","title":"Java Functional Interfaces and Optional","file":"Java.Functional.Interfaces.and.Optional.mp4","mb":23}
   ],
+  "Java Topics Not Covered Notes/java_gap_07_modern_java_features.md": [
+    {"part":"","title":"Java Modern Java Features","file":"Java.Modern.Java.Features.mp4","mb":20}
+  ],
   "Java Topics Not Covered Notes/java_gap_08_generics_in_depth.md": [
     {"part":"","title":"Java Generics in Depth","file":"Java.Generics.in.Depth.mp4","mb":21}
+  ],
+  "Java Topics Not Covered Notes/java_gap_09_jvm_internals_gc.md": [
+    {"part":"","title":"Java JVM Internals and GC","file":"Java.JVM.Internals.and.GC.mp4","mb":26}
+  ],
+  "Java Topics Not Covered Notes/java_gap_10_iterator_fail_fast_fail_safe.md": [
+    {"part":"","title":"Java Iterator Fail Fast and Fail Safe","file":"Java.Iterator.Fail.Fast.and.Fail.Safe.mp4","mb":22}
+  ],
+  "Java Topics Not Covered Notes/java_gap_11_serialization_reflection_regex_time.md": [
+    {"part":"","title":"Java Serialization Reflection Regex and Time","file":"Java.Serialization.Reflection.Regex.and.Time.mp4","mb":24}
   ],
   "Spring Boot Notes/spring_02_http_rest_basics.md": [
     {"part":"","title":"Spring HTTP and REST Basics","file":"Spring.HTTP.and.REST.Basics.mp4","mb":22}
