@@ -505,6 +505,9 @@ const CONCEPT_VIDEOS = {
   "Spring Boot Notes/spring_11_security.md": [
     {"part":"","title":"Spring Security","file":"Spring.Security.mp4","mb":27}
   ],
+  "Spring Boot Notes/spring_12_production_features.md": [
+    {"part":"","title":"Spring Production Features","file":"Spring.Production.Features.mp4","mb":22}
+  ],
   "Spring Boot Notes/spring_13_advanced_spring.md": [
     {"part":"","title":"Spring Advanced Spring","file":"Spring.Advanced.Spring.mp4","mb":22}
   ],
