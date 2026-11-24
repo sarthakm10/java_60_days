@@ -302,6 +302,27 @@ const DAY_VIDEOS = {
   ],
   93: [
     {"part":"","title":"System Design Practice","file":"Day.93.System.Design.Practice.mp4","mb":15}
+  ],
+  94: [
+    {"part":"","title":"Revision Java and Collections","file":"Day.94.Revision.Java.and.Collections.mp4","mb":19}
+  ],
+  95: [
+    {"part":"","title":"Revision Spring Kafka and Cloud","file":"Day.95.Revision.Spring.Kafka.and.Cloud.mp4","mb":20}
+  ],
+  96: [
+    {"part":"","title":"Revision SQL and System Design","file":"Day.96.Revision.SQL.and.System.Design.mp4","mb":20}
+  ],
+  97: [
+    {"part":"","title":"Behavioral Interviews and Final Weak Areas","file":"Day.97.Behavioral.Interviews.and.Final.Weak.Areas.mp4","mb":15}
+  ],
+  98: [
+    {"part":"","title":"Resume LinkedIn and Your Project Story","file":"Day.98.Resume.LinkedIn.and.Your.Project.Story.mp4","mb":17}
+  ],
+  99: [
+    {"part":"","title":"DSA Mock A Timed Coding Round","file":"Day.99.DSA.Mock.A.Timed.Coding.Round.mp4","mb":13}
+  ],
+  100: [
+    {"part":"","title":"Final Mock Interview Day","file":"Day.100.Final.Mock.Interview.Day.mp4","mb":15}
   ]
 };
 
