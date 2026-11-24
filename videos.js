@@ -377,6 +377,21 @@ const CONCEPT_VIDEOS = {
   "DSA Topics Not Covered Notes/dsa_gap_02_two_pointers.md": [
     {"part":"","title":"DSA Two Pointers","file":"DSA.Two.Pointers.mp4","mb":23}
   ],
+  "DSA Topics Not Covered Notes/dsa_gap_03_prefix_sum_difference_array.md": [
+    {"part":"","title":"DSA Prefix Sum and Difference Array","file":"DSA.Prefix.Sum.and.Difference.Array.mp4","mb":23}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_04_kadanes_algorithm.md": [
+    {"part":"","title":"DSA Kadanes Algorithm","file":"DSA.Kadanes.Algorithm.mp4","mb":18}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_05_merge_intervals.md": [
+    {"part":"","title":"DSA Merge Intervals","file":"DSA.Merge.Intervals.mp4","mb":18}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_08_monotonic_stack.md": [
+    {"part":"","title":"DSA Monotonic Stack","file":"DSA.Monotonic.Stack.mp4","mb":22}
+  ],
+  "DSA Topics Not Covered Notes/dsa_gap_12_combination_backtracking.md": [
+    {"part":"","title":"DSA Backtracking","file":"DSA.Backtracking.mp4","mb":20}
+  ],
   "DSA Topics Not Covered Notes/dsa_topic_01_dynamic_programming.md": [
     {"part":"1","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.1.mp4","mb":16},
     {"part":"2","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.2.mp4","mb":27}
@@ -395,6 +410,12 @@ const CONCEPT_VIDEOS = {
   "Java Topics Not Covered Notes/java_gap_03_comparator_comparable.md": [
     {"part":"","title":"Java Comparator and Comparable","file":"Java.Comparator.and.Comparable.mp4","mb":22}
   ],
+  "Java Topics Not Covered Notes/java_gap_06_functional_interfaces_optional.md": [
+    {"part":"","title":"Java Functional Interfaces and Optional","file":"Java.Functional.Interfaces.and.Optional.mp4","mb":23}
+  ],
+  "Java Topics Not Covered Notes/java_gap_08_generics_in_depth.md": [
+    {"part":"","title":"Java Generics in Depth","file":"Java.Generics.in.Depth.mp4","mb":21}
+  ],
   "Spring Boot Notes/spring_03_spring_core_ioc_di.md": [
     {"part":"","title":"Spring Core IoC, Dependency Injection and Beans","file":"Spring.Core.IoC.Dependency.Injection.and.Beans.mp4","mb":16}
   ],
@@ -404,8 +425,17 @@ const CONCEPT_VIDEOS = {
   "Spring Boot Notes/spring_05_rest_controllers.md": [
     {"part":"1","title":"Spring REST Controllers","file":"Spring.REST.Controllers.Part.1.mp4","mb":24}
   ],
+  "Spring Boot Notes/spring_06_validation_error_handling.md": [
+    {"part":"","title":"Spring Validation and Error Handling","file":"Spring.Validation.and.Error.Handling.mp4","mb":26}
+  ],
   "Spring Boot Notes/spring_08_data_access_jdbc_jpa.md": [
     {"part":"1","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.1.mp4","mb":26}
+  ],
+  "Spring Boot Notes/spring_09_queries_transactions.md": [
+    {"part":"","title":"Spring Queries and Transactions","file":"Spring.Queries.and.Transactions.mp4","mb":25}
+  ],
+  "Spring Boot Notes/spring_10_testing.md": [
+    {"part":"","title":"Spring Testing","file":"Spring.Testing.mp4","mb":23}
   ],
   "Spring Boot Notes/spring_11_security.md": [
     {"part":"","title":"Spring Security","file":"Spring.Security.mp4","mb":27}
