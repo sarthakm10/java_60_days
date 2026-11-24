@@ -16,8 +16,11 @@ const TAG = "videos";
 const root = path.join(__dirname, "..");
 
 async function main() {
+  // Unauthenticated calls from shared CI runners hit the rate limit (403), so use a token when given
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const res = await fetch(`https://api.github.com/repos/${REPO}/releases/tags/${TAG}`, {
-    headers: { Accept: "application/vnd.github+json", "User-Agent": "build-videos-script" }
+    headers: { Accept: "application/vnd.github+json", "User-Agent": "build-videos-script",
+               ...(token && { Authorization: `Bearer ${token}` }) }
   });
   if (!res.ok) throw new Error(`GitHub answered ${res.status} for the "${TAG}" release`);
   const assets = (await res.json()).assets.filter(a => /\.mp4$/i.test(a.name));

@@ -374,16 +374,40 @@ const CONCEPT_VIDEOS = {
   "DSA Topics Not Covered Notes/dsa_gap_01_sliding_window.md": [
     {"part":"","title":"DSA Sliding Window","file":"DSA.Sliding.Window.mp4","mb":16}
   ],
+  "DSA Topics Not Covered Notes/dsa_gap_02_two_pointers.md": [
+    {"part":"","title":"DSA Two Pointers","file":"DSA.Two.Pointers.mp4","mb":23}
+  ],
   "DSA Topics Not Covered Notes/dsa_topic_01_dynamic_programming.md": [
-    {"part":"1","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.1.mp4","mb":16}
+    {"part":"1","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.1.mp4","mb":16},
+    {"part":"2","title":"DSA Dynamic Programming","file":"DSA.Dynamic.Programming.Part.2.mp4","mb":27}
   ],
   "DSA Topics Not Covered Notes/dsa_topic_02_graphs.md": [
-    {"part":"1","title":"DSA Graphs","file":"DSA.Graphs.Part.1.mp4","mb":23}
+    {"part":"1","title":"DSA Graphs","file":"DSA.Graphs.Part.1.mp4","mb":23},
+    {"part":"2","title":"DSA Graphs","file":"DSA.Graphs.Part.2.mp4","mb":23}
   ],
   "Java Topics Not Covered Notes/java_gap_01_multithreading_concurrency.md": [
-    {"part":"1","title":"Java Multithreading and Concurrency","file":"Java.Multithreading.and.Concurrency.Part.1.mp4","mb":18}
+    {"part":"1","title":"Java Multithreading and Concurrency","file":"Java.Multithreading.and.Concurrency.Part.1.mp4","mb":18},
+    {"part":"2","title":"Java Multithreading and Concurrency","file":"Java.Multithreading.and.Concurrency.Part.2.mp4","mb":29}
+  ],
+  "Java Topics Not Covered Notes/java_gap_02_streams_api.md": [
+    {"part":"","title":"Java Streams API","file":"Java.Streams.API.mp4","mb":23}
+  ],
+  "Java Topics Not Covered Notes/java_gap_03_comparator_comparable.md": [
+    {"part":"","title":"Java Comparator and Comparable","file":"Java.Comparator.and.Comparable.mp4","mb":22}
   ],
   "Spring Boot Notes/spring_03_spring_core_ioc_di.md": [
     {"part":"","title":"Spring Core IoC, Dependency Injection and Beans","file":"Spring.Core.IoC.Dependency.Injection.and.Beans.mp4","mb":16}
+  ],
+  "Spring Boot Notes/spring_04_spring_boot_fundamentals.md": [
+    {"part":"","title":"Spring Boot Fundamentals","file":"Spring.Boot.Fundamentals.mp4","mb":29}
+  ],
+  "Spring Boot Notes/spring_05_rest_controllers.md": [
+    {"part":"1","title":"Spring REST Controllers","file":"Spring.REST.Controllers.Part.1.mp4","mb":24}
+  ],
+  "Spring Boot Notes/spring_08_data_access_jdbc_jpa.md": [
+    {"part":"1","title":"Spring Data Access with JDBC and JPA","file":"Spring.Data.Access.with.JDBC.and.JPA.Part.1.mp4","mb":26}
+  ],
+  "Spring Boot Notes/spring_11_security.md": [
+    {"part":"","title":"Spring Security","file":"Spring.Security.mp4","mb":27}
   ]
 };
