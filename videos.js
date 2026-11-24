@@ -272,6 +272,36 @@ const DAY_VIDEOS = {
   ],
   83: [
     {"part":"","title":"Serialization, Reflection, Regex and java.time","file":"Day.83.Serialization.Reflection.Regex.and.java.time.mp4","mb":40}
+  ],
+  84: [
+    {"part":"","title":"AWS Accounts IAM and Networking","file":"Day.84.AWS.Accounts.IAM.and.Networking.mp4","mb":19}
+  ],
+  85: [
+    {"part":"","title":"AWS Compute EC2 ECS and Lambda","file":"Day.85.AWS.Compute.EC2.ECS.and.Lambda.mp4","mb":18}
+  ],
+  86: [
+    {"part":"","title":"AWS Storage with S3","file":"Day.86.AWS.Storage.with.S3.mp4","mb":17}
+  ],
+  87: [
+    {"part":"","title":"AWS Databases Caching and Messaging","file":"Day.87.AWS.Databases.Caching.and.Messaging.mp4","mb":17}
+  ],
+  88: [
+    {"part":"","title":"AWS Monitoring and Security","file":"Day.88.AWS.Monitoring.and.Security.mp4","mb":18}
+  ],
+  89: [
+    {"part":"","title":"Terraform Infrastructure as Code","file":"Day.89.Terraform.Infrastructure.as.Code.mp4","mb":17}
+  ],
+  90: [
+    {"part":"","title":"Terraform Practice and Cloud Review","file":"Day.90.Terraform.Practice.and.Cloud.Review.mp4","mb":15}
+  ],
+  91: [
+    {"part":"","title":"System Design Fundamentals Part 1","file":"Day.91.System.Design.Fundamentals.Part.1.mp4","mb":17}
+  ],
+  92: [
+    {"part":"","title":"System Design Fundamentals Part 2","file":"Day.92.System.Design.Fundamentals.Part.2.mp4","mb":16}
+  ],
+  93: [
+    {"part":"","title":"System Design Practice","file":"Day.93.System.Design.Practice.mp4","mb":15}
   ]
 };
 
