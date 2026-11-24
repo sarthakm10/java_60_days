@@ -1378,7 +1378,8 @@
   }
 
   // ── Render: Day Detail ──
-  // ── Explainer videos (videos.js, streamed from the GitHub release): Beginner days, and Frontend modules in both tracks ──
+  // ── Explainer videos (videos.js, streamed from the GitHub release): Beginner days, Frontend modules in both tracks,
+  //    and concept videos on the Beginner days that use their Kunal note ──
   const VIDEO_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
   const VIDEO_SPEED_KEY = "sde_video_speed";
   function videoSpeed() {
@@ -1398,8 +1399,18 @@
       return videos.filter((v, i) => days[Math.floor(i * days.length / videos.length)] === dayNum)
         .map(v => ({ ...v, label: `Frontend ${n}${v.part}` }));
     });
-    return [...own, ...frontend];
+    // Concept videos (DSA, Java, Spring) go on the days that use their Kunal note, parts spread like a module's
+    const notes = [...new Set(getAllSubtopicsForDay(dayNum).map(s => s.note).filter(Boolean))];
+    const concept = notes.flatMap(note => {
+      const videos = conceptVideos(note), days = noteDays(note);
+      return videos.filter((v, i) => days[Math.floor(i * days.length / videos.length)] === dayNum)
+        .map(v => ({ ...v, label: `Concept${v.part ? ` · Part ${v.part}` : ""}` }));
+    });
+    return [...own, ...frontend, ...concept];
   }
+  const conceptVideos = (note) => (typeof CONCEPT_VIDEOS !== "undefined" && CONCEPT_VIDEOS[note]) || [];
+  // The Beginner days that use a Kunal note, in order
+  const noteDays = (note) => DAYS.filter(d => d.topics.some(t => t.subtopics.some(s => s.note === note))).map(d => d.day);
   // What a video card shows: its videos, how each is labelled ("Day 41A", "Frontend 29B") and a line under the heading
   const dayVideoSource = (dayNum) => ({ key: `day-${dayNum}`, videos: dayVideos(dayNum), label: v => v.label,
     blurb: "A walkthrough of today's notes. Watch it first, then read and practise." });
