@@ -5395,3 +5395,546 @@ button { font-family: inherit; }
   content-visibility: auto;
   contain-intrinsic-size: auto 240px;
 }
+
+/* ============================================================
+   Journey: each phase's node is a progress ring
+   ============================================================ */
+.phase.started:not(.done) .phase-node {
+  border-color: transparent;
+  background:
+    radial-gradient(closest-side, var(--bg-elevated) calc(100% - 4px), transparent calc(100% - 3px)),
+    conic-gradient(var(--accent) calc(var(--p, 0) * 1%), var(--border-primary) 0);
+}
+
+/* ============================================================
+   Day complete: summary card
+   ============================================================ */
+.day-done-overlay { z-index: 1100; }
+.modal-content.day-done {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  overflow: hidden;
+  text-align: center;
+  padding-top: 30px;
+}
+.modal-content.day-done::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 130px;
+  background: radial-gradient(80% 100% at 50% 0%, color-mix(in srgb, var(--a1) 30%, transparent), transparent 75%);
+  pointer-events: none;
+}
+.day-done-burst { position: relative; font-size: 2.8rem; line-height: 1; animation: dayDonePop 0.6s var(--ease) both; }
+@keyframes dayDonePop {
+  0% { opacity: 0; scale: 0.4; }
+  60% { opacity: 1; scale: 1.15; }
+  100% { scale: 1; }
+}
+.day-done-kicker {
+  position: relative;
+  margin-top: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.day-done-title {
+  position: relative;
+  margin: 6px 0 18px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.day-done-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.day-done-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 4px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+}
+.day-done-stats b { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; }
+.day-done-stats span { font-size: 0.68rem; color: var(--text-secondary); line-height: 1.3; }
+.day-done-progress { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; font-size: 0.78rem; color: var(--text-secondary); }
+.day-done-progress .bar { flex: 1; }
+.day-done-next {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 14px 0 20px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  text-align: left;
+}
+.day-done-next-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.day-done-next-title { font-weight: 700; font-size: 0.92rem; }
+.modal-btn.day-done-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--grad);
+  border-color: transparent;
+  color: #fff;
+}
+.modal-btn.day-done-go:hover { filter: brightness(1.08); }
+@media (max-width: 420px) {
+  .day-done-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   Keyboard shortcuts panel
+   ============================================================ */
+.modal-content.shortcuts { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+.shortcuts-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.shortcuts-head .modal-title { margin: 0; }
+.shortcuts-x {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-primary);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.shortcuts-x:hover { background: var(--bg-hover); color: var(--text-primary); }
+.shortcuts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 6px 28px; }
+.shortcuts-grid h3 {
+  margin: 14px 0 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.sc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-primary);
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+.sc-row:last-child { border-bottom: none; }
+.sc-keys { display: inline-flex; gap: 4px; min-width: 104px; }
+.sc-keys kbd {
+  min-width: 26px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--border-primary);
+  border-bottom-width: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+/* No keyboard on a touch screen: no shortcuts button */
+@media (hover: none) and (pointer: coarse) {
+  .kbd-only { display: none !important; }
+}
+
+/* ============================================================
+   Loading placeholders for study notes
+   ============================================================ */
+.notes-skeleton {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px 38px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+}
+.skel {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bg-tertiary) 0%, var(--bg-hover) 40%, var(--bg-tertiary) 80%) 0 0 / 300% 100%;
+  animation: skelShimmer 1.4s ease-in-out infinite;
+}
+.skel-title { width: 46%; height: 26px; margin-bottom: 8px; }
+.skel-heading { width: 32%; height: 18px; margin-top: 10px; }
+.skel-block { width: 100%; height: 110px; border-radius: 12px; margin: 6px 0; }
+@keyframes skelShimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (max-width: 640px) { .notes-skeleton { padding: 22px 18px; } }
+@media (prefers-reduced-motion: reduce) {
+  .skel, .day-done-burst { animation: none; }
+}
+/* ============================================================
+   Dashboard: highlight of the day in the hero quote,
+   "continue reading" row in the mission card, folding cards
+   ============================================================ */
+.quote.from-notes {
+  border-color: color-mix(in srgb, var(--hl) 40%, transparent);
+  background: color-mix(in srgb, var(--hl) 9%, color-mix(in srgb, var(--bg-primary) 35%, transparent));
+}
+.quote.from-notes .quote-mark { color: var(--hl); }
+.quote-kicker {
+  margin-bottom: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.quote-open { font-size: inherit; }
+
+.continue-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  background: color-mix(in srgb, var(--bg-primary) 30%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.continue-row:hover { border-color: var(--accent-line); background: var(--bg-hover); }
+.continue-row-icon { flex: none; font-size: 1.1rem; }
+.continue-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.continue-row-text small { font-size: 0.72rem; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.continue-row-text b { font-size: 0.86rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.continue-row > svg { flex: none; color: var(--text-tertiary); }
+
+.card-head-end { display: flex; align-items: center; gap: 10px; }
+.fold-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.fold-btn:hover { background: var(--bg-hover); border-color: var(--border-primary); color: var(--text-primary); }
+.fold-btn svg { transition: transform 0.25s var(--ease, ease); }
+.folded .fold-btn svg { transform: rotate(-90deg); }
+.foldable.folded > .fold-body { display: none; }
+.mastery-card.foldable .card-head { margin-bottom: 0; }
+
+/* ============================================================
+   Roadmap: phases fold away; a day card previews its topics
+   ============================================================ */
+button.phase-section-head {
+  width: calc(100% + 6px);
+  padding: 6px 8px 6px 6px;
+  margin-left: -6px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  box-sizing: border-box;
+}
+button.phase-section-head:not([disabled]):hover { background: var(--bg-hover); }
+button.phase-section-head[disabled] { cursor: default; }
+.phase-section-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.phase-section.done .phase-section-num { background: var(--accent-green); }
+.phase-fold-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+}
+.phase-fold-icon svg { transition: transform 0.25s var(--ease, ease); }
+.phase-section.folded .phase-fold-icon svg { transform: rotate(-90deg); }
+.phase-section.folded .phase-cards { display: none; }
+.phase-section.folded .phase-section-head { margin-bottom: 0; }
+.days-grid:has(.phase-section.folded) { gap: 22px; }
+
+.day-peek {
+  position: fixed;
+  z-index: 950;
+  width: 290px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--bg-elevated, var(--bg-secondary));
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  animation: dayPeekIn 0.16s ease-out both;
+}
+@keyframes dayPeekIn { from { opacity: 0; transform: translateY(4px); } }
+.day-peek-kicker { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.day-peek-title { margin: 4px 0 10px; font-weight: 700; font-size: 0.95rem; line-height: 1.35; }
+.day-peek-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.day-peek-list li { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-secondary); }
+.day-peek-list li.done { color: var(--text-tertiary); }
+.day-peek-list li.done .day-peek-name { text-decoration: line-through; text-decoration-color: color-mix(in srgb, currentColor 50%, transparent); }
+.day-peek-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-peek-count { flex: none; font-family: var(--font-mono); font-size: 0.74rem; font-weight: 700; }
+.day-peek-list li.done .day-peek-count { color: var(--accent-green); }
+.day-peek-foot { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-primary); font-size: 0.74rem; color: var(--text-tertiary); }
+@media (prefers-reduced-motion: reduce) { .day-peek { animation: none; } }
+
+/* ============================================================
+   Day page: slim bar once the header scrolls away; day pager
+   ============================================================ */
+.detail-sticky {
+  position: fixed;
+  z-index: 45;
+  pointer-events: none;
+}
+.detail-sticky-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1440px;
+  margin: 0 auto 0 0;
+  padding: 7px 32px;
+  border-bottom: 1px solid var(--border-primary);
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.2s ease, transform 0.25s var(--ease);
+}
+.detail-sticky.shown .detail-sticky-inner { opacity: 1; transform: none; pointer-events: auto; }
+.detail-sticky-top {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.detail-sticky .ring { --size: 32px; --thick: 3px; }
+.detail-sticky .ring-value { font-size: 0.62rem; }
+.detail-sticky-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.detail-sticky-text small { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.detail-sticky-text b { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-sticky-nav { display: inline-flex; gap: 6px; flex: none; }
+.detail-sticky-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.detail-sticky-btn:hover:not([disabled]) { background: var(--bg-hover); }
+.detail-sticky-btn[disabled] { opacity: 0.35; cursor: default; }
+@media (max-width: 640px) {
+  .detail-sticky-inner { padding: 6px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-sticky-inner { transition: opacity 0.15s ease; transform: none; }
+}
+
+.day-pager {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--border-primary);
+}
+.day-pager-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  background: var(--glass);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+.day-pager-btn:hover { border-color: var(--accent-line); background: var(--bg-hover); transform: translateY(-1px); }
+.day-pager-btn.next { justify-content: flex-end; text-align: right; }
+.day-pager-btn > svg { flex: none; color: var(--accent); }
+.day-pager-btn > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.day-pager-btn small { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
+.day-pager-btn b { font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .day-pager { gap: 8px; }
+  .day-pager-btn { padding: 12px; gap: 8px; }
+  .day-pager-btn b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 0.84rem; }
+}
+
+/* ============================================================
+   Flashcards: running tally during a session
+   ============================================================ */
+.fc-tally { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-tally-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.fc-tally-item b { font-family: var(--font-mono); }
+.fc-tally-item.again { background: var(--accent-red-bg); color: var(--accent-red); }
+.fc-tally-item.good { background: var(--accent-blue-bg); color: var(--accent-blue); }
+.fc-tally-item.easy { background: var(--accent-green-bg); color: var(--accent-green); }
+#flashcard { backface-visibility: hidden; will-change: auto; }
+
+/* ============================================================
+   Practice: filters stay in reach, difficulty edge, jump to next
+   ============================================================ */
+#practice-view .revise-tabs {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+.practice-row { position: relative; }
+.practice-row::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--edge, transparent);
+  opacity: 0.85;
+}
+.diff-easy { --edge: var(--accent-green); }
+.diff-medium { --edge: var(--accent-yellow); }
+.diff-hard { --edge: var(--accent-red); }
+.practice-row.done::before { opacity: 0.35; }
+.exercise-card[class*="diff-"] { border-left: 4px solid color-mix(in srgb, var(--edge) 75%, transparent); }
+.exercise-card.done[class*="diff-"] { border-left-color: color-mix(in srgb, var(--accent-green) 60%, transparent); }
+.exercise-card.ex-flash { animation: exFlash 1.4s ease-out; }
+@keyframes exFlash {
+  0%, 30% { box-shadow: 0 0 0 3px var(--accent-line), var(--shadow-md); }
+  100% { box-shadow: var(--shadow-md); }
+}
+.practice-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-primary);
+  background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+.practice-toolbar b { color: var(--text-primary); font-family: var(--font-mono); }
+.practice-toolbar-done { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-green); font-weight: 700; padding-right: 6px; }
+.practice-skeleton { display: flex; flex-direction: column; gap: 16px; }
+.practice-skel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+}
+.practice-skel-card .skel-heading { width: 40%; margin-top: 0; }
+
+/* ============================================================
+   Empty and error messages: one look everywhere
+   ============================================================ */
+.empty-box {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  border-radius: var(--radius-xl);
+  background: var(--glass);
+  border: 1px dashed var(--border-primary);
+  text-align: center;
+  color: var(--text-secondary);
+}
+.empty-box-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  font-size: 1.7rem;
+}
+.empty-box-title { margin: 0; font-family: var(--font-display); font-size: 1.12rem; font-weight: 800; color: var(--text-primary); text-wrap: balance; }
+.empty-box-text { max-width: 56ch; font-size: 0.9rem; line-height: 1.6; }
+.empty-box-text p { margin: 0 0 6px; }
+.empty-box-text code, .empty-box-text pre {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
+.empty-box-text pre { display: inline-block; padding: 8px 14px; margin: 4px 0 8px; }
+.empty-box-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+
+/* ============================================================
+   Navigation: sidebar groups; search box shows Ctrl K
+   ============================================================ */
+.nav-group-label {
+  margin: 12px 12px 2px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.nav-group-label:first-child { margin-top: 0; }
+@media (min-width: 901px) { .search-input { padding-right: 70px; } }
+#day-detail .practice-toolbar { top: 58px; }
+.search-item.is-action .search-item-icon { font-size: 1rem; }
+/* The top bar's own blur stops this panel's blur from working, so it needs a solid background */
+.search-results { background: var(--bg-elevated); }

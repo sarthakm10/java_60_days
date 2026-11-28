@@ -43,7 +43,9 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function networkFirst(request) {
   const cache = await caches.open(CACHE);
   const saved = () => cache.match(request, { ignoreSearch: true });
-  const network = fetch(request).then(response => {
+  // "no-cache": always ask the server whether the file changed (a cheap 304 when it hasn't), so the browser's
+  // HTTP cache can't hand back an old styles.css next to a new app.js
+  const network = fetch(request, { cache: "no-cache" }).then(response => {
     if (response.ok) cache.put(request, response.clone());
     return response;
   });

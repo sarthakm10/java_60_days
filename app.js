@@ -44,6 +44,7 @@
     drillStats: {},           // pattern drill, both tracks: { setId: [right, seen] }
     drillScope: "studied",    // "studied" (patterns up to the day you've reached) | "all"
     practiceDone: {},         // code practice, both tracks: { exerciseId: { on: "YYYY-MM-DD", level: "E" | "M" | "H" } }
+    annotations: {},          // notes book: { "beginner:d12" | "fe:3": { bookmarks: [...], highlights: [...] } }
     practiceFilter: "all",    // "all" | "todo" | "done"
     reviseTab: "due",         // "due" | "cards" | "again"
     currentView: "home",      // "home" | "grid" | "detail" | "backlog" | "sets"
@@ -121,6 +122,7 @@
         goalMetOn: state.goalMetOn,
         drillStats: state.drillStats,
         drillScope: state.drillScope,
+        annotations: state.annotations,
         activity: state.activity,
         profileName: state.profileName,
         lastPalette: state.lastPalette,
@@ -155,6 +157,7 @@
         state.goalMetOn = saved.goalMetOn || null;
         state.drillStats = saved.drillStats || {};
         state.drillScope = saved.drillScope === "all" ? "all" : "studied";
+        state.annotations = saved.annotations && typeof saved.annotations === "object" ? saved.annotations : {};
         state.theme = saved.theme || "dark";
       }
     } catch (e) { /* corrupted */ }
@@ -707,10 +710,16 @@
   function setupNoteBook(article, opts) {
     if (!window.NoteBook || article._notebook) return;
     article.querySelector(":scope > .nb-open-row")?.remove();
+    const marks = opts.marksKey ? notesMarks(opts.marksKey) : null;
     if (NoteBook.mode() === "book") {
-      const book = NoteBook.attach(article, { ...opts, onModeChange: () => setupNoteBook(article, opts), onPage: rememberBookPage });
-      if (state.pendingBookPage?.key === navKey(navState()) && !state.pendingNoteScroll) book.openAt(state.pendingBookPage);
+      const book = NoteBook.attach(article, { ...opts, marks, toast: (msg) => showToast(msg, "info"),
+        onModeChange: () => setupNoteBook(article, opts), onPage: rememberBookPage });
+      if (state.pendingBookPage?.key === navKey(navState()) && !state.pendingNoteScroll) {
+        book.openAt(state.pendingBookPage);
+        if (state.pendingBookPage.scrollTo) book.root.scrollIntoView({ block: "start" });
+      }
       state.pendingBookPage = null;
+      revealPendingHighlight();
       return;
     }
     const row = document.createElement("div");
@@ -722,6 +731,21 @@
       article.closest(".study-notes")?.scrollIntoView({ block: "start" });
     });
     article.prepend(row);
+    if (marks) NoteBook.applyHighlights(article, marks.load());   // highlights made in the book show here too
+    state.pendingBookPage = null;
+    revealPendingHighlight();
+  }
+
+  // Bookmarks and highlights of one set of notes, kept with the rest of the progress (and in exports)
+  function notesMarks(key) {
+    return {
+      load: () => state.annotations[key] || { bookmarks: [], highlights: [] },
+      save: (data) => {
+        if (data.bookmarks.length || data.highlights.length) state.annotations[key] = data;
+        else delete state.annotations[key];
+        saveState();
+      }
+    };
   }
 
   // Remember which page of the notes book is open, so a reload (or Back) opens it there again
@@ -729,6 +753,113 @@
     const nav = history.state?.nav;
     if (!nav || restoringNav || !book.article.offsetParent) return;
     history.replaceState({ ...history.state, nav: { ...nav, book: where } }, "");
+    saveLastRead(nav, where);
+  }
+
+  // ── Continue reading: the notes book read last, and the page it was at ──
+  const LAST_READ_KEY = "notes_last_read";
+  function saveLastRead(nav, where) {
+    let item = null;
+    if (nav.view === "detail" && nav.day && nav.tab === "study") item = { view: "detail", day: nav.day, track: state.track };
+    else if (nav.view === "frontend" && nav.module && nav.moduleTab === "study") item = { view: "frontend", module: nav.module };
+    if (!item || where?.page == null) return;
+    try { localStorage.setItem(LAST_READ_KEY, JSON.stringify({ ...item, where, at: Date.now() })); } catch { /* storage off */ }
+  }
+  function getLastRead() {
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(LAST_READ_KEY) || "null"); } catch { return null; }
+    if (!r || !r.where) return null;
+    if (r.view === "detail") {
+      const d = r.track === state.track && getDayData(r.day);
+      if (!d) return null;
+      return { ...r, title: d.title, kicker: `Day ${r.day}`, key: `detail:${r.day}` };
+    }
+    const m = r.view === "frontend" && getModule(r.module);
+    return m ? { ...r, title: m.title, kicker: `Frontend ${r.module}`, key: `frontend:${r.module}` } : null;
+  }
+  function openLastRead(r) {
+    state.pendingBookPage = { ...r.where, key: r.key, scrollTo: true };
+    if (r.view === "detail") openDayDetail(r.day, "study");
+    else openFrontendModule(r.module, "study");
+    applyPendingBookPage();   // notes that were already built don't go through setupNoteBook again
+  }
+  function applyPendingBookPage() {
+    const p = state.pendingBookPage;
+    const book = $(".view.active #study-article")?._notebook;
+    if (!p || !book || p.key !== navKey(navState())) return;
+    state.pendingBookPage = null;
+    book.openAt(p);
+    book.root.scrollIntoView({ block: "start" });
+  }
+
+  // ── Highlight of the day: one saved highlight, a different one each day ──
+  function pickDailyHighlight() {
+    const list = [];
+    Object.entries(state.annotations || {}).forEach(([key, a]) => {
+      const d = key.match(/^(\w+):d(\d+)$/), f = key.match(/^fe:(\d+)$/);
+      if (d ? d[1] !== state.track || !getDayData(+d[2]) : !(f && getModule(+f[1]))) return;
+      (a.highlights || []).forEach(h => { if (h.quote?.trim()) list.push({ key, h, day: d ? +d[2] : null, module: f ? +f[1] : null }); });
+    });
+    if (!list.length) return null;
+    list.sort((a, b) => (a.h.at || 0) - (b.h.at || 0));
+    const now = new Date();
+    const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 864e5);
+    const pick = list[(dayOfYear + now.getFullYear()) % list.length];
+    pick.source = pick.day ? `Day ${pick.day} · ${getDayData(pick.day).title}` : `Frontend ${pick.module} · ${getModule(pick.module).title}`;
+    return pick;
+  }
+  function openHighlight(pick) {
+    state.pendingHighlight = { key: pick.day ? `detail:${pick.day}` : `frontend:${pick.module}`, id: pick.h.id };
+    if (pick.day) openDayDetail(pick.day, "study");
+    else openFrontendModule(pick.module, "study");
+    revealPendingHighlight();
+  }
+  function revealPendingHighlight() {
+    const p = state.pendingHighlight;
+    if (!p || p.key !== navKey(navState())) return;
+    const article = $(".view.active #study-article");
+    const mark = article?.querySelector(`mark.nb-hl[data-hl="${p.id}"]`);
+    if (!mark) return;
+    state.pendingHighlight = null;
+    const show = () => {
+      if (!mark.isConnected) return;
+      window.NoteBook ? NoteBook.reveal(mark, { instant: true, flash: true }) : mark.scrollIntoView({ block: "center" });
+      (article._notebook?.root || mark).scrollIntoView({ block: article._notebook ? "start" : "center" });
+    };
+    show();
+    // Diagrams drawing a moment later lay the pages out again: land on it again if it moved away
+    setTimeout(() => { if (mark.isConnected && !mark.offsetParent) show(); }, 1200);
+  }
+
+  function timeAgo(ms) {
+    const s = Math.max(0, (Date.now() - ms) / 1000);
+    if (s < 60) return "just now";
+    if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+    if (s < 86400) { const h = Math.floor(s / 3600); return `${h} hour${h === 1 ? "" : "s"} ago`; }
+    const d = Math.floor(s / 86400);
+    return d === 1 ? "yesterday" : `${d} days ago`;
+  }
+
+  // Dashboard cards the reader folded away
+  const FOLD_KEY = "dash_folded";
+  const foldedCards = () => { try { return JSON.parse(localStorage.getItem(FOLD_KEY) || "[]"); } catch { return []; } };
+  const foldBtnHTML = (id, label) => {
+    const folded = foldedCards().includes(id);
+    return `<button class="fold-btn" type="button" data-fold="${id}" aria-expanded="${!folded}" title="${folded ? "Show" : "Hide"} ${label}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`;
+  };
+  function bindFoldButtons(root, store = FOLD_KEY) {
+    root.querySelectorAll(".fold-btn[data-fold]").forEach(btn => btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.fold;
+      let list;
+      try { list = JSON.parse(localStorage.getItem(store) || "[]"); } catch { list = []; }
+      const folded = !list.includes(id);
+      list = folded ? [...list, id] : list.filter(x => x !== id);
+      try { localStorage.setItem(store, JSON.stringify(list)); } catch { /* storage off */ }
+      btn.closest(".foldable")?.classList.toggle("folded", folded);
+      btn.setAttribute("aria-expanded", String(!folded));
+      btn.title = btn.title.replace(/^(Show|Hide)/, folded ? "Show" : "Hide");
+    }));
   }
 
   // Open the notes at a subtopic: flip to its page in the book, scroll to it otherwise.
@@ -755,21 +886,45 @@
     });
   }
 
+  // Grey placeholder lines while a day's notes load
+  function notesSkeletonHTML() {
+    const lines = (widths) => widths.map(w => `<span class="skel skel-line" style="width:${w}%"></span>`).join("");
+    return `<div class="notes-skeleton" role="status" aria-label="Loading notes">
+      <span class="skel skel-title"></span>
+      ${lines([96, 88, 92, 64])}
+      <span class="skel skel-block"></span>
+      <span class="skel skel-heading"></span>
+      ${lines([94, 90, 72])}
+    </div>`;
+  }
+
+  // One look for every "nothing here" / "couldn't load" message: an icon, a line, a few words and maybe a button
+  function emptyStateHTML(icon, title, text = "", action = "") {
+    return `<div class="empty-box" role="status">
+      <div class="empty-box-icon" aria-hidden="true">${icon}</div>
+      <h3 class="empty-box-title">${title}</h3>
+      ${text ? `<div class="empty-box-text">${text}</div>` : ""}
+      ${action ? `<div class="empty-box-actions">${action}</div>` : ""}
+    </div>`;
+  }
+  const reloadBtnHTML = () => `<button class="btn small" data-empty-action="reload">↻ Reload the page</button>`;
+  const checklistBtnHTML = () => `<button class="btn small" data-empty-action="checklist">${ICONS.clipboardList} Open the checklist</button>`;
+
+  // Placeholder exercise cards while the exercises load
+  function practiceSkeletonHTML() {
+    const card = `<div class="practice-skel-card"><span class="skel skel-heading"></span><span class="skel"></span><span class="skel" style="width:88%"></span><span class="skel" style="width:62%"></span></div>`;
+    return `<div class="practice-skeleton" aria-label="Loading exercises">${card}${card}</div>`;
+  }
+
   function studyNotesMessageHTML(dayNum) {
     const notes = notesCache[dayNum];
-    if (!notes || notes.status === "loading") {
-      return `<div class="study-notes-message">Loading notes…</div>`;
-    }
+    if (!notes || notes.status === "loading") return notesSkeletonHTML();
     if (notes.status === "missing") {
       return state.track === "beginner"
-        ? `<div class="study-notes-message">
-            <strong>Notes for Day ${dayNum} are being written.</strong>
-            <p>For now, work through the checklist: each item says what to learn and practise. The notes will appear here when they're ready.</p>
-          </div>`
-        : `<div class="study-notes-message">
-            <strong>No study notes for Day ${dayNum} yet.</strong>
-            <p>Add a Markdown file at <code>${notesPath(dayNum)}</code> and it will show up here.</p>
-          </div>`;
+        ? emptyStateHTML("✍️", `Notes for Day ${dayNum} are being written`,
+            `<p>For now, work through the checklist: each item says what to learn and practise. The notes will appear here when they're ready.</p>`, checklistBtnHTML())
+        : emptyStateHTML("📝", `No study notes for Day ${dayNum} yet`,
+            `<p>Add a Markdown file at <code>${notesPath(dayNum)}</code> and it will show up here.</p>`, checklistBtnHTML());
     }
     const fileHint = location.protocol === "file:"
       ? `<p>Browsers block reading local files when the page is opened directly from disk. Serve the folder instead, for example:</p>
@@ -778,7 +933,7 @@
       : state.track === "interview"
         ? `<p>Check that <code>${notesPath(dayNum)}</code> exists and reload the page.</p>`
         : `<p>Check your connection and reload the page.</p>`;
-    return `<div class="study-notes-message"><strong>Couldn't load the study notes.</strong>${fileHint}</div>`;
+    return emptyStateHTML("📡", "Couldn't load the study notes", fileHint, location.protocol === "file:" ? "" : reloadBtnHTML());
   }
 
   // ── Helpers ──
@@ -1175,7 +1330,8 @@
     const messages = [];
     const level = getLevelInfo();
     const newDays = DAYS.filter(d => isDayCompleted(d.day) && !before.completed.has(d.day));
-    newDays.forEach(d => messages.push(`Day ${d.day} complete! 🎉`));
+    // One day finished: a summary card says so. Several at once (an import, a module): a toast
+    if (newDays.length > 1) newDays.forEach(d => messages.push(`Day ${d.day} complete! 🎉`));
     if (level.level > before.level) messages.push(`Level up! You're now Level ${level.level} · ${level.title} ⭐`);
 
     const today = dateKey();
@@ -1192,11 +1348,57 @@
     state.seenAchievements = unlocked.map(a => a.id);
     saveState();
 
-    if (messages.length) {
-      showToast(messages.join(" · "), "celebrate");
-      launchConfetti(newDays.length || fresh.length || level.level > before.level || goalMet ? 1 : 0.5);
-    }
+    if (messages.length) showToast(messages.join(" · "), "celebrate");
+    if (messages.length || newDays.length) launchConfetti(newDays.length || fresh.length || level.level > before.level || goalMet ? 1 : 0.5);
+    if (newDays.length === 1) showDayDone(newDays[0].day);
   }
+
+  // ── Day complete: a summary card with what you did and what's next ──
+  function showDayDone(dayNum) {
+    closeDayDone();
+    const day = getDayData(dayNum);
+    if (!day) return;
+    const next = DAYS.find(d => d.day > dayNum && !isDayCompleted(d.day));
+    const streak = getStudyStreak();
+    const lvl = getLevelInfo();
+    const minutes = state.studyMinutes[dateKey()] || 0;
+    const subs = getAllSubtopicsForDay(dayNum).length;
+    const done = DAYS.filter(d => isDayCompleted(d.day)).length;
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay active day-done-overlay";
+    overlay.id = "day-done";
+    overlay.innerHTML = `
+      <div class="modal-content day-done" role="dialog" aria-modal="true" aria-labelledby="day-done-title">
+        <div class="day-done-burst" aria-hidden="true">🎉</div>
+        <div class="day-done-kicker">Day ${dayNum} of ${DAYS.length} · complete</div>
+        <h2 class="day-done-title" id="day-done-title">${escapeHTML(day.title)}</h2>
+        <div class="day-done-stats">
+          <div><b>${subs}</b><span>subtopics</span></div>
+          <div><b>${minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`}</b><span>focused today</span></div>
+          <div><b>${streak.current}🔥</b><span>day streak</span></div>
+          <div><b>${lvl.level}</b><span>${escapeHTML(lvl.title)}</span></div>
+        </div>
+        <div class="day-done-progress">
+          <div class="bar"><div class="bar-fill" style="width:${Math.round(done / DAYS.length * 100)}%"></div></div>
+          <span>${done} of ${DAYS.length} days done</span>
+        </div>
+        ${next ? `
+          <div class="day-done-next">
+            <span class="day-done-next-label">Up next</span>
+            <span class="day-done-next-title">Day ${next.day} · ${escapeHTML(next.title)}</span>
+          </div>` : `<div class="day-done-next"><span class="day-done-next-title">That was the last one. Every day is done. 🏆</span></div>`}
+        <div class="modal-actions">
+          <button class="modal-btn cancel" id="day-done-close">Close</button>
+          ${next ? `<button class="modal-btn day-done-go" id="day-done-go">Start Day ${next.day} ${ICONS.arrowRight}</button>` : ""}
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeDayDone(); });
+    overlay.querySelector("#day-done-close").addEventListener("click", closeDayDone);
+    overlay.querySelector("#day-done-go")?.addEventListener("click", () => { closeDayDone(); openDayDetail(next.day); });
+    (overlay.querySelector("#day-done-go") || overlay.querySelector("#day-done-close")).focus({ preventScroll: true });
+  }
+  function closeDayDone() { $("#day-done")?.remove(); }
 
   // ── Confetti (tiny canvas implementation, no library) ──
   function launchConfetti(strength = 1) {
@@ -1301,7 +1503,10 @@
 
     // Navigation highlight ("detail" keeps the section it was opened from lit)
     const navView = state.currentView === "detail" ? state.returnView : state.currentView;
-    $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === navView));
+    // "Today" on the phone bar is lit on the current day's page (and then the Roadmap tab isn't)
+    const onToday = state.currentView === "detail" && state.selectedDay === getCurrentDay();
+    $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.action === "today" ? onToday
+      : item.dataset.view === navView && !(onToday && item.classList.contains("bottom-item"))));
     const dueCount = getDueTopics().length + dueCardKeys().length + getDueResolves().length;
     $$(".nav-badge[data-badge='revise']").forEach(b => {
       b.textContent = dueCount > 99 ? "99+" : dueCount;
@@ -1362,13 +1567,8 @@
     const filteredDays = getFilteredDays();
 
     if (filteredDays.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state" style="grid-column: 1 / -1">
-          ${ICONS.sparkles}
-          <h3>No days match your filters</h3>
-          <p>Try adjusting your search or filter criteria.</p>
-        </div>
-      `;
+      container.innerHTML = emptyStateHTML("🔍", "No days match your filters",
+        "<p>Try another status or subject.</p>", `<button class="btn small" data-empty-action="clear-filters">Clear the filters</button>`);
       return;
     }
 
@@ -1409,28 +1609,94 @@
       `;
     };
 
-    // Group the (filtered) days under their phase
+    // Group the (filtered) days under their phase. A finished phase starts folded; a filter shows every match.
+    const filtering = filteredDays.length < DAYS.length;
+    const folds = phaseFolds();
     container.innerHTML = getPhases()
       .map(phase => ({ phase, days: filteredDays.filter(d => phase.days.includes(d.day)) }))
       .filter(group => group.days.length)
-      .map(({ phase, days }) => `
-        <section class="phase-section">
-          <div class="phase-section-head">
-            <span class="phase-section-num">${phase.index}</span>
-            <div>
-              <div class="phase-section-title">${escapeHTML(phase.heading)}</div>
-              <div class="phase-section-meta">${phase.range} · ${phase.doneDays}/${phase.days.length} days done</div>
-            </div>
-            <div class="bar"><div class="bar-fill" style="width:${phase.percentage}%"></div></div>
-          </div>
+      .map(({ phase, days }) => {
+        const done = phase.doneDays === phase.days.length;
+        const fid = `${state.track}:${phase.index}`;
+        const folded = !filtering && (folds[fid] ?? (done && !phase.days.includes(currentDay)));
+        return `
+        <section class="phase-section ${folded ? "folded" : ""} ${done ? "done" : ""}" data-fold-id="${fid}">
+          <button type="button" class="phase-section-head" aria-expanded="${!folded}" ${filtering ? "disabled" : ""}>
+            <span class="phase-section-num">${done ? "✓" : phase.index}</span>
+            <span class="phase-section-text">
+              <span class="phase-section-title">${escapeHTML(phase.heading)}</span>
+              <span class="phase-section-meta">${phase.range} · ${phase.doneDays}/${phase.days.length} days done</span>
+            </span>
+            <span class="bar"><span class="bar-fill" style="display:block;width:${phase.percentage}%"></span></span>
+            ${filtering ? "" : `<span class="phase-fold-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>`}
+          </button>
           <div class="phase-cards">${days.map(dayCardHTML).join("")}</div>
-        </section>
-      `).join("");
+        </section>`;
+      }).join("");
+
+    // Fold or open a phase
+    container.querySelectorAll(".phase-section-head:not([disabled])").forEach(head => head.addEventListener("click", () => {
+      const sec = head.closest(".phase-section");
+      const folded = !sec.classList.contains("folded");
+      sec.classList.toggle("folded", folded);
+      head.setAttribute("aria-expanded", String(!folded));
+      const all = phaseFolds();
+      all[sec.dataset.foldId] = folded;
+      try { localStorage.setItem(PHASE_FOLD_KEY, JSON.stringify(all)); } catch { /* storage off */ }
+    }));
 
     // Bind click events
     container.querySelectorAll(".day-card").forEach(card => {
-      card.addEventListener("click", () => openDayDetail(parseInt(card.dataset.day)));
+      card.addEventListener("click", () => { hideDayPeek(); openDayDetail(parseInt(card.dataset.day)); });
+      card.addEventListener("mouseenter", () => scheduleDayPeek(card));
+      card.addEventListener("mouseleave", hideDayPeek);
     });
+  }
+
+  const PHASE_FOLD_KEY = "roadmap_folded";
+  const phaseFolds = () => { try { return JSON.parse(localStorage.getItem(PHASE_FOLD_KEY) || "{}") || {}; } catch { return {}; } };
+
+  // ── Day card preview on hover: the day's topics and how far each one is ──
+  let peekTimer = 0;
+  function scheduleDayPeek(card) {
+    clearTimeout(peekTimer);
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    peekTimer = setTimeout(() => showDayPeek(card), 420);
+  }
+  function hideDayPeek() {
+    clearTimeout(peekTimer);
+    $("#day-peek")?.remove();
+  }
+  function showDayPeek(card) {
+    if (!card.isConnected || !card.matches(":hover")) return;
+    const day = getDayData(+card.dataset.day);
+    if (!day) return;
+    hideDayPeek();
+    const peek = document.createElement("div");
+    peek.id = "day-peek";
+    peek.className = "day-peek";
+    peek.setAttribute("role", "tooltip");
+    peek.innerHTML = `
+      <div class="day-peek-kicker">Day ${day.day} · ${escapeHTML(day.phase || "")}</div>
+      <div class="day-peek-title">${escapeHTML(day.title)}</div>
+      <ul class="day-peek-list">${day.topics.map(t => {
+        const n = t.subtopics.filter(st => state.checkedSubtopics[st.id]).length;
+        const color = CATEGORY_COLORS[t.category]?.text || "#888";
+        return `<li class="${n === t.subtopics.length ? "done" : ""}">
+          <span class="category-dot" style="background:${color}"></span>
+          <span class="day-peek-name">${escapeHTML(t.name)}</span>
+          <span class="day-peek-count">${n === t.subtopics.length ? "✓" : `${n}/${t.subtopics.length}`}</span>
+        </li>`;
+      }).join("")}</ul>
+      <div class="day-peek-foot">${ICONS.clock} ${day.estimatedTime}${hasPractice(day.day) ? " · has code practice" : ""}</div>`;
+    document.body.appendChild(peek);
+    const r = card.getBoundingClientRect(), w = peek.offsetWidth, h = peek.offsetHeight;
+    const right = r.right + 10 + w <= innerWidth - 8;
+    let left = right ? r.right + 10 : r.left - 10 - w;
+    if (left < 8) left = Math.max(8, Math.min(innerWidth - w - 8, r.left));
+    const top = Math.max(8, Math.min(innerHeight - h - 8, r.top));
+    peek.style.left = `${left}px`;
+    peek.style.top = `${top}px`;
   }
 
   // ── Render: Day Detail ──
@@ -1717,7 +1983,10 @@
       </div>
       ${tabsHTML}
       ${detailTab === "study" ? studyHTML : detailTab === "practice" ? practiceTabHTML(dayNum) : detailTab === "video" ? videoCardHTML(dayVideoSource(dayNum)) : checklistHTML}
+      ${dayPagerHTML(dayNum)}
     `;
+    detail.querySelectorAll(".day-pager [data-go-day]").forEach(b => b.addEventListener("click", () => openDayDetail(+b.dataset.goDay, state.detailTab)));
+    watchDetailHeader(detail, dayNum, info);
     const videoCard = detail.querySelector(".day-video");
     if (videoCard) {
       if (keptVideo) videoCard.replaceWith(keptVideo);
@@ -1733,6 +2002,7 @@
     detail.querySelectorAll(".detail-tab").forEach(tab => {
       tab.addEventListener("click", () => {
         if (state.detailTab === tab.dataset.tab) return;
+        window.NoteBook?.setFocus(false);
         state.detailTab = tab.dataset.tab;
         renderDayDetail(dayNum);
         rememberNav();
@@ -1787,7 +2057,7 @@
           diagramsReady = Promise.resolve();
         } else {
           diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), () => renderDayDetail(dayNum));
-          setupNoteBook(article, { title: day.title, kicker: `Day ${dayNum} · ${day.phase}` });
+          setupNoteBook(article, { title: day.title, kicker: `Day ${dayNum} · ${day.phase}`, marksKey: `${state.track}:d${dayNum}` });
           studyNotesKeep = { day: dayNum, track: state.track, html: notes.html, theme: state.theme, el: article.closest(".study-notes") };
         }
         revealPendingNote(detail, article, diagramsReady, !reuseNotes);
@@ -2254,10 +2524,10 @@
     const studyHTML = notes.status === "ready"
       ? `<div class="reading-progress"><span id="reading-progress-fill"></span></div>
          <div class="study-notes"><nav class="study-toc" id="study-toc"></nav><article class="md-content" id="study-article">${notes.html}</article></div>`
-      : `<div class="study-notes"><div class="study-notes-message">${
-          notes.status === "loading" ? "Loading notes…"
-          : notes.status === "missing" ? `<strong>Notes for this module are being written.</strong><p>For now, work through the checklist: each item says what to learn. The notes will appear here when they're ready.</p>`
-          : `<strong>Couldn't load the notes.</strong><p>Check your connection and reload the page.</p>`}</div></div>`;
+      : notes.status === "loading" ? `<div class="study-notes">${notesSkeletonHTML()}</div>`
+      : `<div class="study-notes">${
+          notes.status === "missing" ? emptyStateHTML("✍️", "Notes for this module are being written", `<p>For now, work through the checklist: each item says what to learn. The notes will appear here when they're ready.</p>`, checklistBtnHTML())
+          : emptyStateHTML("📡", "Couldn't load the notes", `<p>Check your connection and reload the page.</p>`, reloadBtnHTML())}</div>`;
 
     container.innerHTML = `
       <button class="detail-back-btn" id="fe-back">${ICONS.arrowLeft} All frontend modules</button>
@@ -2315,6 +2585,7 @@
     }));
     container.querySelectorAll(".detail-tab").forEach(t => t.addEventListener("click", () => {
       if (state.moduleTab === t.dataset.tab) return;
+      window.NoteBook?.setFocus(false);
       state.moduleTab = t.dataset.tab;
       rerender();
       rememberNav();
@@ -2352,7 +2623,7 @@
       const article = container.querySelector("#study-article");
       if (article) {
         const diagramsReady = enhanceStudyNotes(article, container.querySelector("#study-toc"), rerender);
-        setupNoteBook(article, { title: m.title, kicker: `Frontend module ${m.module}` });
+        setupNoteBook(article, { title: m.title, kicker: `Frontend module ${m.module}`, marksKey: `fe:${m.module}` });
         revealPendingNote(container, article, diagramsReady);
       }
       return;
@@ -2379,9 +2650,9 @@
   // A frontend module's Code Practice tab
   function modulePracticeHTML(file, list) {
     const entry = practiceCache[file];
-    if (!entry || entry.status === "loading") return `<div class="study-notes-message">Loading exercises…</div>`;
+    if (!entry || entry.status === "loading") return practiceSkeletonHTML();
     if (entry.status === "error") {
-      return `<div class="study-notes-message"><strong>Couldn't load the exercises.</strong><p>Check your connection and reload the page.</p></div>`;
+      return emptyStateHTML("📡", "Couldn't load the exercises", `<p>Check your connection and reload the page.</p>`, reloadBtnHTML());
     }
     return `
       <div class="practice-panel">
@@ -2389,6 +2660,7 @@
           ${entry.intro.trim() ? `<div class="md-content">${mdToHTML(entry.intro.trim())}</div>` : ""}
           ${practiceKinds(list).map(runTipHTML).join("")}
         </div>
+        ${practiceToolbarHTML(list)}
         ${list.map(exerciseCardHTML).join("")}
       </div>`;
   }
@@ -2877,6 +3149,7 @@
   }
 
   function openDayDetail(dayNum, tab = "checklist") {
+    if (tab !== "study") window.NoteBook?.setFocus(false);   // going day to day in the notes keeps focus mode
     saveScrollPosition();
     if (RETURN_LABELS[state.currentView]) state.returnView = state.currentView;
     else if (state.currentView !== "detail") state.returnView = "grid";
@@ -2891,6 +3164,80 @@
     rememberNav();
   }
 
+  // Previous / next day at the foot of a day's page
+  function dayPagerHTML(dayNum) {
+    const prev = getDayData(dayNum - 1), next = getDayData(dayNum + 1);
+    if (!prev && !next) return "";
+    const btn = (d, dir) => d ? `
+      <button class="day-pager-btn ${dir}" data-go-day="${d.day}">
+        ${dir === "prev" ? ICONS.arrowLeft : ""}
+        <span><small>${dir === "prev" ? "Previous" : "Next"} · Day ${d.day}</small><b>${escapeHTML(d.title)}</b></span>
+        ${dir === "next" ? ICONS.arrowRight : ""}
+      </button>` : `<span></span>`;
+    return `<nav class="day-pager" aria-label="Other days">${btn(prev, "prev")}${btn(next, "next")}</nav>`;
+  }
+
+  // A slim bar with the day and its progress, once the big header has scrolled out of sight
+  let detailHeaderObserver = null;
+  function stickyBar() {
+    let bar = $("#detail-sticky");
+    if (bar) return bar;
+    bar = document.createElement("div");
+    bar.id = "detail-sticky";
+    bar.className = "detail-sticky";
+    bar.hidden = true;
+    document.body.appendChild(bar);
+    bar.addEventListener("click", (e) => {
+      const go = e.target.closest("[data-go-day]");
+      if (go) { openDayDetail(+go.dataset.goDay, state.detailTab); return; }
+      if (e.target.closest(".detail-sticky-top")) $(".content-scroll").scrollTo({ top: 0, behavior: "smooth" });
+    });
+    addEventListener("resize", placeStickyBar);
+    return bar;
+  }
+  function placeStickyBar() {
+    const bar = $("#detail-sticky");
+    if (!bar || bar.hidden) return;
+    const r = $(".content-scroll").getBoundingClientRect();
+    bar.style.top = `${r.top}px`;
+    bar.style.left = `${r.left}px`;
+    bar.style.width = `${$(".content-scroll").clientWidth}px`;
+  }
+  function hideStickyBar() {
+    detailHeaderObserver?.disconnect();
+    detailHeaderObserver = null;
+    const bar = $("#detail-sticky");
+    if (bar) { bar.hidden = true; bar.classList.remove("shown"); }
+  }
+  function watchDetailHeader(detail, dayNum, info) {
+    hideStickyBar();
+    const header = detail.querySelector(".detail-header");
+    if (!header || !("IntersectionObserver" in window)) return;
+    const bar = stickyBar();
+    const prev = getDayData(dayNum - 1), next = getDayData(dayNum + 1);
+    bar.innerHTML = `
+      <div class="detail-sticky-inner">
+        <button class="detail-sticky-top" title="Back to the top">
+          <span class="ring" style="--p:${info.percentage}"><span class="ring-value">${info.percentage}</span></span>
+          <span class="detail-sticky-text"><small>Day ${dayNum} of ${DAYS.length}</small><b>${escapeHTML(getDayData(dayNum).title)}</b></span>
+        </button>
+        <span class="detail-sticky-nav">
+          <button class="detail-sticky-btn" ${prev ? `data-go-day="${prev.day}" title="Day ${prev.day}: ${escapeHTML(prev.title)}"` : "disabled"} aria-label="Previous day">${ICONS.arrowLeft}</button>
+          <button class="detail-sticky-btn" ${next ? `data-go-day="${next.day}" title="Day ${next.day}: ${escapeHTML(next.title)}"` : "disabled"} aria-label="Next day">${ICONS.arrowRight}</button>
+        </span>
+      </div>`;
+    detailHeaderObserver = new IntersectionObserver(([entry]) => {
+      // The notes book has its own bar and sizes itself to the screen, so the slim bar stays out of its way
+      const show = !entry.isIntersecting && entry.boundingClientRect.top < 0 && state.currentView === "detail"
+        && !detail.querySelector(".study-notes.nb-mode");
+      bar.hidden = false;
+      placeStickyBar();
+      bar.classList.toggle("shown", show);
+      bar.inert = !show;
+    }, { root: $(".content-scroll"), threshold: 0 });
+    detailHeaderObserver.observe(header);
+  }
+
   function closeDayDetail() {
     backTo({ view: state.returnView || "grid", module: state.selectedModule, set: state.selectedSet }, () => {
       state.selectedDay = null;
@@ -2899,6 +3246,9 @@
   }
 
   function switchView(view) {
+    window.NoteBook?.setFocus(false);   // focus mode belongs to the notes being read
+    hideStickyBar();
+    hideDayPeek();
     saveScrollPosition();
     state.currentView = view;
     if (view !== "detail") state.selectedDay = null;
@@ -2999,6 +3349,8 @@
 
   // Closes the topmost thing open over the page; false if nothing was open
   function closeOverlay() {
+    if ($("#shortcuts-modal")) { closeShortcuts(); return true; }
+    if ($("#day-done")) { closeDayDone(); return true; }
     if (window.CodeVisualizer?.isOpen()) { CodeVisualizer.close(); return true; }
     if ($("#kunal-reader")) { readerStack.pop(); showReaderTop(); return true; }   // back one note
     if ($("#log-modal")) { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); return true; }
@@ -3006,6 +3358,7 @@
     if (timerPanelOpen) { toggleTimerPanel(false); return true; }
     if (!$("#search-results").hidden) { $("#search-results").hidden = true; $("#search-input").blur(); return true; }
     if ($(".sidebar").classList.contains("open")) { closeMobileMenu(); return true; }
+    if (window.NoteBook?.isFocus() && $(".view.active .study-notes.nb-mode")) { NoteBook.setFocus(false); return true; }
     return false;
   }
 
@@ -3158,6 +3511,11 @@
     const dueCardsCount = dueCardKeys().length;
     const dueResolvesCount = getDueResolves().length;
     const dueTotal = dueTopicsCount + dueCardsCount + dueResolvesCount;
+    const lastRead = getLastRead();
+    const dailyHl = pickDailyHighlight();
+    const hlQuote = dailyHl && (dailyHl.h.quote.trim().length > 200 ? dailyHl.h.quote.trim().slice(0, 197) + "…" : dailyHl.h.quote.trim());
+    const foldedList = foldedCards();
+    const folded = (id) => foldedList.includes(id) ? "folded" : "";
 
     const missionTopics = day.topics.map(t => {
       const checked = t.subtopics.filter(s => state.checkedSubtopics[s.id]).length;
@@ -3190,11 +3548,14 @@
           <p class="hero-sub">${allDone
             ? `You finished all <strong>${DAYS.length} days</strong>. Keep revising and go get that offer. 🏆`
             : `You're on <strong>Day ${currentDay}</strong> of ${DAYS.length} in the ${TRACKS[state.track].name} track — <strong>${stats.percentage}%</strong> of the whole plan done. ${currentPhase ? `This week: <strong>${escapeHTML(currentPhase.shortName)}</strong>.` : ""}`}</p>
-          <div class="quote">
+          <div class="quote ${dailyHl ? `from-notes nb-hl-${escapeHTML(dailyHl.h.color || "yellow")}` : ""}" id="hero-quote">
             <span class="quote-mark">“</span>
             <div>
-              <div class="quote-text" id="quote-text">${escapeHTML(quote)}</div>
-              <div class="quote-author" id="quote-author">— ${escapeHTML(author)}</div>
+              ${dailyHl ? `<div class="quote-kicker" id="quote-kicker">✨ Your highlight of the day</div>` : ""}
+              <div class="quote-text" id="quote-text">${escapeHTML(dailyHl ? hlQuote : quote)}</div>
+              <div class="quote-author" id="quote-author">${dailyHl
+                ? `${escapeHTML(dailyHl.source)} · <button class="link-btn quote-open" id="home-hl">Open in the notes →</button>`
+                : `— ${escapeHTML(author)}`}</div>
             </div>
             <button class="quote-shuffle" id="quote-shuffle" title="Another quote">${ICONS.shuffle}</button>
           </div>
@@ -3221,6 +3582,15 @@
             <button class="btn" id="mission-notes">${ICONS.bookOpen} Study notes</button>
             ${hasPractice(currentDay) ? `<button class="btn" id="mission-practice">${ICONS.code} Code practice</button>` : ""}
           </div>
+          ${lastRead ? `
+          <button class="continue-row" id="home-continue" title="Open the notes where you left off">
+            <span class="continue-row-icon">📖</span>
+            <span class="continue-row-text">
+              <small>Continue reading · ${escapeHTML(lastRead.kicker)}${lastRead.where.of ? ` · page ${Math.max(1, lastRead.where.page + 1)} of ${lastRead.where.of}` : ""}</small>
+              <b>${escapeHTML(lastRead.title)}</b>
+            </span>
+            ${ICONS.arrowRight}
+          </button>` : ""}
         </section>
 
         <section class="card stat-tile ${r()}">
@@ -3248,13 +3618,15 @@
           <button class="link-btn" id="home-sets" style="align-self:flex-start">Open question sets →</button>
         </section>
 
-        <section class="card activity-card ${r()}">
+        <section class="card activity-card foldable ${folded("activity")} ${r()}">
           <div class="card-head">
             <div class="card-title">📈 Your study activity</div>
-            <div class="activity-summary"><strong>${streak.activeDays}</strong> active day${streak.activeDays === 1 ? "" : "s"} · best streak <strong>${streak.best}</strong></div>
+            <div class="card-head-end"><div class="activity-summary"><strong>${streak.activeDays}</strong> active day${streak.activeDays === 1 ? "" : "s"} · best streak <strong>${streak.best}</strong></div>${foldBtnHTML("activity", "study activity")}</div>
           </div>
+          <div class="fold-body">
           ${activityCalendarHTML()}
           <div class="activity-legend">Less <span class="act-cell"></span><span class="act-cell l1"></span><span class="act-cell l2"></span><span class="act-cell l3"></span><span class="act-cell l4"></span> More <span class="legend-today">today</span></div>
+          </div>
         </section>
 
         ${dueTotal ? `
@@ -3290,7 +3662,7 @@
           <div class="journey">
             ${phases.map(p => `
               <button class="phase ${p.started ? "started" : ""} ${p.doneDays === p.days.length ? "done" : ""} ${p === currentPhase && !allDone ? "current" : ""}" data-day="${p.days[0]}" title="${escapeHTML(p.name)}">
-                <span class="phase-node">${p.doneDays === p.days.length ? "✓" : p.index}</span>
+                <span class="phase-node" style="--p:${p.percentage}">${p.doneDays === p.days.length ? "✓" : p.index}</span>
                 <span class="phase-name">${escapeHTML(p.shortName)}</span>
                 <span class="phase-range">${p.range}</span>
                 <span class="bar"><span class="bar-fill" style="display:block;width:${p.percentage}%"></span></span>
@@ -3298,9 +3670,12 @@
           </div>
         </section>
 
-        <section class="card mastery-card ${r()}">
-          <div class="card-title">🎓 Subject mastery</div>
-          <div class="mastery">
+        <section class="card mastery-card foldable ${folded("mastery")} ${r()}">
+          <div class="card-head">
+            <div class="card-title">🎓 Subject mastery</div>
+            ${foldBtnHTML("mastery", "subject mastery")}
+          </div>
+          <div class="mastery fold-body">
             ${categories.map(c => {
               const s = getCategoryStats(c.name);
               const color = CATEGORY_COLORS[c.name]?.text || "#888";
@@ -3314,17 +3689,20 @@
           </div>
         </section>
 
-        <section class="card badges-card ${r()}">
+        <section class="card badges-card foldable ${folded("badges")} ${r()}">
           <div class="card-head">
             <div class="card-title">🏆 Badges ${achievements.filter(a => a.unlocked).length}/${achievements.length}</div>
-            <button class="link-btn" id="home-badges">See all →</button>
+            <div class="card-head-end"><button class="link-btn" id="home-badges">See all →</button>${foldBtnHTML("badges", "badges")}</div>
           </div>
-          <div class="badge-row">${badgeStrip.map(a => badgeHTML(a, false)).join("")}</div>
+          <div class="badge-row fold-body">${badgeStrip.map(a => badgeHTML(a, false)).join("")}</div>
         </section>
       </div>
     `;
 
     // Interactions
+    bindFoldButtons(container);
+    $("#home-continue")?.addEventListener("click", () => openLastRead(lastRead));
+    $("#home-hl")?.addEventListener("click", () => openHighlight(dailyHl));
     $("#mission-start").addEventListener("click", () => openDayDetail(currentDay));
     $("#mission-notes").addEventListener("click", () => openDayDetail(currentDay, "study"));
     $("#mission-practice")?.addEventListener("click", () => openDayDetail(currentDay, "practice"));
@@ -3335,6 +3713,8 @@
       btn.addEventListener("click", () => openDayDetail(parseInt(btn.dataset.day))));
 
     $("#quote-shuffle").addEventListener("click", () => {
+      $("#hero-quote").className = "quote";
+      $("#quote-kicker")?.remove();
       quoteIndex = (quoteIndex + 1 + Math.floor(Math.random() * (QUOTES.length - 1))) % QUOTES.length;
       $("#quote-text").textContent = QUOTES[quoteIndex][0];
       $("#quote-author").textContent = `— ${QUOTES[quoteIndex][1]}`;
@@ -3397,7 +3777,8 @@
       reviewsDone: state.reviewsDone,
       studyMinutes: state.studyMinutes,
       goal: state.goal,
-      drillStats: state.drillStats
+      drillStats: state.drillStats,
+      annotations: state.annotations
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -3425,7 +3806,7 @@
         state.practiceDone = savedPracticeDone(data);
         if (data.activity) state.activity = data.activity;
         if (typeof data.profileName === "string") state.profileName = data.profileName;
-        ["reviewsDone", "studyMinutes", "drillStats"].forEach(k => { if (data[k]) state[k] = data[k]; });
+        ["reviewsDone", "studyMinutes", "drillStats", "annotations"].forEach(k => { if (data[k] && typeof data[k] === "object") state[k] = data[k]; });
         if (data.goal) state.goal = { ...state.goal, ...data.goal };
         // No confetti burst for imported badges: each track re-baselines when it is next opened
         TRACK_ORDER.forEach(key => { if (state.tracks[key]) state.tracks[key].seenAchievements = null; });
@@ -3721,12 +4102,38 @@
     renderSidebar();
     celebrateProgress(before);
     if (cardSession.index >= cardSession.queue.length) launchConfetti(0.6);
+    else if (!reduceMotion()) $("#flashcard")?.animate?.([   // the next card slides in
+      { opacity: 0, transform: "translateX(36px)" }, { opacity: 1, transform: "none" }
+    ], { duration: 240, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
   }
 
+  const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // The card turns over: a quarter turn, the other side drawn, then the last quarter
+  let cardFlipping = false;
   function flipCurrentCard() {
-    if (!cardSession || cardSession.index >= cardSession.queue.length) return;
-    cardSession.flipped = !cardSession.flipped;
-    renderReviseView();
+    if (!cardSession || cardSession.index >= cardSession.queue.length || cardFlipping) return;
+    const el = $("#flashcard");
+    const turn = () => {
+      cardSession.flipped = !cardSession.flipped;
+      renderReviseView();
+    };
+    if (!el?.animate || reduceMotion()) { turn(); return; }
+    cardFlipping = true;
+    let done = false;
+    const second = () => {
+      if (done) return;
+      done = true;
+      cardFlipping = false;
+      if (state.currentView !== "revise" || !cardSession || cardSession.index >= cardSession.queue.length) return;
+      turn();
+      $("#flashcard")?.animate([
+        { transform: "perspective(1400px) rotateY(-90deg)" }, { transform: "perspective(1400px) rotateY(0deg)" }
+      ], { duration: 200, easing: "ease-out" });
+    };
+    el.animate([
+      { transform: "perspective(1400px) rotateY(0deg)" }, { transform: "perspective(1400px) rotateY(90deg)" }
+    ], { duration: 150, easing: "ease-in", fill: "forwards" }).finished.then(second, second);
+    setTimeout(second, 400);   // in case the animation never finishes (a hidden tab)
   }
 
   // ── Render: Revise page ──
@@ -3833,6 +4240,11 @@
             <span class="fc-deck">${escapeHTML(s.deckLabel)}</span>
             <span class="fc-count">${s.index + 1} / ${s.queue.length}</span>
           </div>
+          ${s.index ? `<div class="fc-tally" aria-label="Rated so far">
+            <span class="fc-tally-item again">Again <b>${s.tally.again}</b></span>
+            <span class="fc-tally-item good">Good <b>${s.tally.good}</b></span>
+            <span class="fc-tally-item easy">Easy <b>${s.tally.easy}</b></span>
+          </div>` : ""}
           <div class="bar"><div class="bar-fill" style="width:${(s.index / s.queue.length) * 100}%"></div></div>
           <div class="flashcard ${s.flipped ? "flipped" : ""}" id="flashcard" tabindex="0">
             <div class="fc-kind">${card.kind} · ${deckLabel(card.day)} ${review ? stageDotsHTML(review.stage) : `<span class="fc-new">new</span>`}</div>
@@ -4284,7 +4696,7 @@
     const d = DIFFICULTY[ex.level];
     ex.html = ex.html || { title: mdInline(ex.title), task: mdToHTML(ex.task), solution: mdToHTML(ex.solution), hints: ex.hints.map(mdInline) };
     return `
-      <article class="exercise-card ${done ? "done" : ""}" id="ex-${ex.id}" data-ex="${ex.id}">
+      <article class="exercise-card diff-${d.cls} ${done ? "done" : ""}" id="ex-${ex.id}" data-ex="${ex.id}">
         <header class="exercise-head">
           <span class="exercise-num">${done ? ICONS.check : ex.num}</span>
           <h3 class="exercise-title">${ex.html.title}</h3>
@@ -4309,12 +4721,22 @@
     `;
   }
 
+  // Above a day's (or module's) exercises: how many are solved, and a jump to the first one still to do
+  function practiceToolbarHTML(list) {
+    if (list.length < 2) return "";
+    const done = list.filter(e => state.practiceDone[e.id]).length;
+    return `<div class="practice-toolbar">
+      <span class="practice-toolbar-count"><b>${done}/${list.length}</b> solved</span>
+      ${done < list.length ? `<button class="btn small" data-jump-unsolved>Next unsolved ↓</button>` : `<span class="practice-toolbar-done">${ICONS.checkCircle} All solved</span>`}
+    </div>`;
+  }
+
   function practiceTabHTML(day) {
     const status = practiceStatus(day);
-    if (status === "loading") return `<div class="study-notes-message">Loading exercises…</div>`;
+    if (status === "loading") return practiceSkeletonHTML();
     if (status === "error") {
-      return `<div class="study-notes-message"><strong>Couldn't load the exercises.</strong>
-        <p>Check that ${practiceSources(day).map(f => `<code>${practicePath(f)}</code>`).join(", ")} exists and reload the page.</p></div>`;
+      return emptyStateHTML("📡", "Couldn't load the exercises",
+        `<p>Check that ${practiceSources(day).map(f => `<code>${practicePath(f)}</code>`).join(", ")} exists and reload the page.</p>`, reloadBtnHTML());
     }
     // A Beginner day shows its own files' intros and the Spring ones (project setup and dependencies);
     // the Interview single-file intros describe the Interview day they were written for
@@ -4327,6 +4749,7 @@
           ${intro ? `<div class="md-content">${mdToHTML(intro)}</div>` : ""}
           ${practiceKinds(dayExercises(day)).map(runTipHTML).join("")}
         </div>
+        ${practiceToolbarHTML(dayExercises(day))}
         ${dayExercises(day).map(exerciseCardHTML).join("")}
       </div>
     `;
@@ -4407,7 +4830,7 @@
     const feModules = state.track === "interview" ? FRONTEND_DATA.filter(m => m.practice?.length) : [];
     const feLoading = feModules.some(m => ["loading", undefined].includes(practiceCache[`f${m.module}`]?.status));
     if (!days.every(practiceLoaded) || feLoading) {
-      container.innerHTML = `${header}<div class="study-notes-message">Loading exercises…</div>`;
+      container.innerHTML = `${header}${practiceSkeletonHTML()}`;
       Promise.all([loadAllPractice(), ...feModules.map(m => loadPractice(`f${m.module}`))])
         .then(() => { if (state.currentView === "practice") renderPracticeView(); });
       return;
@@ -4442,7 +4865,7 @@
           </button>
           <div class="practice-rows">
             ${rows.map(e => `
-              <button class="practice-row ${state.practiceDone[e.id] ? "done" : ""}" data-day="${day}" data-ex="${e.id}">
+              <button class="practice-row diff-${DIFFICULTY[e.level].cls} ${state.practiceDone[e.id] ? "done" : ""}" data-day="${day}" data-ex="${e.id}">
                 <span class="practice-check">${state.practiceDone[e.id] ? ICONS.check : e.num}</span>
                 <span class="practice-row-title">${mdInline(e.title)}</span>
                 <span class="difficulty-pill ${DIFFICULTY[e.level].cls}">${DIFFICULTY[e.level].label}</span>
@@ -4464,7 +4887,7 @@
           </button>
           <div class="practice-rows">
             ${rows.map(e => `
-              <button class="practice-row ${state.practiceDone[e.id] ? "done" : ""}" data-module="${m.module}" data-ex="${e.id}">
+              <button class="practice-row diff-${DIFFICULTY[e.level].cls} ${state.practiceDone[e.id] ? "done" : ""}" data-module="${m.module}" data-ex="${e.id}">
                 <span class="practice-check">${state.practiceDone[e.id] ? ICONS.check : e.num}</span>
                 <span class="practice-row-title">${mdInline(e.title)}</span>
                 <span class="difficulty-pill ${DIFFICULTY[e.level].cls}">${DIFFICULTY[e.level].label}</span>
@@ -4505,7 +4928,9 @@
           </button>`).join("")}
       </div>
       <div class="practice-groups">
-        ${groups || `<div class="study-notes-message">${state.practiceFilter === "done" ? "Nothing solved yet. Pick an exercise and open your IDE." : "Nothing left to do here. 🎉"}</div>`}
+        ${groups || (state.practiceFilter === "done"
+          ? emptyStateHTML("⌨️", "Nothing solved yet", "<p>Pick an exercise, open your IDE and write it yourself.</p>", `<button class="btn small primary" data-empty-action="practice-todo">See what's to do</button>`)
+          : emptyStateHTML("🎉", "Nothing left to do here", "<p>Every exercise so far is solved. Try rewriting one from memory.</p>", `<button class="btn small" data-empty-action="practice-all">Show all exercises</button>`))}
       </div>
       <p class="practice-footnote">More days get exercises as the plan goes on.</p>
     `;
@@ -4829,6 +5254,55 @@
     })).filter(g => g.items.length);
   }
 
+  // ── Command palette (Ctrl/Cmd+K): things to do, shown in the search box before anything is typed ──
+  function paletteActions() {
+    const today = getCurrentDay();
+    const last = getLastRead();
+    const due = getDueTopics().length, dueCards = dueCardKeys().length;
+    const list = [
+      { id: "today-notes", icon: "📖", title: `Read today's notes · Day ${today}`, meta: getDayData(today).title, words: "today study notes read",
+        run: () => openDayDetail(today, "study") },
+      { id: "today", icon: "✅", title: `Today's checklist · Day ${today}`, meta: "Tick what you've covered", words: "today checklist mission start",
+        run: () => openDayDetail(today) },
+      last && { id: "continue", icon: "🔖", title: "Continue reading", meta: `${last.kicker} · ${last.title}`, words: "continue resume book last",
+        run: () => openLastRead(last) },
+      { id: "revise", icon: "🧠", title: "Revise due topics", meta: due ? `${due} due today` : "Nothing due right now", words: "revise review spaced repetition due",
+        run: () => { state.reviseTab = "due"; switchView("revise"); } },
+      { id: "cards", icon: "🃏", title: "Flashcards", meta: dueCards ? `${dueCards} card${dueCards === 1 ? "" : "s"} due` : "Pick a deck", words: "flashcards cards deck",
+        run: () => { state.reviseTab = "cards"; cardSession = null; switchView("revise"); } },
+      { id: "practice", icon: "⌨️", title: "Code practice", meta: "Exercises for each day", words: "code practice exercises",
+        run: () => switchView("practice") },
+      { id: "grid", icon: "🗺️", title: "Roadmap", meta: `All ${DAYS.length} days`, words: "roadmap days plan grid",
+        run: () => switchView("grid") },
+      { id: "home", icon: "🏠", title: "Dashboard", meta: "Today, progress and badges", words: "dashboard home",
+        run: () => switchView("home") },
+      { id: "sets", icon: "🧩", title: "Question sets", meta: "LeetCode problems by pattern", words: "question sets problems leetcode",
+        run: () => openSet(null) },
+      { id: "frontend", icon: "🎨", title: "Frontend modules", meta: "HTML, CSS, JavaScript, React", words: "frontend modules react javascript",
+        run: () => openFrontendModule(null) },
+      { id: "visualizer", icon: "🔬", title: "Code visualizer", meta: "Step through code line by line", words: "visualizer visualiser debugger",
+        run: () => switchView("visualizer") },
+      { id: "backlog", icon: "📊", title: "Backlog & stats", meta: "Missed items and charts", words: "backlog stats statistics missed",
+        run: () => switchView("backlog") },
+      { id: "timer", icon: "⏱", title: "Focus timer", meta: "25 or 50 minute sessions", words: "focus timer pomodoro",
+        run: () => toggleTimerPanel(true) },
+      { id: "theme", icon: state.theme === "dark" ? "☀️" : "🌙", title: `Switch to ${state.theme === "dark" ? "light" : "dark"} theme`, meta: "Theme", words: "theme dark light mode",
+        run: () => $("#theme-toggle").click() },
+      { id: "shortcuts", icon: "⌨", title: "Keyboard shortcuts", meta: "Every key the app knows", words: "keyboard shortcuts keys help",
+        run: () => openShortcuts() },
+      { id: "export", icon: "💾", title: "Export progress", meta: "Save a backup file", words: "export backup save download",
+        run: () => exportProgress() }
+    ].filter(Boolean);
+    list.forEach(a => { a.type = "action"; a.lower = `${a.title} ${a.meta} ${a.words}`.toLowerCase(); a.titleLower = a.title.toLowerCase(); });
+    return list;
+  }
+  function matchActions(query) {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return paletteActions();
+    return paletteActions().filter(a => words.every(w => a.lower.includes(w)))
+      .sort((a, b) => b.titleLower.startsWith(words[0]) - a.titleLower.startsWith(words[0])).slice(0, 4);
+  }
+
   function highlightMatch(text, query) {
     const safe = escapeHTML(text);
     const words = query.trim().split(/\s+/).filter(w => w.length > 1).map(w => escapeHTML(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
@@ -4841,10 +5315,10 @@
       : item.type === "problem" ? state.solvedProblems[item.slug]
       : item.type === "day" ? isDayCompleted(item.day)
       : item.type === "module" ? frontendStats([getModule(item.module)]).percentage === 100 : false;
-    const icon = { day: "📅", subtopic: "📘", problem: "🧩", set: "🗂️", module: "🎨" }[item.type];
+    const icon = item.type === "action" ? item.icon : { day: "📅", subtopic: "📘", problem: "🧩", set: "🗂️", module: "🎨" }[item.type];
     const pill = item.type === "problem" ? `<span class="difficulty-pill ${DIFFICULTY[item.diff].cls}">${DIFFICULTY[item.diff].label}</span>` : "";
     return `
-      <div class="search-item" role="option" id="search-opt-${index}" data-index="${index}">
+      <div class="search-item ${item.type === "action" ? "is-action" : ""}" role="option" id="search-opt-${index}" data-index="${index}">
         <span class="search-item-icon">${icon}</span>
         <span class="search-item-body">
           <span class="search-item-title">${highlightMatch(item.title, query)}</span>
@@ -4859,6 +5333,7 @@
 
   // Open whatever the result points at, then highlight it on its page
   function openSearchResult(item) {
+    if (item.type === "action") { item.run(); return; }
     highlightUntil = Date.now() + 6000;
     if (item.type === "day") {
       state.highlight = null;
@@ -4897,9 +5372,11 @@
     let results = [];       // flat list in display order
     let active = 0;
     let timer;
+    let palette = false;    // opened with Ctrl/Cmd+K: show actions before anything is typed
 
     const close = () => {
       panel.hidden = true;
+      palette = false;
       input.setAttribute("aria-expanded", "false");
     };
 
@@ -4914,8 +5391,9 @@
 
     const render = () => {
       const query = input.value;
-      if (!query.trim()) { close(); results = []; return; }
-      const groups = runSearch(query);
+      if (!query.trim() && !palette) { close(); results = []; return; }
+      const actions = matchActions(query);
+      const groups = [...(actions.length ? [{ type: "action", label: query.trim() ? "Actions" : "Jump to", items: actions }] : []), ...runSearch(query)];
       results = groups.flatMap(g => g.items);
       let n = 0;
       panel.innerHTML = groups.length
@@ -4943,7 +5421,8 @@
       clearTimeout(timer);
       timer = setTimeout(render, 120);
     });
-    input.addEventListener("focus", () => { if (input.value.trim()) render(); });
+    input.addEventListener("focus", () => { if (input.value.trim() || palette) render(); });
+    input.addEventListener("blur", () => { if (!input.value.trim()) palette = false; });
 
     input.addEventListener("keydown", (e) => {
       if (e.key === "ArrowDown") { e.preventDefault(); if (panel.hidden) render(); else setActive(active + 1); }
@@ -4977,6 +5456,21 @@
       if (!e.target.closest(".search-container")) close();
     });
 
+    // Ctrl/Cmd+K opens the search box as a command palette, from anywhere (even while typing)
+    const kbd = $(".search-kbd");
+    if (kbd) kbd.textContent = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? "⌘K" : "Ctrl K";
+    document.addEventListener("keydown", (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "k") return;
+      e.preventDefault();
+      if (palette && document.activeElement === input) { input.value = ""; close(); input.blur(); return; }
+      window.NoteBook?.setFocus(false);   // the book in focus mode covers the search box
+      if ($("#shortcuts-modal")) closeShortcuts();
+      palette = true;
+      if (document.activeElement === input) render();
+      else input.focus();
+      input.select();
+    });
+
     // "/" focuses search from anywhere
     document.addEventListener("keydown", (e) => {
       const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName);
@@ -4985,6 +5479,107 @@
         input.focus();
       }
     });
+  }
+
+  // ── Keyboard shortcuts ──
+  const SHORTCUTS = [
+    ["Anywhere", [[["?"], "Show these shortcuts"], [["/"], "Search"], [["Ctrl", "K"], "Command palette: jump anywhere"], [["H"], "Go to the dashboard"], [["T"], "Light or dark theme"], [["Esc"], "Close a panel or leave focus mode"]]],
+    ["A day's page", [[["J"], "Next day"], [["K"], "Previous day"], [["Swipe ← →"], "Next or previous day, on a phone"]]],
+    ["Study notes book", [[["←", "→"], "Turn the page"], [["Home", "End"], "First or last page"], [["F"], "Focus mode"], [["M"], "Bookmark the page"], [["B"], "Book or scroll view"]]],
+    ["Flashcards & drills", [[["Space"], "Flip a flashcard"], [["1", "2", "3"], "Again, good or easy"], [["1–4"], "Answer a drill question"], [["Enter"], "Next drill question"]]]
+  ];
+
+  function openShortcuts() {
+    closeShortcuts();
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay active";
+    overlay.id = "shortcuts-modal";
+    overlay.innerHTML = `
+      <div class="modal-content shortcuts" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+        <div class="shortcuts-head">
+          <h2 class="modal-title" id="shortcuts-title">Keyboard shortcuts</h2>
+          <button class="shortcuts-x" aria-label="Close">✕</button>
+        </div>
+        <div class="shortcuts-grid">
+          ${SHORTCUTS.map(([group, rows]) => `
+            <section>
+              <h3>${escapeHTML(group)}</h3>
+              ${rows.map(([keys, what]) => `
+                <div class="sc-row"><span class="sc-keys">${keys.map(k => `<kbd>${escapeHTML(k)}</kbd>`).join("")}</span><span>${escapeHTML(what)}</span></div>`).join("")}
+            </section>`).join("")}
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.closest(".shortcuts-x")) closeShortcuts(); });
+    overlay.querySelector(".shortcuts-x").focus({ preventScroll: true });
+  }
+  function closeShortcuts() { $("#shortcuts-modal")?.remove(); }
+
+  // Next or previous day, keeping the tab you're on
+  function goDay(delta) {
+    const n = state.selectedDay + delta;
+    if (!getDayData(n)) { showToast(delta > 0 ? "This is the last day" : "This is the first day", "info"); return; }
+    openDayDetail(n, state.detailTab);
+  }
+
+  function initShortcuts() {
+    $("#btn-shortcuts")?.addEventListener("click", () => ($("#shortcuts-modal") ? closeShortcuts() : openShortcuts()));
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+      const active = document.activeElement;
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(active?.tagName) || active?.isContentEditable) return;
+      if (e.key === "Escape") {
+        if ($("#shortcuts-modal")) { e.preventDefault(); closeShortcuts(); }
+        else if ($("#day-done")) { e.preventDefault(); closeDayDone(); }
+        return;
+      }
+      if (e.key === "?") { e.preventDefault(); $("#shortcuts-modal") ? closeShortcuts() : openShortcuts(); return; }
+      if ($(".modal-overlay.active") || $("#kunal-reader") || $("#log-modal") || window.CodeVisualizer?.isOpen()) return;
+      const k = e.key.toLowerCase();
+      if (k === "j" || k === "k") {
+        if (state.currentView !== "detail" || !state.selectedDay) return;
+        e.preventDefault();
+        goDay(k === "j" ? 1 : -1);
+      } else if (k === "b") {
+        const book = $(".view.active .md-content.nb-active");
+        const open = $(".view.active .nb-open");
+        if (book?._notebook) { e.preventDefault(); book._notebook.root.querySelector(".nb-mode-btn").click(); }
+        else if (open) { e.preventDefault(); open.click(); }
+      } else if (k === "h") {
+        e.preventDefault();
+        if (state.currentView !== "home") switchView("home");
+      } else if (k === "t") {
+        e.preventDefault();
+        $("#theme-toggle").click();
+      }
+    });
+  }
+
+  // On a phone, a quick sideways swipe on a day's page opens the next or previous day.
+  // Not on the notes book (it turns pages), code, tables, or anything that scrolls sideways.
+  function initDaySwipe() {
+    const area = $("#day-detail");
+    if (!area) return;
+    let start = null;
+    area.addEventListener("touchstart", (e) => {
+      start = null;
+      if (e.touches.length !== 1) return;
+      const t = e.target;
+      if (t.closest(".nb-book, pre, table, .mermaid-diagram, input, textarea, select, video, .day-video, .detail-tabs, .nb-open-row")) return;
+      for (let n = t; n && n !== area; n = n.parentElement) {
+        if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return;
+      }
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() };
+    }, { passive: true });
+    area.addEventListener("touchend", (e) => {
+      if (!start || state.currentView !== "detail") { start = null; return; }
+      const dx = e.changedTouches[0].clientX - start.x, dy = e.changedTouches[0].clientY - start.y;
+      const quick = Date.now() - start.at < 700;
+      start = null;
+      if (!quick || Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      if (!window.getSelection()?.isCollapsed) return;
+      goDay(dx < 0 ? 1 : -1);
+    }, { passive: true });
   }
 
   // ── Offline use ──
@@ -5088,7 +5683,38 @@
     });
 
     // Sidebar navigation
-    $$(".nav-item").forEach(item => {
+    $$(".nav-item[data-action='today']").forEach(item => item.addEventListener("click", () => openDayDetail(getCurrentDay())));
+    // Buttons inside empty / error messages, and the "Next unsolved" jump above exercises
+    document.addEventListener("click", (e) => {
+      const jump = e.target.closest("[data-jump-unsolved]");
+      if (jump) {
+        const card = jump.closest(".practice-panel")?.querySelector(".exercise-card:not(.done)");
+        if (card) {
+          card.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" });
+          card.classList.remove("ex-flash");
+          void card.offsetWidth;
+          card.classList.add("ex-flash");
+        }
+        return;
+      }
+      const act = e.target.closest("[data-empty-action]")?.dataset.emptyAction;
+      if (!act) return;
+      if (act === "reload") location.reload();
+      else if (act === "checklist") {
+        if (state.currentView === "detail") { state.detailTab = "checklist"; renderDayDetail(state.selectedDay); rememberNav(); }
+        else if (state.currentView === "frontend" && state.selectedModule) openFrontendModule(state.selectedModule, "checklist");
+      } else if (act === "clear-filters") {
+        state.statusFilter = "all";
+        state.categoryFilter = "all";
+        renderDaysGrid();
+        renderSidebar();
+      } else if (act === "practice-todo" || act === "practice-all") {
+        state.practiceFilter = act === "practice-todo" ? "todo" : "all";
+        renderPracticeView();
+      }
+    });
+
+    $$(".nav-item[data-view]").forEach(item => {
       item.addEventListener("click", () => {
         if (item.dataset.view === "sets") openSet(null);
         else if (item.dataset.view === "frontend") openFrontendModule(null);
@@ -5143,6 +5769,9 @@
       if ((e.key === " " || e.key === "Enter") && !cardSession.flipped) { e.preventDefault(); flipCurrentCard(); }
       else if (cardSession.flipped && ["1", "2", "3"].includes(e.key)) gradeCurrentCard(["again", "good", "easy"][+e.key - 1]);
     });
+
+    initShortcuts();
+    initDaySwipe();
 
     // Status filters
     $$(".filter-btn[data-status]").forEach(btn => {
