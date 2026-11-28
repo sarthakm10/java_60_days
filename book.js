@@ -277,8 +277,24 @@
       range.max = String(this.spreadCount() - 1);
 
       const to = anchor ? this.pageOf(anchor) : 0;
-      this.show(this.spreadFor(to < 0 ? 0 : to));
+      if (this.pinned) this.openAt(this.pinned);   // a page asked for before the layout settled (fonts, diagrams)
+      else this.show(this.spreadFor(to < 0 ? 0 : to));
       this.article.style.minHeight = "";
+    }
+
+    // Where the reader is, as a content page out of how many: survives a different page size (roughly)
+    where() {
+      const [a] = this.pagesAt(this.spread);
+      const content = this.total - this.front;
+      return { page: Math.max(-1, (a?.pageNo ?? 0) - this.front), of: content };
+    }
+    openAt(where) {
+      const { page, of } = where || {};
+      if (page == null) return;
+      this.pinned = where;
+      const content = this.total - this.front;
+      const p = page < 0 ? -1 : (of && of !== content ? Math.round(page / of * content) : page);
+      this.show(p < 0 ? 0 : this.spreadFor(Math.min(this.total - 1, this.front + p)));
     }
 
     blank() { const p = this.makePage("blank"); p.classList.add("nb-recto"); p.body.innerHTML = `<div class="nb-blank-mark">❦</div>`; return p; }
@@ -303,6 +319,7 @@
       if (b) this.right.appendChild(b);
       a?.querySelector(".nb-body")?.scrollTo?.(0, 0);
       this.updateBar();
+      this.opts.onPage?.(this.where(), this);
     }
 
     updateBar() {
@@ -336,11 +353,12 @@
         mark.classList.add("nb-flash");
         setTimeout(() => mark.classList.remove("nb-flash"), 1600);
       };
-      if (instant) { this.show(this.spreadFor(i)); after(); }
+      if (instant) { this.pinned = null; this.show(this.spreadFor(i)); after(); }
       else this.flipTo(this.spreadFor(i), after);
     }
 
     flipTo(t, done) {
+      this.pinned = null;   // the reader has moved on
       const n = this.spreadCount();
       t = Math.max(0, Math.min(n - 1, t));
       if (this.busy) return;
@@ -409,7 +427,7 @@
       r.querySelector(".nb-next").onclick = r.querySelector(".nb-edge-next").onclick = () => this.next();
       r.querySelector(".nb-prev").onclick = r.querySelector(".nb-edge-prev").onclick = () => this.prev();
       r.querySelector(".nb-index-btn").onclick = () => this.flipTo(this.twoUp ? 0 : 1);
-      r.querySelector(".nb-range").oninput = (e) => this.show(+e.target.value);
+      r.querySelector(".nb-range").oninput = (e) => { this.pinned = null; this.show(+e.target.value); };
       r.querySelector(".nb-mode-btn").onclick = () => { setMode("scroll"); this.destroy(); this.opts.onModeChange?.("scroll"); };
 
       this.onKey = (e) => {

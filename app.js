@@ -708,7 +708,9 @@
     if (!window.NoteBook || article._notebook) return;
     article.querySelector(":scope > .nb-open-row")?.remove();
     if (NoteBook.mode() === "book") {
-      NoteBook.attach(article, { ...opts, onModeChange: () => setupNoteBook(article, opts) });
+      const book = NoteBook.attach(article, { ...opts, onModeChange: () => setupNoteBook(article, opts), onPage: rememberBookPage });
+      if (state.pendingBookPage?.key === navKey(navState()) && !state.pendingNoteScroll) book.openAt(state.pendingBookPage);
+      state.pendingBookPage = null;
       return;
     }
     const row = document.createElement("div");
@@ -720,6 +722,13 @@
       article.closest(".study-notes")?.scrollIntoView({ block: "start" });
     });
     article.prepend(row);
+  }
+
+  // Remember which page of the notes book is open, so a reload (or Back) opens it there again
+  function rememberBookPage(where, book) {
+    const nav = history.state?.nav;
+    if (!nav || restoringNav || !book.article.offsetParent) return;
+    history.replaceState({ ...history.state, nav: { ...nav, book: where } }, "");
   }
 
   // Open the notes at a subtopic: flip to its page in the book, scroll to it otherwise.
@@ -741,7 +750,7 @@
     if (!fresh) return;
     diagramsReady.then(() => {
       // Drawn diagrams change heights, so the pages are laid out again
-      if (article._notebook?.article.isConnected && article.querySelector(".mermaid-diagram")) article._notebook.paginate();
+      if (article._notebook?.article.isConnected && article.querySelector(".mermaid-diagram")) article._notebook.paginate();
       place(false);
     });
   }
@@ -2950,7 +2959,7 @@
     const current = history.state?.nav;
     const next = navState();
     if (navKey(current) === navKey(next)) {
-      history.replaceState({ ...history.state, nav: { ...next, prev: current.prev, scroll: current.scroll } }, "");
+      history.replaceState({ ...history.state, nav: { ...next, prev: current.prev, scroll: current.scroll, book: current.book } }, "");
     } else if (current && current.view === next.view && navKey(current) !== current.view + ":") {
       // From one day (or module, or set) straight to another: replace, so back returns to the list, not day by day
       history.replaceState({ nav: { ...next, prev: current.prev } }, "");
@@ -2967,6 +2976,7 @@
   }
 
   function restoreNav(nav) {
+    state.pendingBookPage = nav.book ? { ...nav.book, key: navKey(nav) } : null;   // the page the notes book was open at
     restoringNav = true;
     try {
       if (nav.view === "detail" && nav.day) {
@@ -3000,6 +3010,17 @@
   }
 
   function initNavHistory() {
+    // Reloading the page keeps its history entry: open the same screen again, where it was scrolled to
+    const saved = history.state?.nav;
+    if (saved && saved.view && saved.view !== "home") {
+      const known = saved.view !== "detail" || getDayData(saved.day);
+      try { if (known) restoreNav(saved); } catch (err) { console.warn("Couldn't reopen the last screen", err); switchView("home"); }
+    }
+    if (saved) {
+      history.replaceState({ ...history.state, nav: { ...navState(), prev: saved.prev, scroll: saved.scroll, book: saved.book } }, "");
+      bindNavListeners();
+      return;
+    }
     const first = navState();
     if (installedApp) {
       // A guard entry under the first screen: back from there lands on it instead of closing the app
@@ -3008,7 +3029,10 @@
     } else {
       history.replaceState({ nav: first }, "");
     }
+    bindNavListeners();
+  }
 
+  function bindNavListeners() {
     addEventListener("popstate", (e) => {
       const nav = e.state?.nav;
       if (closeOverlay()) {
@@ -5081,7 +5105,11 @@
     toTop.innerHTML = ICONS.arrowUp;
     toTop.addEventListener("click", () => scroller.scrollTo({ top: 0, behavior: "smooth" }));
     document.body.appendChild(toTop);
+    let scrollSaveTimer;
     scroller.addEventListener("scroll", () => {
+      // Keep the screen's scroll position in its history entry, so a reload comes back to it
+      clearTimeout(scrollSaveTimer);
+      scrollSaveTimer = setTimeout(saveScrollPosition, 400);
       toTop.classList.toggle("visible", scroller.scrollTop > 900);
       const fill = $(".view.active #reading-progress-fill");   // a day and a frontend module can both hold notes
       if (fill && !fill.closest(".view")?.querySelector(".nb-active")) {
