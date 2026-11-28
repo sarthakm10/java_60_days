@@ -11,7 +11,7 @@
 // and a focus mode that hides the rest of the app.
 // ============================================================
 (function () {
-  const SPLIT = new Set(["UL", "OL", "BLOCKQUOTE", "SECTION"]);
+  const SPLIT = new Set(["UL", "OL", "BLOCKQUOTE", "SECTION", "TABLE", "TBODY"]);
   const HEADING = /^H[1-4]$/;
   const MODE_KEY = "notes_view_mode";   // "book" | "scroll"
   const PREFS_KEY = "notes_reader_prefs";
@@ -86,10 +86,11 @@
   function finder(roots) {
     const byTag = new Map(), keys = new Map();
     const list = (tag) => {
-      if (!byTag.has(tag)) byTag.set(tag, roots.flatMap(r => [...r.querySelectorAll(tag)]).filter(e => !e.classList.contains("nb-clone")));
+      // A code listing split over pages counts once, as its first piece
+      if (!byTag.has(tag)) byTag.set(tag, roots.flatMap(r => [...r.querySelectorAll(tag)]).filter(e => !e.classList.contains("nb-clone") && !e._off));
       return byTag.get(tag);
     };
-    const key = (e) => { if (!keys.has(e)) keys.set(e, keyOf(e)); return keys.get(e); };
+    const key = (e) => { if (!keys.has(e)) keys.set(e, keyOf(e._orig || e)); return keys.get(e); };
     return {
       find(loc) {
         if (!loc?.tag) return null;
@@ -98,6 +99,7 @@
         return null;
       },
       locate(e) {
+        if (e._first) e = e._first;
         const tag = e.tagName.toLowerCase(), k = key(e);
         let nth = 0;
         for (const x of list(tag)) {
@@ -177,6 +179,7 @@
       this.spread = 0;
       this.busy = false;
       this.moves = [];
+      this.splits = [];   // [original code block, its pieces] for listings too long for one page
       article._notebook = this;
       article.classList.add("nb-active");
       article.closest(".study-notes")?.classList.add("nb-mode");
@@ -311,10 +314,73 @@
 
     overflow(page) { return page.body.scrollHeight > page.body.clientHeight + 1; }
 
+    // Cut a code listing taller than a page into page-sized runs of lines (each run keeps the syntax colours and
+    // highlights: a copy of that stretch of the original). The copy button stays on the first piece and copies it all.
+    splitCode(block, avail) {
+      const pre = block.querySelector(":scope > pre");
+      if (!pre) return null;
+      const code = pre.querySelector(":scope > code") || pre;
+      const text = code.textContent;
+      const starts = [0];
+      for (let i = text.indexOf("\n"); i >= 0 && i < text.length - 1; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+      const cs = getComputedStyle(code);
+      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.6;
+      const extra = block.getBoundingClientRect().height - starts.length * lh;   // padding, borders, a scrollbar
+      const per = Math.max(4, Math.floor((avail * 0.94 - extra) / lh));
+      if (starts.length <= per) return null;
+      const pieces = [];
+      let first = null;
+      for (let i = 0; i < starts.length; i += per) {
+        const s = starts[i], e = i + per < starts.length ? starts[i + per] - 1 : text.length;   // without the line break
+        const r = rangeAt(code, s, e - s);
+        if (!r) return null;
+        const piece = block.cloneNode(false);
+        piece.removeAttribute("id");
+        piece.classList.add("nb-piece");
+        if (i) piece.classList.add("nb-cont");
+        const p = pre.cloneNode(false);
+        p.removeAttribute("id");
+        const c = code === pre ? p : p.appendChild(code.cloneNode(false));
+        c.appendChild(r.cloneContents());
+        p._orig = pre; p._off = s; p._first = first || p;
+        first = first || p;
+        piece.appendChild(p);
+        pieces.push(piece);
+      }
+      const btn = block.querySelector(":scope > .code-copy");
+      if (btn) pieces[0].appendChild(btn);
+      return pieces;
+    }
+
+    // Scale a page's text and pictures down together (CSS zoom, so the layout shrinks too) until nothing scrolls
+    shrinkToFit(page) {
+      const fit = el("div", "nb-fit");
+      fit.append(...page.body.childNodes);
+      page.body.appendChild(fit);
+      page.classList.add("nb-recto");
+      this.measure.replaceChildren(page);
+      const room = page.body.clientHeight - parseFloat(getComputedStyle(page.body).paddingTop) - parseFloat(getComputedStyle(page.body).paddingBottom) - 4;
+      let z = 1;
+      for (let i = 0; i < 12 && fit.getBoundingClientRect().height > room && z > 0.3; i++) {
+        z = Math.max(0.3, z * Math.min(0.96, room / fit.getBoundingClientRect().height));
+        fit.style.zoom = String(z);
+      }
+      page.classList.remove("nb-recto");
+      this.measure.replaceChildren();
+    }
+
     // Put every block back into the source tree in its original order
     restore() {
       for (const [node, parent] of this.moves) parent.appendChild(node);
       this.moves = [];
+      for (const [orig, pieces] of this.splits) {
+        const btn = pieces[0].querySelector(":scope > .code-copy");
+        if (btn) orig.appendChild(btn);
+        pieces[0].replaceWith(orig);
+        pieces.slice(1).forEach(p => p.remove());
+        orig._pieces = null;
+      }
+      this.splits = [];
       this.pages.forEach(p => p.remove());
       this.pages = [];
     }
@@ -322,10 +388,13 @@
     paginate() {
       if (this.busy) { this.pendingLayout = true; return; }
       this.hideFloating();
-      const anchor = this.currentAnchor();
+      let anchor = this.currentAnchor();
+      if (anchor?.closest?.(".nb-piece")) anchor = anchor.closest(".nb-piece").querySelector("pre")._orig.parentNode;   // a split listing: its original
       // Hold the book's height while its pages are rebuilt, or the page around it scrolls back to the top
       this.article.style.minHeight = this.article.offsetHeight + "px";
       this.restore();
+      // Highlights live in the original blocks: draw them again, so ones added or removed on a split listing stick
+      if (this.marks) this.missing = applyHighlights([this.source], this.marks.highlights);
       this.applyPrefs();
       this.sig = layoutSig();
       this.twoUp = this.fitsTwo;
@@ -341,6 +410,8 @@
       this.measure.replaceChildren(probe);
       const pcs = getComputedStyle(probe.body);
       const avail = probe.body.clientHeight - parseFloat(pcs.paddingTop) - parseFloat(pcs.paddingBottom) - 22;
+      // No picture is ever taller than a page's text area
+      this.article.style.setProperty("--nb-img-h", Math.max(80, avail - 8) + "px");
       probe.body.style.height = "auto";
       probe.body.append(...this.source.childNodes);
       const top0 = probe.body.getBoundingClientRect().top + parseFloat(pcs.paddingTop);
@@ -348,7 +419,8 @@
       const edge = (n) => {
         if (!edges.has(n)) {
           const c = getComputedStyle(n);
-          edges.set(n, { top: parseFloat(c.paddingTop) + parseFloat(c.borderTopWidth), bottom: parseFloat(c.paddingBottom) + parseFloat(c.borderBottomWidth) });
+          // a split table also repeats its header row on every page
+          edges.set(n, { top: parseFloat(c.paddingTop) + parseFloat(c.borderTopWidth) + (n._nbHead || 0), bottom: parseFloat(c.paddingBottom) + parseFloat(c.borderBottomWidth) + (n.classList.contains("kunal-note") ? 0 : parseFloat(c.marginBottom) || 0) });
         }
         return edges.get(n);
       };
@@ -359,8 +431,26 @@
         // Split a wrapper only when it is big: a short callout or list stays in one piece
         if (splittable(node) && (node.classList.contains("kunal-note") || node.getBoundingClientRect().height > avail * 0.5)) {
           const c = [...chain, node];
+          if (node.tagName === "TABLE") {
+            // Every piece of the table keeps the same column widths and repeats the header
+            const row = node.rows[0], cells = row ? [...row.cells] : [];
+            node._nbTHead = node.tHead;   // remembered: the header itself moves onto the table's first page
+            node._nbHead = node.tHead ? node.tHead.getBoundingClientRect().height : 0;
+            node._nbCols = cells.length && cells.every(td => td.colSpan === 1) ? cells.map(td => td.getBoundingClientRect().width) : null;
+          }
           for (const ch of [...node.childNodes]) walk(ch, c);
           return;
+        }
+        // A code listing taller than a page goes over several pages, a run of lines on each
+        if (node.nodeType === 1 && node.classList.contains("code-block") && !node.classList.contains("nb-piece") && node.getBoundingClientRect().height > avail) {
+          const pieces = this.splitCode(node, avail);
+          if (pieces) {
+            node.replaceWith(...pieces);
+            node._pieces = pieces;
+            this.splits.push([node, pieces]);
+            for (const p of pieces) walk(p, chain);
+            return;
+          }
         }
         let r;
         if (node.nodeType === 3) { const rg = document.createRange(); rg.selectNodeContents(node); r = rg.getBoundingClientRect(); }
@@ -369,7 +459,7 @@
         if (!r.width && !r.height) top = bottom = lastBottom;   // hidden or empty (a subtopic anchor)
         lastBottom = Math.max(lastBottom, bottom);
         items.push({ node, chain, top, bottom,
-          lead: node.nodeType === 1 && (HEADING.test(node.tagName) || node.classList.contains("notes-anchor")) });
+          lead: node.nodeType === 1 && (HEADING.test(node.tagName) || node.tagName === "THEAD" || node.classList.contains("notes-anchor")) });
       };
       for (const child of [...probe.body.childNodes]) walk(child, []);
       this.source.append(...probe.body.childNodes);
@@ -415,10 +505,25 @@
           for (let j = d; j < it.chain.length; j++) {
             const orig = it.chain[j], c = orig.cloneNode(false);
             c.classList.add("nb-clone");
+            // A split wrapper goes back in its turn too, or restore() would put it after its siblings
+            if (!seen.has(orig)) this.moves.push([orig, orig.parentNode]);
             if (seen.has(orig)) {
               c.classList.add("nb-cont");
               c.removeAttribute("id");
               if (orig.tagName === "OL") c.start = (orig.start || 1) + (liDone.get(orig) || 0);
+              if (orig.tagName === "TABLE" && orig._nbTHead) {
+                const head = orig._nbTHead.cloneNode(true);   // the header again: a copy nobody can highlight
+                [head, ...head.querySelectorAll("*")].forEach(e => { e.classList.add("nb-clone"); e.removeAttribute("id"); });
+                c.appendChild(head);
+              }
+            }
+            if (orig.tagName === "TABLE" && orig._nbCols) {
+              // An empty row of cells at the measured widths (<col> widths don't hold in these scrolling tables)
+              const sizer = el("tbody", "nb-clone nb-sizer"), tr = el("tr", "nb-clone");
+              sizer.setAttribute("aria-hidden", "true");
+              orig._nbCols.forEach(w => { const td = el("td", "nb-clone"); td.style.width = td.style.minWidth = td.style.maxWidth = w + "px"; tr.appendChild(td); });
+              sizer.appendChild(tr);
+              c.prepend(sizer);
             }
             seen.add(orig);
             (j ? open[j - 1].clone : page.body).appendChild(c);
@@ -431,6 +536,8 @@
         }
         return page;
       });
+      // A block too big for any page (a long code listing, a big table) is shrunk until the page holds it
+      content.filter(p => p.classList.contains("nb-tall")).forEach(p => this.shrinkToFit(p));
       const pagesOut = content.length ? content : [this.makePage()];
 
       // Front matter: a title page, then the index
@@ -453,7 +560,7 @@
       const entries = [];
       for (const { h, i } of heads) {
         const li = el("li", `nb-index-item ${h.closest(".kunal-note") ? "lvl-sub" : "lvl-" + h.tagName.toLowerCase()}`,
-          `<a href="#"><span class="nb-index-text">${esc(headingText(h))}</span><span class="nb-dots"></span><span class="nb-index-num"></span></a>`);
+          `<a href="#"><span class="nb-index-text">${esc(headingText(h))}</span><span class="nb-dots"></span><span class="nb-index-num">${i + 1}</span></a>`);   // the number now, so the page is measured with it
         li.h = h; li.pageIdx = i;
         let list = ip.body.querySelector(".nb-index");
         list.appendChild(li);
@@ -516,10 +623,10 @@
     spreadCount() { return this.twoUp ? Math.ceil(this.total / 2) : this.total; }
     spreadFor(pageIdx) { return this.twoUp ? Math.floor(pageIdx / 2) : pageIdx; }
     pagesAt(s) { return this.twoUp ? [this.pages[2 * s], this.pages[2 * s + 1]] : [this.pages[s]]; }
-    pageOf(node) { const p = node.closest?.(".nb-page"); return p ? this.pages.indexOf(p) : -1; }
+    pageOf(node) { const p = (node._pieces?.[0] || node).closest?.(".nb-page"); return p ? this.pages.indexOf(p) : -1; }
     contentPages() { return this.pages.slice(this.front).filter(p => !p.classList.contains("nb-page-blank")); }
     contentRoots() { return this.contentPages().map(p => p.body); }
-    firstBlock(page) { return [...page.body.querySelectorAll("*")].find(n => !n.classList.contains("nb-clone")) || null; }
+    firstBlock(page) { return [...page.body.querySelectorAll("*")].find(n => !n.classList.contains("nb-clone") && !n.classList.contains("nb-fit")) || null; }
 
     // The first block on screen, to land on the same place after a re-layout
     currentAnchor() {
@@ -574,7 +681,6 @@
       const i = this.pageOf(node);
       if (i < 0) return;
       const after = () => {
-        if (node.closest(".nb-page").classList.contains("nb-tall")) node.scrollIntoView({ block: "start" });
         // A subtopic anchor is an empty marker: light up its heading
         const mark = node.classList.contains("notes-anchor") ? node.nextElementSibling : node;
         if (!flash || !mark) return;
@@ -716,7 +822,7 @@
       const page = startEl.closest?.(".nb-page");
       const block = startEl.closest?.(BLOCK);
       if (!page || !this.spreadEl.contains(page) || page.closest(".nb-leaf") || page.pageNo < this.front
-          || !block || !page.contains(block) || startEl.closest(SKIP)) return this.hideTool();
+          || !block || !page.contains(block) || block.classList.contains("nb-clone") || startEl.closest(SKIP)) return this.hideTool();
       const range = r.cloneRange();
       if (!block.contains(range.endContainer)) range.setEnd(block, block.childNodes.length);   // one block at a time
       if (!range.toString().trim()) return this.hideTool();
@@ -749,7 +855,7 @@
       const before = document.createRange();
       before.setStart(s.block, 0);
       before.setEnd(s.range.startContainer, s.range.startOffset);
-      const hl = { id: uid(), color, note: "", quote: s.range.toString(), start: before.toString().length, ...loc, at: Date.now() };
+      const hl = { id: uid(), color, note: "", quote: s.range.toString(), start: before.toString().length + (s.block._off || 0), ...loc, at: Date.now() };
       const marks = wrapRange(s.range, hl);
       window.getSelection()?.removeAllRanges();
       this.hideTool();
@@ -969,6 +1075,7 @@
     destroy() {
       this.closeEditor();
       this.restore();
+      if (this.marks) applyHighlights([this.source], this.marks.highlights);
       document.removeEventListener("keydown", this.onKey);
       document.removeEventListener("mousedown", this.onDocDown);
       document.removeEventListener("touchstart", this.onDocDown);

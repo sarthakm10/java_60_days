@@ -198,9 +198,12 @@
 }
 .nb-verso .nb-body { padding-left: 56px; padding-right: 60px; }
 .nb-recto .nb-body { padding-left: 60px; padding-right: 56px; }
-.nb-tall .nb-body { overflow-y: auto; scrollbar-width: thin; }
 .nb-body > :first-child,
-.nb-body > .nb-clone > :first-child { margin-top: 0 !important; }
+.nb-body > .nb-clone > :first-child,
+.nb-fit > :first-child,
+.nb-fit > .nb-clone > :first-child { margin-top: 0 !important; }
+.nb-fit { display: flow-root; }
+.nb-body .nb-sizer td { height: 0; padding: 0 !important; border: 0 !important; line-height: 0; box-sizing: border-box; background: none !important; }
 
 /* Bookish headings */
 .nb-body h2 {
@@ -225,6 +228,9 @@
 .nb-body .kunal-note h1 { font-family: var(--nb-serif); }
 .nb-body pre, .nb-body .mermaid-diagram, .nb-body table { box-shadow: 0 1px 0 var(--nb-rule); }
 .nb-body img, .nb-body svg { max-width: 100%; height: auto; }
+/* A picture never needs scrolling: it shrinks to the page's height, keeping its shape */
+.nb-body img, .nb-body .mermaid-diagram svg { max-height: var(--nb-img-h, 70vh); width: auto; object-fit: contain; }
+.nb-body .mermaid-diagram svg { max-height: calc(var(--nb-img-h, 70vh) - 90px); }   /* room for the diagram's frame and a heading */
 
 .nb-folio {
   position: absolute;
