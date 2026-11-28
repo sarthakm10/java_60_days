@@ -9,8 +9,8 @@ const NETWORK_TIMEOUT = 4000;
 const CDN_HOSTS = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 // Saved on install, so both pages open offline even before a full download
-const SHELL = ["./", "index.html", "app.html", "styles.css", "landing.css", "visualizer.css", "app.js", "landing.js",
-  "data.js", "data-frontend.js", "data-beginner.js", "question-sets.js", "question-sets-beginner.js", "videos.js", "visualize/index.js", "visualizer.js",
+const SHELL = ["./", "index.html", "app.html", "styles.css", "landing.css", "visualizer.css", "book.css", "app.js", "landing.js",
+  "data.js", "data-frontend.js", "data-beginner.js", "question-sets.js", "question-sets-beginner.js", "videos.js", "visualize/index.js", "visualizer.js", "book.js",
   "favicon.svg", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", event => {

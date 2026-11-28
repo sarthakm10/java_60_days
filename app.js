@@ -376,7 +376,10 @@
       if (!file.endsWith(".md")) return;
       const note = a.closest(".kunal-note");
       if (note && note.dataset.file === file) {
-        const heading = slug ? note.querySelector(`[data-slug="${CSS.escape(slug)}"]`) : note;
+        // In the book view one note is split over many pages, so look in every part of it
+        const parts = `.kunal-note[data-file="${CSS.escape(file)}"]`;
+        const heading = slug ? container.querySelector(`${parts} [data-slug="${CSS.escape(slug)}"]`) : container.querySelector(parts);
+        if (heading && window.NoteBook?.reveal(heading)) return;
         if (heading) {   // notes are long: glide over short distances, jump over long ones
           const far = Math.abs(heading.getBoundingClientRect().top) > 2500;
           heading.scrollIntoView({ behavior: far ? "auto" : "smooth", block: "start" });
@@ -689,6 +692,7 @@
         saveState();
         const scroller = $(".content-scroll");
         const top = scroller.scrollTop;
+        if (article._notebook) { state.pendingNoteScroll = cb.dataset.id; state.pendingNoteQuiet = true; }
         rerender();
         scroller.scrollTop = top;
         renderSidebar();
@@ -697,6 +701,49 @@
     });
 
     return diagramsReady;
+  }
+
+  // Show the notes as a flip-through book (book.js), or as one long page if the reader chose that
+  function setupNoteBook(article, opts) {
+    if (!window.NoteBook || article._notebook) return;
+    article.querySelector(":scope > .nb-open-row")?.remove();
+    if (NoteBook.mode() === "book") {
+      NoteBook.attach(article, { ...opts, onModeChange: () => setupNoteBook(article, opts) });
+      return;
+    }
+    const row = document.createElement("div");
+    row.className = "nb-open-row";
+    row.innerHTML = `<button type="button" class="nb-open">📖 Read as a book</button>`;
+    row.querySelector("button").addEventListener("click", () => {
+      NoteBook.setMode("book");
+      setupNoteBook(article, opts);
+      article.closest(".study-notes")?.scrollIntoView({ block: "start" });
+    });
+    article.prepend(row);
+  }
+
+  // Open the notes at a subtopic: flip to its page in the book, scroll to it otherwise.
+  // Diagrams above it change height when they finish drawing, so place it again then.
+  function revealPendingNote(root, article, diagramsReady, fresh = true) {
+    const target = state.pendingNoteScroll ? root.querySelector(`#note-${state.pendingNoteScroll}`) : null;
+    const flash = !state.pendingNoteQuiet;
+    state.pendingNoteScroll = null;
+    state.pendingNoteQuiet = false;
+    const place = (lightUp) => {
+      if (!target?.isConnected) return;
+      if (window.NoteBook && article._notebook) {
+        NoteBook.reveal(target, { instant: true, flash: lightUp });
+        if (lightUp) article._notebook.root.scrollIntoView({ block: "start" });
+      }
+      else target.scrollIntoView({ block: "start" });
+    };
+    place(flash);
+    if (!fresh) return;
+    diagramsReady.then(() => {
+      // Drawn diagrams change heights, so the pages are laid out again
+      if (article._notebook?.article.isConnected && article.querySelector(".mermaid-diagram")) article._notebook.paginate();
+      place(false);
+    });
   }
 
   function studyNotesMessageHTML(dayNum) {
@@ -1731,15 +1778,10 @@
           diagramsReady = Promise.resolve();
         } else {
           diagramsReady = enhanceStudyNotes(article, detail.querySelector("#study-toc"), () => renderDayDetail(dayNum));
+          setupNoteBook(article, { title: day.title, kicker: `Day ${dayNum} · ${day.phase}` });
           studyNotesKeep = { day: dayNum, track: state.track, html: notes.html, theme: state.theme, el: article.closest(".study-notes") };
         }
-        if (state.pendingNoteScroll) {
-          const target = detail.querySelector(`#note-${state.pendingNoteScroll}`);
-          state.pendingNoteScroll = null;
-          target?.scrollIntoView({ block: "start" });
-          // Diagrams above the target change height when they finish drawing, so scroll again
-          diagramsReady.then(() => { if (target?.isConnected) target.scrollIntoView({ block: "start" }); });
-        }
+        revealPendingNote(detail, article, diagramsReady, !reuseNotes);
       }
       return;
     }
@@ -2301,12 +2343,8 @@
       const article = container.querySelector("#study-article");
       if (article) {
         const diagramsReady = enhanceStudyNotes(article, container.querySelector("#study-toc"), rerender);
-        if (state.pendingNoteScroll) {
-          const target = container.querySelector(`#note-${state.pendingNoteScroll}`);
-          state.pendingNoteScroll = null;
-          target?.scrollIntoView({ block: "start" });
-          diagramsReady.then(() => { if (target?.isConnected) target.scrollIntoView({ block: "start" }); });
-        }
+        setupNoteBook(article, { title: m.title, kicker: `Frontend module ${m.module}` });
+        revealPendingNote(container, article, diagramsReady);
       }
       return;
     }
@@ -5046,7 +5084,7 @@
     scroller.addEventListener("scroll", () => {
       toTop.classList.toggle("visible", scroller.scrollTop > 900);
       const fill = $(".view.active #reading-progress-fill");   // a day and a frontend module can both hold notes
-      if (fill) {
+      if (fill && !fill.closest(".view")?.querySelector(".nb-active")) {
         const max = scroller.scrollHeight - scroller.clientHeight;
         fill.style.width = `${max > 0 ? Math.min(100, (scroller.scrollTop / max) * 100) : 0}%`;
       }
